@@ -13,11 +13,8 @@
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 {
     int n = y.size();
-    arma::colvec ret(n);
-    for (int i = 0; i < n; i++)
-    {
-        ret(i) = R::dnorm(y(i), mean(i), sd, log);
-    }
+    arma::colvec sd_vec(n, arma::fill::value(sd));
+    arma::colvec ret = arma::normpdf(y, mean, sd_vec);
     return ret;
 }
 
