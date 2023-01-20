@@ -37,6 +37,15 @@ arma::colvec rtn1_vec(int n, arma::colvec mean, double sd, arma::colvec low, dou
   return ret;
 }
 
+arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::colvec t_beta_a, arma::colvec t_beta_b, double sd_a, double sd_b)
+{
+    arma::colvec mean_a = x * t_beta_a;
+    arma::colvec mean_b = x * t_beta_b;
+    arma::colvec pr1 = theta * dnorm_vec(log_y, mean_a, sd_a, false);
+    arma::colvec pr2 = (1 - theta) * dnorm_vec(log_y, mean_b, sd_b, false);
+    return pr1 / (pr1 + pr2);
+}
+
 //' Gibbs sampling for a two componentes mixture model
 //'
 //' @param y [nx1]
@@ -67,12 +76,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
   beta_b.row(0) = arma::rowvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
   
   // variaveis auxiliares usadas no for
-  arma::colvec mean_a(numero_observacoes);
-  arma::colvec mean_b(numero_observacoes);
   double sd_a;
   double sd_b;
-  arma::colvec pr1(numero_observacoes);
-  arma::colvec pr2(numero_observacoes);
   arma::colvec prob(numero_observacoes);
   arma::uvec idxA;
   arma::uvec idxB;
@@ -120,16 +125,12 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     
     aux_beta_a = arma::trans(beta_a.row(it-1));
     aux_beta_b = arma::trans(beta_b.row(it-1));
-    
-    // probability
-    mean_a = x * aux_beta_a;
-    mean_b = x * aux_beta_b;
     sd_a = 1 / sqrt(phi_a(it-1));
     sd_b = 1 / sqrt(phi_b(it-1));
     
-    pr1 = theta(it-1) * dnorm_vec(log_y, mean_a, sd_a, false);
-    pr2 = (1 - theta(it-1)) * dnorm_vec(log_y, mean_b, sd_b, false);
-    prob = pr1/(pr1 + pr2);
+    // probability
+    prob = calcular_prob(log_y, theta(it - 1), x, aux_beta_a, aux_beta_b, sd_a, sd_b);
+
     
     // mixture
     I = rbernoulli(numero_observacoes, prob);
