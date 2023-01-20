@@ -23,7 +23,7 @@ arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 arma::colvec rbernoulli(int n, arma::colvec prob)
 {
     arma::colvec unif(n, arma::fill::randu);
-    arma::uvec ret = unif > (1 - prob);
+    arma::uvec ret = unif < prob;
     return arma::conv_to<arma::vec>::from(ret);
 }
 
