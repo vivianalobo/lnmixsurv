@@ -6,7 +6,7 @@
 #include <mvnorm.h>
 #include "RcppTN.h"
 #include <progress.hpp>
-#include <progress_bar.hpp>
+#include "eta_progress_bar.hpp"
 
 
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log){
@@ -106,7 +106,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
   arma::colvec aux_beta_a(numero_covariaveis);
   arma::colvec aux_beta_b(numero_covariaveis);
   
-  Progress pro(numero_iteracoes, true);
+  ETAProgressBar pb;
+  Progress pro(numero_iteracoes, true, pb);
   for(int it=1; it <= numero_iteracoes-1;it++){
     if (Progress::check_abort())
       return Rcpp::List::create(
