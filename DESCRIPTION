@@ -1,0 +1,18 @@
+Package: persistencia
+Type: Package
+Title: What the package does (short line)
+Version: 1.0
+Date: 2023-01-19
+Author: Who wrote it
+Maintainer: Who to complain to <yourfault@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+Imports: 
+    Rcpp (>= 1.0.8.3),
+    posterior,
+    stats,
+    glue,
+    data.table
+LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
+Depends: 
+    RcppTN
