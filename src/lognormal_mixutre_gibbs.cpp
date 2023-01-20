@@ -83,7 +83,7 @@ double gerar_phi(int n, arma::colvec y, arma::mat x, arma::colvec t_beta)
 arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 {
     arma::mat tx = arma::trans(x);
-    arma::mat v = arma::inv(tx * x, arma::inv_opts::allow_approx);
+    arma::mat v = arma::inv_sympd(tx * x, arma::inv_opts::allow_approx);
     arma::colvec m = v * tx * y;
 
     return arma::trans(rmvnorm(1, m, v / phi));
@@ -148,14 +148,12 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
                 Rcpp::_["theta"] = theta);
         pro.increment();
         
-        // Rcpp::Rcout << "inicio do for\n";
         aux_beta_a = beta_a.col(it - 1);
         aux_beta_b = beta_b.col(it - 1);
 
         sd_a = 1 / sqrt(phi_a(it - 1));
         sd_b = 1 / sqrt(phi_b(it - 1));
 
-        // Rcpp::Rcout << "antes do prob\n";
         // probability
         prob = calcular_prob(log_y, theta(it - 1), x, aux_beta_a, aux_beta_b, sd_a, sd_b);
 
@@ -164,7 +162,6 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         idxA = arma::find(I == 1);
         idxB = arma::find(I == 0);
 
-        // Rcpp::Rcout << "antes do augmentation\n";
         realizar_augmentation(idxA, log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
         realizar_augmentation(idxB, log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
 
@@ -179,12 +176,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         yA = log_y.elem(idxA);
         yB = log_y.elem(idxB);
 
-        // Rcpp::Rcout << "antes do pphi\n";
         phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
         phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
-
-
-        // Rcpp::Rcout << "antes do beta\n";
 
         beta_a.col(it) = gerar_beta(yA, XA, phi_a(it));
         beta_b.col(it) = gerar_beta(yB, XB, phi_b(it));
