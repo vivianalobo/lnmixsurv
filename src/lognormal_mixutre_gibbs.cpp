@@ -8,6 +8,8 @@
 #include <progress.hpp>
 #include <progress_bar.hpp>
 
+#include <RcppClock.h>
+
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 {
     int n = y.size();
@@ -136,52 +138,88 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     arma::colvec aux_beta_a(numero_covariaveis);
     arma::colvec aux_beta_b(numero_covariaveis);
 
+    // profiling
+    // Rcpp::Clock clock;
+
     Progress pro(numero_iteracoes, true);
+    // // clock.tick("algoritmo_completo");
     for (int it = 1; it <= numero_iteracoes - 1; it++)
     {
+        // clock.tick("check_abort");
         if (Progress::check_abort())
+        {
+            // clock.stop("run_times");
             return Rcpp::List::create(
                 Rcpp::_["beta_a"] = beta_a,
                 Rcpp::_["beta_b"] = beta_b,
                 Rcpp::_["phi_a"] = phi_a,
                 Rcpp::_["phi_b"] = phi_b,
                 Rcpp::_["theta"] = theta);
+        }
+
+        // clock.tock("check_abort");
+        // clock.tick("increment_pb");
         pro.increment();
-        
+        // clock.tock("increment_pb");
+
+        // clock.tick("criar_aux_beta");
         aux_beta_a = beta_a.col(it - 1);
         aux_beta_b = beta_b.col(it - 1);
+        // clock.tock("criar_aux_beta");
 
+        // clock.tick("criar_sd");
         sd_a = 1 / sqrt(phi_a(it - 1));
         sd_b = 1 / sqrt(phi_b(it - 1));
+        // clock.tock("criar_sd");
 
         // probability
+        // clock.tick("calcular_prob");
         prob = calcular_prob(log_y, theta(it - 1), x, aux_beta_a, aux_beta_b, sd_a, sd_b);
-
+        // clock.tock("calcular_prob");
         // mixture
+        // clock.tick("gerar_bernoulli");
         I = rbernoulli(numero_observacoes, prob);
+        // clock.tock("gerar_bernoulli");
+
+        // clock.tick("separar_grupos");
         idxA = arma::find(I == 1);
         idxB = arma::find(I == 0);
+        // clock.tock("separar_grupos");
 
+        // clock.tick("realizar_augmentation");
         realizar_augmentation(idxA, log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
         realizar_augmentation(idxB, log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
+        // clock.tock("realizar_augmentation");
 
         // theta
+        // clock.tick("gerar_theta");
         A = idxA.size();
         B = idxB.size();
         theta(it) = R::rbeta(1 + A, 1 + B);
+        // clock.tock("gerar_theta");
 
         // phi
+        // clock.tick("subset_x");
         XA = x.rows(idxA);
         XB = x.rows(idxB);
+        // clock.tock("subset_x");
+        // clock.tick("subset_log_y");
         yA = log_y.elem(idxA);
         yB = log_y.elem(idxB);
+        // clock.tock("subset_log_y");
 
+        // clock.tick("gerar_phi");
         phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
         phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
+        // clock.tock("gerar_phi");
 
+        // clock.tick("gerar_beta");
         beta_a.col(it) = gerar_beta(yA, XA, phi_a(it));
         beta_b.col(it) = gerar_beta(yB, XB, phi_b(it));
+        // clock.tock("gerar_beta");
     }
+    // clock.tock("algoritmo_completo");
+    // clock.stop("run_times");
     return Rcpp::List::create(
         Rcpp::_["betaA"] = beta_a,
         Rcpp::_["betaB"] = beta_b,

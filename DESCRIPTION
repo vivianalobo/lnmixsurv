@@ -13,6 +13,6 @@ Imports:
     stats,
     glue,
     data.table
-LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
+LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN, RcppClock
 Depends: 
     RcppTN
