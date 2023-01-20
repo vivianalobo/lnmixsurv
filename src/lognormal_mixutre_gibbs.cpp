@@ -22,13 +22,11 @@ arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 // diferente. prob deve ter tamanho n.
 arma::colvec rbernoulli(int n, arma::colvec prob)
 {
-    arma::colvec ret(n);
-    for (int i = 0; i < n; i++)
-    {
-        ret(i) = R::rbinom(1, prob(i));
-    }
-    return ret;
+    arma::colvec unif(n, arma::fill::randu);
+    arma::uvec ret = unif > (1 - prob);
+    return arma::conv_to<arma::vec>::from(ret);
 }
+
 
 // rtn1 mas com alguns argumentos especificos vetorizados.
 arma::colvec rtn1_vec(int n, arma::colvec mean, double sd, arma::colvec low, double high)
