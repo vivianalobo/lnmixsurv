@@ -29,8 +29,9 @@ lognormal_mixture_gibbs <- function(x, y, m, delta, intercepto = F, valor_inicia
     t2 <- Sys.time()
     tempo <- t2 - t1
     message(glue::glue("Rodado em {round(tempo,2)} {units(tempo)}."))
-    res$betaA <- t(res$betaA)
-    res$betaB <- t(res$betaB)
+    res$betaA <- t(res$beta[, 1, ])
+    res$betaB <- t(res$beta[, 2, ])
+    res$beta <- NULL
     colnames(res$betaA) <- cov_names
     colnames(res$betaB) <- cov_names
 

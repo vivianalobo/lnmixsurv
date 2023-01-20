@@ -27,7 +27,6 @@ arma::colvec rbernoulli(int n, arma::colvec prob)
     return arma::conv_to<arma::vec>::from(ret);
 }
 
-
 // rtn1 mas com alguns argumentos especificos vetorizados.
 arma::colvec rtn1_vec(int n, arma::colvec mean, double sd, arma::colvec low, double high)
 {
@@ -39,10 +38,12 @@ arma::colvec rtn1_vec(int n, arma::colvec mean, double sd, arma::colvec low, dou
     return ret;
 }
 
-arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::colvec t_beta_a, arma::colvec t_beta_b, double sd_a, double sd_b)
+arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::mat beta, double sd_a, double sd_b)
 {
-    arma::colvec mean_a = x * t_beta_a;
-    arma::colvec mean_b = x * t_beta_b;
+    // n x p * p x 2 = n x 2
+    arma::mat mean = x * beta;
+    arma::colvec mean_a = mean.col(0);
+    arma::colvec mean_b = mean.col(1);
     arma::colvec pr1 = theta * dnorm_vec(log_y, mean_a, sd_a, false);
     arma::colvec pr2 = (1 - theta) * dnorm_vec(log_y, mean_b, sd_b, false);
     return pr1 / (pr1 + pr2);
@@ -58,7 +59,7 @@ arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::
 //' @param c [nx1] uma copia do valor original de log_y.
 //' @param x [nxp] matriz de covariaveis
 //' @param cens [nx1] vetor indicador de censura (1 = censura, 0 = evento).
-void realizar_augmentation(arma::uvec idx, arma::colvec &log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
+void realizar_augmentation(arma::colvec &log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
 {
     arma::uvec g_z = arma::find(indicadora_grupo == grupo && cens == 1);
     int tamanho = g_z.size();
@@ -98,14 +99,14 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
 
     int numero_observacoes = y.size();
     int numero_covariaveis = x.n_cols;
+    int numero_componentes_mistura = 2;
 
     arma::colvec log_y = log(y);
     arma::uvec cens = (delta == 0);
     arma::colvec theta(numero_iteracoes);
     arma::colvec phi_a(numero_iteracoes);
     arma::colvec phi_b(numero_iteracoes);
-    arma::mat beta_a(numero_covariaveis, numero_iteracoes);
-    arma::mat beta_b(numero_covariaveis, numero_iteracoes);
+    arma::cube beta(numero_covariaveis, numero_componentes_mistura, numero_iteracoes);
     arma::colvec c = arma::colvec(log_y);
 
     // valores iniciais
@@ -113,8 +114,7 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     phi_a(0) = R::runif(0, 1);
     phi_b(0) = R::runif(0, 1);
 
-    beta_a.col(0) = arma::colvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
-    beta_b.col(0) = arma::colvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
+    beta.slice(0) = arma::mat(numero_covariaveis, numero_componentes_mistura, arma::fill::value(valor_inicial_beta));
 
     // variaveis auxiliares usadas no for
     double sd_a;
@@ -133,6 +133,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     arma::colvec aux_beta_a(numero_covariaveis);
     arma::colvec aux_beta_b(numero_covariaveis);
 
+    arma::mat beta_corrente(numero_covariaveis, numero_componentes_mistura);
+
     // profiling
     // Rcpp::Clock clock;
 
@@ -145,8 +147,7 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         {
             // clock.stop("run_times");
             return Rcpp::List::create(
-                Rcpp::_["beta_a"] = beta_a,
-                Rcpp::_["beta_b"] = beta_b,
+                Rcpp::_["beta"] = beta,
                 Rcpp::_["phi_a"] = phi_a,
                 Rcpp::_["phi_b"] = phi_b,
                 Rcpp::_["theta"] = theta);
@@ -158,8 +159,9 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         // clock.tock("increment_pb");
 
         // clock.tick("criar_aux_beta");
-        aux_beta_a = beta_a.col(it - 1);
-        aux_beta_b = beta_b.col(it - 1);
+        beta_corrente = beta.slice(it - 1);
+        aux_beta_a = beta_corrente.col(0);
+        aux_beta_b = beta_corrente.col(1);
         // clock.tock("criar_aux_beta");
 
         // clock.tick("criar_sd");
@@ -169,7 +171,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
 
         // probability
         // clock.tick("calcular_prob");
-        prob = calcular_prob(log_y, theta(it - 1), x, aux_beta_a, aux_beta_b, sd_a, sd_b);
+        // Rcpp::Rcout << "Antes prob" << std::endl;
+        prob = calcular_prob(log_y, theta(it - 1), x, beta_corrente, sd_a, sd_b);
         // clock.tock("calcular_prob");
         // mixture
         // clock.tick("gerar_bernoulli");
@@ -182,8 +185,9 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         // clock.tock("separar_grupos");
 
         // clock.tick("realizar_augmentation");
-        realizar_augmentation(idxA, log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
-        realizar_augmentation(idxB, log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
+        // Rcpp::Rcout << "Antes aug" << std::endl;
+        realizar_augmentation(log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
+        realizar_augmentation(log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
         // clock.tock("realizar_augmentation");
 
         // theta
@@ -204,20 +208,21 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         // clock.tock("subset_log_y");
 
         // clock.tick("gerar_phi");
+        // Rcpp::Rcout << "Antes phi" << std::endl;
         phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
         phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
         // clock.tock("gerar_phi");
 
         // clock.tick("gerar_beta");
-        beta_a.col(it) = gerar_beta(yA, XA, phi_a(it));
-        beta_b.col(it) = gerar_beta(yB, XB, phi_b(it));
+        // Rcpp::Rcout << "Antes beta" << std::endl;
+        beta.slice(it).col(0) = gerar_beta(yA, XA, phi_a(it));
+        beta.slice(it).col(1) = gerar_beta(yB, XB, phi_b(it));
         // clock.tock("gerar_beta");
     }
     // clock.tock("algoritmo_completo");
     // clock.stop("run_times");
     return Rcpp::List::create(
-        Rcpp::_["betaA"] = beta_a,
-        Rcpp::_["betaB"] = beta_b,
+        Rcpp::_["beta"] = beta,
         Rcpp::_["phiA"] = phi_a,
         Rcpp::_["phiB"] = phi_b,
         Rcpp::_["theta"] = theta);
