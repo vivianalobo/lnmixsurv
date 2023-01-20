@@ -28,10 +28,10 @@ arma::colvec rbernoulli(int n, arma::colvec prob)
 }
 
 // rtn1 mas com alguns argumentos especificos vetorizados.
-arma::colvec rtn1_vec(int n, arma::colvec mean, double sd, arma::colvec low, double high)
+arma::colvec rtn1_vec(arma::uword n, arma::colvec mean, double sd, arma::colvec low, double high)
 {
     arma::colvec ret(n);
-    for (int i = 0; i < n; i++)
+    for (arma::uword i = 0; i < n; i++)
     {
         ret(i) = RcppTN::rtn1(mean(i), sd, low(i), high);
     }
@@ -62,12 +62,11 @@ arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::
 void realizar_augmentation(arma::colvec &log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
 {
     arma::uvec g_z = arma::find(indicadora_grupo == grupo && cens == 1);
-    int tamanho = g_z.size();
 
     // augmentation
     arma::colvec g_z_mean = x.rows(g_z) * t_beta;
 
-    log_y.elem(g_z) = rtn1_vec(tamanho, g_z_mean, sd, c.elem(g_z), R_PosInf);
+    log_y.elem(g_z) = rtn1_vec(g_z.size(), g_z_mean, sd, c.elem(g_z), R_PosInf);
     return;
 }
 
@@ -94,7 +93,7 @@ arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 //' @param delta [nx1]
 //'
 // [[Rcpp::export]]
-Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, double valor_inicial_beta = 0)
+Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, arma::uword numero_iteracoes, double valor_inicial_beta = 0)
 {
 
     int numero_observacoes = y.size();
@@ -140,7 +139,7 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
 
     Progress pro(numero_iteracoes, true);
     // // clock.tick("algoritmo_completo");
-    for (int it = 1; it <= numero_iteracoes - 1; it++)
+    for (arma::uword it = 1; it <= numero_iteracoes - 1; it++)
     {
         // clock.tick("check_abort");
         if (Progress::check_abort())

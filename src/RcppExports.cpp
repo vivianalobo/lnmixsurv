@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lognormal_mixture_gibbs_cpp
-Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, double valor_inicial_beta);
+Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, arma::uword numero_iteracoes, double valor_inicial_beta);
 RcppExport SEXP _persistencia_lognormal_mixture_gibbs_cpp(SEXP ySEXP, SEXP xSEXP, SEXP deltaSEXP, SEXP numero_iteracoesSEXP, SEXP valor_inicial_betaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -20,7 +20,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::colvec >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< int >::type numero_iteracoes(numero_iteracoesSEXP);
+    Rcpp::traits::input_parameter< arma::uword >::type numero_iteracoes(numero_iteracoesSEXP);
     Rcpp::traits::input_parameter< double >::type valor_inicial_beta(valor_inicial_betaSEXP);
     rcpp_result_gen = Rcpp::wrap(lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, valor_inicial_beta));
     return rcpp_result_gen;
