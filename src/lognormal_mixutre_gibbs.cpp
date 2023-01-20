@@ -61,7 +61,7 @@ arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::
 //' @param c [nx1] uma copia do valor original de log_y.
 //' @param x [nxp] matriz de covariaveis
 //' @param cens [nx1] vetor indicador de censura (1 = censura, 0 = evento).
-void realizar_augmentation(arma::uvec idx, arma::colvec& log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
+void realizar_augmentation(arma::uvec idx, arma::colvec &log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
 {
     arma::uvec g_z = arma::find(indicadora_grupo == grupo && cens == 1);
     int tamanho = g_z.size();
@@ -71,6 +71,22 @@ void realizar_augmentation(arma::uvec idx, arma::colvec& log_y, arma::colvec c, 
 
     log_y.elem(g_z) = rtn1_vec(tamanho, g_z_mean, sd, c.elem(g_z), R_PosInf);
     return;
+}
+
+double gerar_phi(int n, arma::colvec y, arma::mat x, arma::colvec t_beta)
+{
+    arma::colvec c1A = y - x * t_beta;
+    double c2A = arma::dot(c1A, c1A);
+    return R::rgamma(0.01 + n / 2, 1 / (0.01 + c2A / 2));
+}
+
+arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
+{
+    arma::mat tx = arma::trans(x);
+    arma::mat v = arma::inv(tx * x, arma::inv_opts::allow_approx);
+    arma::colvec m = v * tx * y;
+
+    return arma::trans(rmvnorm(1, m, v / phi));
 }
 
 //' Gibbs sampling for a two componentes mixture model
@@ -91,8 +107,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     arma::colvec theta(numero_iteracoes);
     arma::colvec phi_a(numero_iteracoes);
     arma::colvec phi_b(numero_iteracoes);
-    arma::mat beta_a(numero_iteracoes, numero_covariaveis);
-    arma::mat beta_b(numero_iteracoes, numero_covariaveis);
+    arma::mat beta_a(numero_covariaveis, numero_iteracoes);
+    arma::mat beta_b(numero_covariaveis, numero_iteracoes);
     arma::colvec c = arma::colvec(log_y);
 
     // valores iniciais
@@ -100,12 +116,10 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     phi_a(0) = R::runif(0, 1);
     phi_b(0) = R::runif(0, 1);
 
-    beta_a.row(0) = arma::rowvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
-    beta_b.row(0) = arma::rowvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
+    beta_a.col(0) = arma::colvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
+    beta_b.col(0) = arma::colvec(numero_covariaveis, arma::fill::value(valor_inicial_beta));
 
     // variaveis auxiliares usadas no for
-    arma::colvec mean_a(numero_observacoes);
-    arma::colvec mean_b(numero_observacoes);
     double sd_a;
     double sd_b;
     arma::colvec prob(numero_observacoes);
@@ -118,19 +132,6 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     arma::colvec I(numero_observacoes);
     int A;
     int B;
-    arma::colvec c1A;
-    double c2A;
-    arma::colvec c1B;
-    double c2B;
-
-    arma::mat tXA;
-    arma::mat tXB;
-
-    arma::mat vA;
-    arma::mat vB;
-
-    arma::colvec mA;
-    arma::colvec mB;
 
     arma::colvec aux_beta_a(numero_covariaveis);
     arma::colvec aux_beta_b(numero_covariaveis);
@@ -146,13 +147,15 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
                 Rcpp::_["phi_b"] = phi_b,
                 Rcpp::_["theta"] = theta);
         pro.increment();
-
-        aux_beta_a = arma::trans(beta_a.row(it - 1));
-        aux_beta_b = arma::trans(beta_b.row(it - 1));
+        
+        // Rcpp::Rcout << "inicio do for\n";
+        aux_beta_a = beta_a.col(it - 1);
+        aux_beta_b = beta_b.col(it - 1);
 
         sd_a = 1 / sqrt(phi_a(it - 1));
         sd_b = 1 / sqrt(phi_b(it - 1));
 
+        // Rcpp::Rcout << "antes do prob\n";
         // probability
         prob = calcular_prob(log_y, theta(it - 1), x, aux_beta_a, aux_beta_b, sd_a, sd_b);
 
@@ -160,11 +163,8 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         I = rbernoulli(numero_observacoes, prob);
         idxA = arma::find(I == 1);
         idxB = arma::find(I == 0);
-        XA = x.rows(idxA);
-        XB = x.rows(idxB);
-        yA = log_y.elem(idxA);
-        yB = log_y.elem(idxB);
 
+        // Rcpp::Rcout << "antes do augmentation\n";
         realizar_augmentation(idxA, log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
         realizar_augmentation(idxB, log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
 
@@ -174,23 +174,20 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         theta(it) = R::rbeta(1 + A, 1 + B);
 
         // phi
-        c1A = yA - XA * aux_beta_a;
-        c2A = arma::dot(c1A, c1A);
-        c1B = yB - XB * aux_beta_b;
-        c2B = arma::dot(c1B, c1B);
+        XA = x.rows(idxA);
+        XB = x.rows(idxB);
+        yA = log_y.elem(idxA);
+        yB = log_y.elem(idxB);
 
-        phi_a(it) = R::rgamma(0.01 + A / 2, 1 / (0.01 + c2A / 2));
-        phi_b(it) = R::rgamma(0.01 + B / 2, 1 / (0.01 + c2B / 2));
+        // Rcpp::Rcout << "antes do pphi\n";
+        phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
+        phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
 
-        tXA = arma::trans(XA);
-        vA = arma::inv(tXA * XA, arma::inv_opts::allow_approx);
-        mA = vA * tXA * yA;
-        tXB = arma::trans(XB);
-        vB = arma::inv(tXB * XB, arma::inv_opts::allow_approx);
-        mB = vB * tXB * yB;
 
-        beta_a.row(it) = rmvnorm(1, mA, vA / phi_a(it));
-        beta_b.row(it) = rmvnorm(1, mB, vB / phi_b(it));
+        // Rcpp::Rcout << "antes do beta\n";
+
+        beta_a.col(it) = gerar_beta(yA, XA, phi_a(it));
+        beta_b.col(it) = gerar_beta(yB, XB, phi_b(it));
     }
     return Rcpp::List::create(
         Rcpp::_["betaA"] = beta_a,
