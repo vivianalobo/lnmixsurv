@@ -7,6 +7,7 @@
 #include "RcppTN.h"
 #include <progress.hpp>
 #include <progress_bar.hpp>
+#include <omp.h> //nao esquecer de editar ~/.R/Makevars para incluir PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) e PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS)
 
 #include <RcppClock.h>
 
@@ -137,24 +138,24 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     // profiling
     // Rcpp::Clock clock;
 
-    Progress pro(numero_iteracoes, true);
-    // // clock.tick("algoritmo_completo");
+    // Progress pro(numero_iteracoes, true);
+    // clock.tick("algoritmo_completo");
     for (arma::uword it = 1; it <= numero_iteracoes - 1; it++)
     {
         // clock.tick("check_abort");
-        if (Progress::check_abort())
-        {
-            // clock.stop("run_times");
-            return Rcpp::List::create(
-                Rcpp::_["beta"] = beta,
-                Rcpp::_["phi_a"] = phi_a,
-                Rcpp::_["phi_b"] = phi_b,
-                Rcpp::_["theta"] = theta);
-        }
+        // if (Progress::check_abort())
+        // {
+        //     // clock.stop("run_times");
+        //     return Rcpp::List::create(
+        //         Rcpp::_["beta"] = beta,
+        //         Rcpp::_["phi_a"] = phi_a,
+        //         Rcpp::_["phi_b"] = phi_b,
+        //         Rcpp::_["theta"] = theta);
+        // }
 
         // clock.tock("check_abort");
         // clock.tick("increment_pb");
-        pro.increment();
+        // pro.increment();
         // clock.tock("increment_pb");
 
         // clock.tick("criar_aux_beta");
@@ -225,4 +226,33 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
         Rcpp::_["phiA"] = phi_a,
         Rcpp::_["phiB"] = phi_b,
         Rcpp::_["theta"] = theta);
+}
+
+// Essa porra ta falhando pq o código falha dependendo do valor inicial. Para paralelizar, eu vou precisar primeiro ajustar a questão do
+// da falha.
+// [[Rcpp::export]]
+Rcpp::List parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, double valor_inicial_beta = 0)
+{
+
+    int nthreads;
+    int numero_iteracao_cadeia;
+    Rcpp::List current_post;
+    Rcpp::List ret = Rcpp::List::create();
+
+#pragma omp parallel private(nthreads, numero_iteracao_cadeia, current_post) shared(y, x, delta, valor_inicial_beta, ret)
+    {
+        nthreads = omp_get_num_threads();
+        numero_iteracao_cadeia = numero_iteracoes / nthreads;
+        try
+        {
+            current_post = lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracao_cadeia, valor_inicial_beta);
+        }
+        catch (...)
+        {
+#pragma omp cancel
+        }
+#pragma omp barrier
+        ret.push_back(current_post);
+    }
+    return ret;
 }

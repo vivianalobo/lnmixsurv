@@ -23,3 +23,7 @@ lognormal_mixture_gibbs_cpp <- function(y, x, delta, numero_iteracoes, valor_ini
     .Call(`_persistencia_lognormal_mixture_gibbs_cpp`, y, x, delta, numero_iteracoes, valor_inicial_beta)
 }
 
+parallel_lognormal_mixture_gibbs_cpp <- function(y, x, delta, numero_iteracoes, valor_inicial_beta = 0) {
+    .Call(`_persistencia_parallel_lognormal_mixture_gibbs_cpp`, y, x, delta, numero_iteracoes, valor_inicial_beta)
+}
+

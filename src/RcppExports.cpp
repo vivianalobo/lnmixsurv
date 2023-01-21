@@ -26,9 +26,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// parallel_lognormal_mixture_gibbs_cpp
+Rcpp::List parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, double valor_inicial_beta);
+RcppExport SEXP _persistencia_parallel_lognormal_mixture_gibbs_cpp(SEXP ySEXP, SEXP xSEXP, SEXP deltaSEXP, SEXP numero_iteracoesSEXP, SEXP valor_inicial_betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::colvec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< int >::type numero_iteracoes(numero_iteracoesSEXP);
+    Rcpp::traits::input_parameter< double >::type valor_inicial_beta(valor_inicial_betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(parallel_lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, valor_inicial_beta));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_persistencia_lognormal_mixture_gibbs_cpp", (DL_FUNC) &_persistencia_lognormal_mixture_gibbs_cpp, 5},
+    {"_persistencia_parallel_lognormal_mixture_gibbs_cpp", (DL_FUNC) &_persistencia_parallel_lognormal_mixture_gibbs_cpp, 5},
     {NULL, NULL, 0}
 };
 
