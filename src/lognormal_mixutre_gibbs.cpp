@@ -94,13 +94,14 @@ arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 //' @param delta [nx1]
 //'
 // [[Rcpp::export]]
-Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, arma::uword numero_iteracoes, double valor_inicial_beta = 0)
+arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, arma::uword numero_iteracoes, double valor_inicial_beta = 0)
 {
 
     int numero_observacoes = y.size();
     int numero_covariaveis = x.n_cols;
     int numero_componentes_mistura = 2;
 
+    arma::field<arma::mat> ret(5);
     arma::colvec log_y = log(y);
     arma::uvec cens = (delta == 0);
     arma::colvec theta(numero_iteracoes);
@@ -221,38 +222,38 @@ Rcpp::List lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec
     }
     // clock.tock("algoritmo_completo");
     // clock.stop("run_times");
-    return Rcpp::List::create(
-        Rcpp::_["beta"] = beta,
-        Rcpp::_["phiA"] = phi_a,
-        Rcpp::_["phiB"] = phi_b,
-        Rcpp::_["theta"] = theta);
+    ret(0) = arma::mat(beta.col(0)).t();
+    ret(1) = arma::mat(beta.col(1)).t();
+    ret(2) = phi_a;
+    ret(3) = phi_b,
+    ret(4) = theta;
+    return ret;
 }
 
-// Essa porra ta falhando pq o código falha dependendo do valor inicial. Para paralelizar, eu vou precisar primeiro ajustar a questão do
-// da falha.
 // [[Rcpp::export]]
-Rcpp::List parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, double valor_inicial_beta = 0)
+arma::field<arma::field<arma::mat>> parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, int numero_cadeias, double valor_inicial_beta = 0)
 {
 
-    int nthreads;
-    int numero_iteracao_cadeia;
-    Rcpp::List current_post;
-    Rcpp::List ret = Rcpp::List::create();
+    arma::field<arma::mat> current_post;
+    arma::field<arma::field<arma::mat>> ret(numero_cadeias);
+    int cadeia_atual;
+    omp_set_dynamic(0);
 
-#pragma omp parallel private(nthreads, numero_iteracao_cadeia, current_post) shared(y, x, delta, valor_inicial_beta, ret)
+#pragma omp parallel private(current_post, cadeia_atual) shared(y, x, delta, valor_inicial_beta, ret, numero_iteracoes) num_threads(numero_cadeias)
     {
-        nthreads = omp_get_num_threads();
-        numero_iteracao_cadeia = numero_iteracoes / nthreads;
+        // nthreads = omp_get_num_threads();
+        // numero_iteracao_cadeia = numero_iteracoes / nthreads;
+        cadeia_atual = omp_get_thread_num();
         try
         {
-            current_post = lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracao_cadeia, valor_inicial_beta);
+            current_post = lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, valor_inicial_beta);
         }
         catch (...)
         {
-#pragma omp cancel
+            std::cout << "Erro na cadeia " << cadeia_atual << "\n";
+#pragma omp cancel parallel
         }
-#pragma omp barrier
-        ret.push_back(current_post);
+        ret(cadeia_atual) = current_post;
     }
     return ret;
 }
