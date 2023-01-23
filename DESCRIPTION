@@ -8,12 +8,20 @@ Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
 Imports: 
-    Rcpp (>= 1.0.8.3),
+    Rcpp,
     posterior,
     stats,
     glue,
     data.table,
-    parallel
+    parallel,
+    hardhat,
+    rlang,
+    survival
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN, RcppClock
 Depends: 
     RcppTN
+Suggests: 
+    recipes
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1

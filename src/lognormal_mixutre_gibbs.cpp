@@ -60,7 +60,9 @@ arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::
 //' @param c [nx1] uma copia do valor original de log_y.
 //' @param x [nxp] matriz de covariaveis
 //' @param cens [nx1] vetor indicador de censura (1 = censura, 0 = evento).
-void realizar_augmentation(arma::colvec &log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
+//'
+//' @noRd
+void realizar_augmentation(arma::colvec& log_y, arma::colvec c, arma::mat x, arma::uvec cens, arma::colvec t_beta, double sd, arma::colvec indicadora_grupo, int grupo)
 {
     arma::uvec g_z = arma::find(indicadora_grupo == grupo && cens == 1);
 

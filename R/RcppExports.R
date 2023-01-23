@@ -11,6 +11,8 @@
 #' @param c [nx1] uma copia do valor original de log_y.
 #' @param x [nxp] matriz de covariaveis
 #' @param cens [nx1] vetor indicador de censura (1 = censura, 0 = evento).
+#'
+#' @noRd
 NULL
 
 #' Gibbs sampling for a two componentes mixture model
