@@ -231,11 +231,16 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, 
 }
 
 // [[Rcpp::export]]
-arma::field<arma::field<arma::mat>> parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, int numero_cadeias, double valor_inicial_beta = 0)
+arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, int numero_cadeias, double valor_inicial_beta = 0)
 {
 
-    arma::field<arma::mat> current_post;
-    arma::field<arma::field<arma::mat>> ret(numero_cadeias);
+    arma::field<arma::mat> current_post(5);
+    arma::field<arma::cube> ret(5);
+    arma::cube beta_a(numero_iteracoes, numero_cadeias, x.n_cols);
+    arma::cube beta_b(numero_iteracoes, numero_cadeias, x.n_cols);
+    arma::cube phi_a(numero_iteracoes, numero_cadeias, 1);
+    arma::cube phi_b(numero_iteracoes, numero_cadeias, 1);
+    arma::cube theta(numero_iteracoes, numero_cadeias, 1);
     int cadeia_atual;
     omp_set_dynamic(0);
 
@@ -253,7 +258,16 @@ arma::field<arma::field<arma::mat>> parallel_lognormal_mixture_gibbs_cpp(arma::c
             std::cout << "Erro na cadeia " << cadeia_atual << "\n";
 #pragma omp cancel parallel
         }
-        ret(cadeia_atual) = current_post;
+        beta_a.col(cadeia_atual) = current_post(0);
+        beta_b.col(cadeia_atual) = current_post(1);
+        phi_a.col(cadeia_atual) = current_post(2);
+        phi_b.col(cadeia_atual) = current_post(3);
+        theta.col(cadeia_atual) = current_post(4);
     }
+    ret(0) = beta_a;
+    ret(1) = beta_b;
+    ret(2) = phi_a;
+    ret(3) = phi_b;
+    ret(4) = theta;
     return ret;
 }

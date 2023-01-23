@@ -12,7 +12,8 @@ Imports:
     posterior,
     stats,
     glue,
-    data.table
+    data.table,
+    parallel
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN, RcppClock
 Depends: 
     RcppTN

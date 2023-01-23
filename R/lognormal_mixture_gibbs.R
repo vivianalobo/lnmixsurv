@@ -15,7 +15,17 @@
 #'
 #' @export
 #'
-lognormal_mixture_gibbs <- function(x, y, m, delta, intercepto = F, valor_inicial_beta = 0) {
+lognormal_mixture_gibbs <- function(x, y, delta, intercepto = F, numero_iteracoes = 1000, numero_cadeias = 1, valor_inicial_beta = 0) { # nolint: line_length_linter.
+    ncores <- parallel::detectCores(logical = FALSE)
+    if (numero_cadeias > ncores) {
+        # TODO: incluir acentos em ascii
+        msg <- paste0(
+            "O numero de cadeias ", numero_cadeias,
+            " deve ser menor ou igual ao o numero de cores disponiveis",
+            ncores, "."
+        )
+        stop(msg)
+    }
     covs <- factor(x)
     cov_names <- levels(covs)
     if (intercepto) {
@@ -25,16 +35,19 @@ lognormal_mixture_gibbs <- function(x, y, m, delta, intercepto = F, valor_inicia
     }
 
     t1 <- Sys.time()
-    res <- lognormal_mixture_gibbs_cpp(y, x, delta, m, valor_inicial_beta)
+    if (numero_cadeias == 1) {
+        res <- lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, valor_inicial_beta)
+    } else {
+        res <- parallel_lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, numero_cadeias, valor_inicial_beta)
+    }
+
     t2 <- Sys.time()
     tempo <- t2 - t1
     message(glue::glue("Rodado em {round(tempo,2)} {units(tempo)}."))
-    res$betaA <- t(res$beta[, 1, ])
-    res$betaB <- t(res$beta[, 2, ])
-    res$beta <- NULL
-    colnames(res$betaA) <- cov_names
-    colnames(res$betaB) <- cov_names
+    names(res) <- c("betaA", "betaB", "phiA", "phiB", "theta")
+    dimnames(posteriori$betaA) <- list(NULL, NULL, cov_names)
+    dimnames(posteriori$betaB) <- list(NULL, NULL, cov_names)
 
 
-    return(lapply(res, posterior::as_draws_matrix))
+    return(lapply(res, posterior::as_draws_array))
 }
