@@ -11,9 +11,9 @@ survival_ln_mixture(x, ...)
 
 \method{survival_ln_mixture}{default}(x, ...)
 
-\method{survival_ln_mixture}{formula}(formula, data, ...)
+\method{survival_ln_mixture}{formula}(formula, data, intercept = TRUE, ...)
 
-\method{survival_ln_mixture}{recipe}(x, data, ...)
+\method{survival_ln_mixture}{recipe}(x, data, intercept = TRUE, ...)
 }
 \arguments{
 \item{...}{Not currently used, but required for extensibility.}

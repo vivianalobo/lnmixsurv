@@ -96,7 +96,9 @@ arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 //' @param delta [nx1]
 //'
 // [[Rcpp::export]]
-arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, arma::uword numero_iteracoes, double valor_inicial_beta = 0)
+arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
+    arma::mat x, arma::colvec y, arma::colvec delta,
+    arma::uword iter = 1000, double valor_inicial_beta = 0)
 {
 
     int numero_observacoes = y.size();
@@ -106,10 +108,10 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, 
     arma::field<arma::mat> ret(5);
     arma::colvec log_y = log(y);
     arma::uvec cens = (delta == 0);
-    arma::colvec theta(numero_iteracoes);
-    arma::colvec phi_a(numero_iteracoes);
-    arma::colvec phi_b(numero_iteracoes);
-    arma::cube beta(numero_covariaveis, numero_componentes_mistura, numero_iteracoes);
+    arma::colvec theta(iter);
+    arma::colvec phi_a(iter);
+    arma::colvec phi_b(iter);
+    arma::cube beta(numero_covariaveis, numero_componentes_mistura, iter);
     arma::colvec c = arma::colvec(log_y);
 
     // valores iniciais
@@ -141,9 +143,9 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, 
     // profiling
     // Rcpp::Clock clock;
 
-    // Progress pro(numero_iteracoes, true);
+    // Progress pro(iter, true);
     // clock.tick("algoritmo_completo");
-    for (arma::uword it = 1; it <= numero_iteracoes - 1; it++)
+    for (arma::uword it = 1; it <= iter - 1; it++)
     {
         // clock.tick("check_abort");
         // if (Progress::check_abort())
@@ -228,43 +230,48 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, 
     ret(1) = arma::mat(beta.col(1)).t();
     ret(2) = phi_a;
     ret(3) = phi_b,
-    ret(4) = theta;
+        ret(4) = theta;
     return ret;
 }
 
 // [[Rcpp::export]]
-arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(arma::colvec y, arma::mat x, arma::colvec delta, int numero_iteracoes, int numero_cadeias, double valor_inicial_beta = 0)
+arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(
+    arma::mat x, arma::colvec y, arma::colvec delta,
+    int iter, int chains, int cores = 1, double valor_inicial_beta = 0)
 {
 
     arma::field<arma::mat> current_post(5);
     arma::field<arma::cube> ret(5);
-    arma::cube beta_a(numero_iteracoes, numero_cadeias, x.n_cols);
-    arma::cube beta_b(numero_iteracoes, numero_cadeias, x.n_cols);
-    arma::cube phi_a(numero_iteracoes, numero_cadeias, 1);
-    arma::cube phi_b(numero_iteracoes, numero_cadeias, 1);
-    arma::cube theta(numero_iteracoes, numero_cadeias, 1);
+    arma::cube beta_a(iter, chains, x.n_cols);
+    arma::cube beta_b(iter, chains, x.n_cols);
+    arma::cube phi_a(iter, chains, 1);
+    arma::cube phi_b(iter, chains, 1);
+    arma::cube theta(iter, chains, 1);
     int cadeia_atual;
     omp_set_dynamic(0);
 
-#pragma omp parallel private(current_post, cadeia_atual) shared(y, x, delta, valor_inicial_beta, ret, numero_iteracoes) num_threads(numero_cadeias)
+#pragma omp parallel private(current_post, cadeia_atual) shared(y, x, delta, valor_inicial_beta, ret, iter) num_threads(chains)
     {
-        // nthreads = omp_get_num_threads();
-        // numero_iteracao_cadeia = numero_iteracoes / nthreads;
+
         cadeia_atual = omp_get_thread_num();
+        bool exception_caught = true;
         try
         {
-            current_post = lognormal_mixture_gibbs_cpp(y, x, delta, numero_iteracoes, valor_inicial_beta);
+            current_post = lognormal_mixture_gibbs_cpp(x, y, delta, iter, valor_inicial_beta);
+            exception_caught = false;
         }
         catch (...)
         {
             std::cout << "Erro na cadeia " << cadeia_atual << "\n";
 #pragma omp cancel parallel
         }
-        beta_a.col(cadeia_atual) = current_post(0);
-        beta_b.col(cadeia_atual) = current_post(1);
-        phi_a.col(cadeia_atual) = current_post(2);
-        phi_b.col(cadeia_atual) = current_post(3);
-        theta.col(cadeia_atual) = current_post(4);
+        if (!exception_caught) {
+            beta_a.col(cadeia_atual) = current_post(0);
+            beta_b.col(cadeia_atual) = current_post(1);
+            phi_a.col(cadeia_atual) = current_post(2);
+            phi_b.col(cadeia_atual) = current_post(3);
+            theta.col(cadeia_atual) = current_post(4);
+        }
     }
     ret(0) = beta_a;
     ret(1) = beta_b;

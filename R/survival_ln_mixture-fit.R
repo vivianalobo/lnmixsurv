@@ -47,8 +47,9 @@ survival_ln_mixture.default <- function(x, ...) {
 
 #' @export
 #' @rdname survival_ln_mixture
-survival_ln_mixture.formula <- function(formula, data, ...) {
-    processed <- hardhat::mold(formula, data)
+survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {
+    blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
+    processed <- hardhat::mold(formula, data, blueprint = blueprint)
     survival_ln_mixture_bridge(processed, ...)
 }
 
@@ -56,8 +57,9 @@ survival_ln_mixture.formula <- function(formula, data, ...) {
 
 #' @export
 #' @rdname survival_ln_mixture
-survival_ln_mixture.recipe <- function(x, data, ...) {
-    processed <- hardhat::mold(x, data)
+survival_ln_mixture.recipe <- function(x, data, intercept = TRUE, ...) {
+    blueprint <- hardhat::default_recipe_blueprint(intercept = intercept)
+    processed <- hardhat::mold(x, data, blueprint = blueprint)
     survival_ln_mixture_bridge(processed, ...)
 }
 
@@ -68,13 +70,15 @@ survival_ln_mixture_bridge <- function(processed, ...) {
     predictors <- as.matrix(processed$predictors)
     outcome <- processed$outcome[[1]]
 
-    if (!survival::is.Surv(outcome)) rlang::abort("Response must be a survival object (created with survival::Surv)")
+    if (!survival::is.Surv(outcome)) {
+        rlang::abort("Response must be a survival object (created with survival::Surv)")
+    }
     if (attr(outcome, "type") != "right") rlang::abort("Only right-censored data allowed")
 
     outcome_times <- outcome[, 1]
     outcome_status <- outcome[, 2]
 
-    fit <- survival_ln_mixture_impl(predictors, outcome_times, outcome_status)
+    fit <- survival_ln_mixture_impl(predictors, outcome_times, outcome_status, ...)
 
     new_survival_ln_mixture(
         posterior = fit$posterior,
@@ -86,8 +90,10 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 # ------------------------------------------------------------------------------
 # Implementation
 
-survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status) {
-    posterior_dist <- lognormal_mixture_gibbs_cpp(outcome_times, predictors, outcome_status, 1000, 0)
+survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
+                                     iter = 1000, warmup = floor(iter / 10), thin = 1,
+                                     chains = 1, cores = 1) {
+    posterior_dist <- lognormal_mixture_gibbs_cpp(predictors, outcome_times, outcome_status, iter, 0)
     posterior_dist <- abind::abind(posterior_dist)
 
     grupos <- c("a", "b")

@@ -21,11 +21,11 @@ NULL
 #' @param x [nxp]
 #' @param delta [nx1]
 #'
-lognormal_mixture_gibbs_cpp <- function(y, x, delta, numero_iteracoes, valor_inicial_beta = 0) {
-    .Call(`_persistencia_lognormal_mixture_gibbs_cpp`, y, x, delta, numero_iteracoes, valor_inicial_beta)
+lognormal_mixture_gibbs_cpp <- function(x, y, delta, iter = 1000L, valor_inicial_beta = 0) {
+    .Call(`_persistencia_lognormal_mixture_gibbs_cpp`, x, y, delta, iter, valor_inicial_beta)
 }
 
-parallel_lognormal_mixture_gibbs_cpp <- function(y, x, delta, numero_iteracoes, numero_cadeias, valor_inicial_beta = 0) {
-    .Call(`_persistencia_parallel_lognormal_mixture_gibbs_cpp`, y, x, delta, numero_iteracoes, numero_cadeias, valor_inicial_beta)
+parallel_lognormal_mixture_gibbs_cpp <- function(x, y, delta, iter, chains, cores = 1L, valor_inicial_beta = 0) {
+    .Call(`_persistencia_parallel_lognormal_mixture_gibbs_cpp`, x, y, delta, iter, chains, cores, valor_inicial_beta)
 }
 

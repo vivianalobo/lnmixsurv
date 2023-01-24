@@ -4,18 +4,12 @@
 \alias{lognormal_mixture_gibbs_cpp}
 \title{Gibbs sampling for a two componentes mixture model}
 \usage{
-lognormal_mixture_gibbs_cpp(
-  y,
-  x,
-  delta,
-  numero_iteracoes,
-  valor_inicial_beta = 0
-)
+lognormal_mixture_gibbs_cpp(x, y, delta, iter = 1000L, valor_inicial_beta = 0)
 }
 \arguments{
-\item{y}{\link{nx1}}
-
 \item{x}{\link{nxp}}
+
+\item{y}{\link{nx1}}
 
 \item{delta}{\link{nx1}}
 }
