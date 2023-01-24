@@ -73,16 +73,27 @@ extract_surv_haz <- function(model, predictors, time, type = "survival") {
     )
 
     post <- model$posterior
-    qntd_iteracoes <- nrow(post[[1]])
-    ma <- post[[1, 1]] %*% t(predictors)
-    mb <- post[[2, 1]] %*% t(predictors)
-    sigmaa <- sqrt(1 / post[[3, 1]])
-    sigmab <- sqrt(1 / post[[4, 1]])
-    theta <- post[[5, 1]]
+
+    qntd_chains <- psoterior::nchains(post)
+    if (qntd_chains > 1) {
+        rlang::abort("Merge the chains before predicting.")
+    }
+
+    qntd_iteracoes <- posterior::niterations(post)
+    beta_a <- posterior::subset_draws(post, "beta_a")
+    beta_b <- posterior::subset_draws(post, "beta_b")
+    phi_a <- posterior::subset_draws(post, "phi_a")
+    phi_b <- posterior::subset_draws(post, "phi_b")
+    theta_a <- posterior::subset_draws(post, "theta_a")
+    m_a <- beta_a %*% t(predictors)
+    m_b <- beta_b %*% t(predictors)
+    sigma_a <- sqrt(1 / phi_a)
+    sigma_b <- sqrt(1 / phi_b)
+
     surv_haz <- list()
-    for (i in seq_len(ncol(ma))) {
+    for (i in seq_len(ncol(m_a))) {
         surv_haz[[i]] <- vapply(
-            time, function(t) fun(t, ma[, i], mb[, i], sigmaa, sigmab, theta), numeric(qntd_iteracoes)
+            time, function(t) fun(t, m_a[, i], m_b[, i], sigma_a, sigma_b, theta_a), numeric(qntd_iteracoes)
         )
     }
     predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))

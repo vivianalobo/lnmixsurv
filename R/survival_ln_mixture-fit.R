@@ -87,6 +87,17 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 # Implementation
 
 survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status) {
-    posterior <- lognormal_mixture_gibbs_cpp(outcome_times, predictors, outcome_status, 1000, 0)
-    list(posterior = posterior)
+    posterior_dist <- lognormal_mixture_gibbs_cpp(outcome_times, predictors, outcome_status, 1000, 0)
+    posterior_dist <- abind::abind(posterior_dist)
+
+    grupos <- c("a", "b")
+    preds <- seq_len(ncol(predictors))
+    names_beta <- glue::glue_data(expand.grid(preds, grupos), "beta_{Var2}[{Var1}]")
+    names_phi <- glue::glue("phi_{grupos}")
+
+    dimnames(posterior_dist)[[length(dimnames(posterior_dist))]] <- c(names_beta, names_phi, "theta_a")
+
+    posterior_dist <- posterior::as_draws_matrix(posterior_dist)
+
+    list(posterior = posterior_dist)
 }

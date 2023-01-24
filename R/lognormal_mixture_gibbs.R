@@ -15,7 +15,7 @@
 #'
 #' @export
 #'
-lognormal_mixture_gibbs <- function(x, y, delta, intercepto = F, numero_iteracoes = 1000, numero_cadeias = 1, valor_inicial_beta = 0) { # nolint: line_length_linter.
+lognormal_mixture_gibbs <- function(x, y, delta, intercepto = FALSE, numero_iteracoes = 1000, numero_cadeias = 1, valor_inicial_beta = 0) { # nolint: line_length_linter.
     ncores <- parallel::detectCores(logical = FALSE)
     if (numero_cadeias > ncores) {
         # TODO: incluir acentos em ascii
