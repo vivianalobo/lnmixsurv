@@ -21,7 +21,8 @@ Imports:
     abind
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN, RcppClock
 Depends: 
-    RcppTN
+    RcppTN,
+    parsnip (>= 0.2.0)
 Suggests: 
     recipes
 Encoding: UTF-8
