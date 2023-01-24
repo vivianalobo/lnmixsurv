@@ -5,11 +5,11 @@
 #include <RcppArmadillo.h>
 #include <mvnorm.h>
 #include "RcppTN.h"
-#include <progress.hpp>
-#include <progress_bar.hpp>
-#include <omp.h> //nao esquecer de editar ~/.R/Makevars para incluir PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) e PKG_CFLAGS = $(SHLIB_OPENMP_CFLAGS)
+// #include <progress.hpp>
+// #include <progress_bar.hpp>
+#include <omp.h> 
 
-#include <RcppClock.h>
+// #include <RcppClock.h>
 
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 {
@@ -95,7 +95,7 @@ arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 //' @param x [nxp]
 //' @param delta [nx1]
 //'
-// [[Rcpp::export]]
+//' @noRd
 arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
     arma::mat x, arma::colvec y, arma::colvec delta,
     arma::uword iter = 1000, double valor_inicial_beta = 0)
@@ -247,13 +247,11 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(
     arma::cube phi_a(iter, chains, 1);
     arma::cube phi_b(iter, chains, 1);
     arma::cube theta(iter, chains, 1);
-    int cadeia_atual;
     omp_set_dynamic(0);
 
-#pragma omp parallel private(current_post, cadeia_atual) shared(y, x, delta, valor_inicial_beta, ret, iter) num_threads(chains)
-    {
+#pragma omp parallel for private(current_post) shared(y, x, delta, valor_inicial_beta, ret, iter) num_threads(cores)
+    for (int i = 0; i < chains; i++) {
 
-        cadeia_atual = omp_get_thread_num();
         bool exception_caught = true;
         try
         {
@@ -262,15 +260,60 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(
         }
         catch (...)
         {
-            std::cout << "Erro na cadeia " << cadeia_atual << "\n";
-#pragma omp cancel parallel
+            std::cout << "Erro na cadeia " << i << "\n";
         }
         if (!exception_caught) {
-            beta_a.col(cadeia_atual) = current_post(0);
-            beta_b.col(cadeia_atual) = current_post(1);
-            phi_a.col(cadeia_atual) = current_post(2);
-            phi_b.col(cadeia_atual) = current_post(3);
-            theta.col(cadeia_atual) = current_post(4);
+            beta_a.col(i) = current_post(0);
+            beta_b.col(i) = current_post(1);
+            phi_a.col(i) = current_post(2);
+            phi_b.col(i) = current_post(3);
+            theta.col(i) = current_post(4);
+        }
+    }
+    ret(0) = beta_a;
+    ret(1) = beta_b;
+    ret(2) = phi_a;
+    ret(3) = phi_b;
+    ret(4) = theta;
+    return ret;
+}
+
+// TODO: Não deveria ter essa repeticao de codigo com relacao ao parallel,
+// mas o parallel com 1 core está demorando absurdos e nao to conseguindo
+// resolver. Talvez depois tester com C++ puro para ver se o problema 
+// aparece lá tb ou só no R
+// [[Rcpp::export]]
+arma::field<arma::cube> sequential_lognormal_mixture_gibbs_cpp(
+    arma::mat x, arma::colvec y, arma::colvec delta,
+    int iter, int chains, double valor_inicial_beta = 0)
+{
+
+    arma::field<arma::mat> current_post(5);
+    arma::field<arma::cube> ret(5);
+    arma::cube beta_a(iter, chains, x.n_cols);
+    arma::cube beta_b(iter, chains, x.n_cols);
+    arma::cube phi_a(iter, chains, 1);
+    arma::cube phi_b(iter, chains, 1);
+    arma::cube theta(iter, chains, 1);
+
+    for (int i = 0; i < chains; i++) {
+
+        bool exception_caught = true;
+        try
+        {
+            current_post = lognormal_mixture_gibbs_cpp(x, y, delta, iter, valor_inicial_beta);
+            exception_caught = false;
+        }
+        catch (...)
+        {
+            std::cout << "Erro na cadeia " << i << "\n";
+        }
+        if (!exception_caught) {
+            beta_a.col(i) = current_post(0);
+            beta_b.col(i) = current_post(1);
+            phi_a.col(i) = current_post(2);
+            phi_b.col(i) = current_post(3);
+            theta.col(i) = current_post(4);
         }
     }
     ret(0) = beta_a;

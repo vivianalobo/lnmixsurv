@@ -76,7 +76,7 @@ extract_surv_haz <- function(model, predictors, time, type = "survival") {
 
     qntd_chains <- posterior::nchains(post)
     if (qntd_chains > 1) {
-        rlang::abort("Merge the chains before predicting.")
+        post <- posterior::merge_chains(post)
     }
 
     qntd_iteracoes <- posterior::niterations(post)

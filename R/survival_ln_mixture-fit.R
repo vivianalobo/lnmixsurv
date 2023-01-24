@@ -93,7 +93,17 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
                                      iter = 1000, warmup = floor(iter / 10), thin = 1,
                                      chains = 1, cores = 1) {
-    posterior_dist <- lognormal_mixture_gibbs_cpp(predictors, outcome_times, outcome_status, iter, 0)
+    if (chains > 1) rlang::warn("Check the posterior draws for label switch problem.")
+    if (cores > 1) {
+        posterior_dist <- parallel_lognormal_mixture_gibbs_cpp(
+            predictors, outcome_times, outcome_status, iter, chains, cores, 0
+        )
+    } else {
+        posterior_dist <- sequential_lognormal_mixture_gibbs_cpp(
+            predictors, outcome_times, outcome_status, iter, chains, 0
+        )
+    }
+
     posterior_dist <- abind::abind(posterior_dist)
 
     grupos <- c("a", "b")
@@ -104,6 +114,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
     dimnames(posterior_dist)[[length(dimnames(posterior_dist))]] <- c(names_beta, names_phi, "theta_a")
 
     posterior_dist <- posterior::as_draws_matrix(posterior_dist)
+    posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))
+    posterior_dist <- posterior::thin_draws(posterior_dist, thin = thin)
 
     list(posterior = posterior_dist)
 }
