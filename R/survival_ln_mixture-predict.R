@@ -48,7 +48,7 @@ predict_survival_ln_mixture_bridge <- function(type, model, predictors, ...) {
     predict_function <- get_survival_ln_mixture_predict_function(type)
     predictions <- predict_function(model, predictors, ...)
 
-    # hardhat::validate_prediction_size(predictions, predictors)
+    hardhat::validate_prediction_size(predictions, predictors)
 
     predictions
 }
@@ -64,31 +64,44 @@ get_survival_ln_mixture_predict_function <- function(type) {
 # ------------------------------------------------------------------------------
 # Implementation
 
-predict_survival_ln_mixture_time <- function(model, predictors) {
-    predictions <- rep(1L, times = nrow(predictors))
-    hardhat::spruce_numeric(predictions)
-}
+extract_surv_haz <- function(model, predictors, time, type = "survival") {
+    rlang::arg_match(type, c("survival", "hazard"))
 
-predict_survival_ln_mixture_survival <- function(model, predictors, time) {
+    fun <- switch(type,
+        survival = sob_lognormal_mix,
+        hazard = falha_lognormal_mix
+    )
+
     post <- model$posterior
     qntd_iteracoes <- nrow(post[[1]])
-    sob <- matrix(NA, nrow = qntd_iteracoes, ncol = length(time))
     ma <- post[[1, 1]] %*% t(predictors)
     mb <- post[[2, 1]] %*% t(predictors)
     sigmaa <- sqrt(1 / post[[3, 1]])
     sigmab <- sqrt(1 / post[[4, 1]])
     theta <- post[[5, 1]]
-    for (iteration in seq(qntd_iteracoes)) {
-        sob[iteration, ] <- sob_lognormal_mix(
-            time, ma[iteration], mb[iteration], sigmaa[iteration], sigmab[iteration], theta[iteration]
+    surv_haz <- list()
+    for (i in seq_len(ncol(ma))) {
+        surv_haz[[i]] <- vapply(
+            time, function(t) fun(t, ma[, i], mb[, i], sigmaa, sigmab, theta), numeric(qntd_iteracoes)
         )
     }
-    predictions <- apply(sob, 2, stats::median)
-    tibble::tibble(.time = time, .pred_survival = predictions)
+    predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
+
+    pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
+
+    tibble::tibble(.pred = purrr::map(predictions, ~ tibble::tibble(.time = time, !!pred_name := .x)))
+}
+
+predict_survival_ln_mixture_time <- function(model, predictors) {
+    rlang::abort("Not implemented")
+    # predictions <- rep(1L, times = nrow(predictors))
     # hardhat::spruce_numeric(predictions)
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors) {
-    predictions <- rep(3L, times = nrow(predictors))
-    hardhat::spruce_numeric(predictions)
+predict_survival_ln_mixture_survival <- function(model, predictors, time) {
+    extract_surv_haz(model, predictors, time, "survival")
+}
+
+predict_survival_ln_mixture_hazard <- function(model, predictors, time) {
+    extract_surv_haz(model, predictors, time, "hazard")
 }

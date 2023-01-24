@@ -16,7 +16,8 @@ Imports:
     parallel,
     hardhat,
     rlang,
-    survival
+    survival,
+    purrr
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN, RcppClock
 Depends: 
     RcppTN
