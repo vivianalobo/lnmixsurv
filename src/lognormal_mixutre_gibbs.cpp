@@ -9,8 +9,6 @@
 // #include <progress_bar.hpp>
 #include <omp.h> 
 
-// #include <RcppClock.h>
-
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 {
     int n = y.size();
@@ -140,17 +138,12 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
 
     arma::mat beta_corrente(numero_covariaveis, numero_componentes_mistura);
 
-    // profiling
-    // Rcpp::Clock clock;
 
     // Progress pro(iter, true);
-    // clock.tick("algoritmo_completo");
     for (arma::uword it = 1; it <= iter - 1; it++)
     {
-        // clock.tick("check_abort");
         // if (Progress::check_abort())
         // {
-        //     // clock.stop("run_times");
         //     return Rcpp::List::create(
         //         Rcpp::_["beta"] = beta,
         //         Rcpp::_["phi_a"] = phi_a,
@@ -158,74 +151,43 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
         //         Rcpp::_["theta"] = theta);
         // }
 
-        // clock.tock("check_abort");
-        // clock.tick("increment_pb");
         // pro.increment();
-        // clock.tock("increment_pb");
 
-        // clock.tick("criar_aux_beta");
         beta_corrente = beta.slice(it - 1);
         aux_beta_a = beta_corrente.col(0);
         aux_beta_b = beta_corrente.col(1);
-        // clock.tock("criar_aux_beta");
 
-        // clock.tick("criar_sd");
         sd_a = 1 / sqrt(phi_a(it - 1));
         sd_b = 1 / sqrt(phi_b(it - 1));
-        // clock.tock("criar_sd");
 
         // probability
-        // clock.tick("calcular_prob");
-        // Rcpp::Rcout << "Antes prob" << std::endl;
         prob = calcular_prob(log_y, theta(it - 1), x, beta_corrente, sd_a, sd_b);
-        // clock.tock("calcular_prob");
         // mixture
-        // clock.tick("gerar_bernoulli");
         I = rbernoulli(numero_observacoes, prob);
-        // clock.tock("gerar_bernoulli");
 
-        // clock.tick("separar_grupos");
         idxA = arma::find(I == 1);
         idxB = arma::find(I == 0);
-        // clock.tock("separar_grupos");
 
-        // clock.tick("realizar_augmentation");
-        // Rcpp::Rcout << "Antes aug" << std::endl;
         realizar_augmentation(log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
         realizar_augmentation(log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
-        // clock.tock("realizar_augmentation");
 
         // theta
-        // clock.tick("gerar_theta");
         A = idxA.size();
         B = idxB.size();
         theta(it) = R::rbeta(1 + A, 1 + B);
-        // clock.tock("gerar_theta");
 
         // phi
-        // clock.tick("subset_x");
         XA = x.rows(idxA);
         XB = x.rows(idxB);
-        // clock.tock("subset_x");
-        // clock.tick("subset_log_y");
         yA = log_y.elem(idxA);
         yB = log_y.elem(idxB);
-        // clock.tock("subset_log_y");
 
-        // clock.tick("gerar_phi");
-        // Rcpp::Rcout << "Antes phi" << std::endl;
         phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
         phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
-        // clock.tock("gerar_phi");
 
-        // clock.tick("gerar_beta");
-        // Rcpp::Rcout << "Antes beta" << std::endl;
         beta.slice(it).col(0) = gerar_beta(yA, XA, phi_a(it));
         beta.slice(it).col(1) = gerar_beta(yB, XB, phi_b(it));
-        // clock.tock("gerar_beta");
     }
-    // clock.tock("algoritmo_completo");
-    // clock.stop("run_times");
     ret(0) = arma::mat(beta.col(0)).t();
     ret(1) = arma::mat(beta.col(1)).t();
     ret(2) = phi_a;
@@ -235,7 +197,7 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
 }
 
 // [[Rcpp::export]]
-arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(
+arma::field<arma::cube> parallel_lognormal_mixture_gibbs(
     arma::mat x, arma::colvec y, arma::colvec delta,
     int iter, int chains, int cores = 1, double valor_inicial_beta = 0)
 {
@@ -283,7 +245,7 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs_cpp(
 // resolver. Talvez depois tester com C++ puro para ver se o problema 
 // aparece lá tb ou só no R
 // [[Rcpp::export]]
-arma::field<arma::cube> sequential_lognormal_mixture_gibbs_cpp(
+arma::field<arma::cube> sequential_lognormal_mixture_gibbs(
     arma::mat x, arma::colvec y, arma::colvec delta,
     int iter, int chains, double valor_inicial_beta = 0)
 {

@@ -24,11 +24,11 @@ NULL
 #' @noRd
 NULL
 
-parallel_lognormal_mixture_gibbs_cpp <- function(x, y, delta, iter, chains, cores = 1L, valor_inicial_beta = 0) {
-    .Call(`_persistencia_parallel_lognormal_mixture_gibbs_cpp`, x, y, delta, iter, chains, cores, valor_inicial_beta)
+parallel_lognormal_mixture_gibbs <- function(x, y, delta, iter, chains, cores = 1L, valor_inicial_beta = 0) {
+    .Call(`_persistencia_parallel_lognormal_mixture_gibbs`, x, y, delta, iter, chains, cores, valor_inicial_beta)
 }
 
-sequential_lognormal_mixture_gibbs_cpp <- function(x, y, delta, iter, chains, valor_inicial_beta = 0) {
-    .Call(`_persistencia_sequential_lognormal_mixture_gibbs_cpp`, x, y, delta, iter, chains, valor_inicial_beta)
+sequential_lognormal_mixture_gibbs <- function(x, y, delta, iter, chains, valor_inicial_beta = 0) {
+    .Call(`_persistencia_sequential_lognormal_mixture_gibbs`, x, y, delta, iter, chains, valor_inicial_beta)
 }
 

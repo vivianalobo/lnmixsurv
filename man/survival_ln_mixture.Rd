@@ -61,6 +61,6 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details.
 
 # Formula interface
 library(survival)
-mod <- survival_ln_mixture(Surv(time, status == 2)~NULL, lung, intercept = TRUE)
+mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 
 }

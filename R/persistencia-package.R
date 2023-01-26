@@ -4,6 +4,6 @@
 ## usethis namespace: start
 #' @useDynLib persistencia, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
-#' @exportPattern "^[[:alpha:]]+"
+#' @import RcppTN
 ## usethis namespace: end
 NULL

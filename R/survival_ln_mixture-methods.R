@@ -35,7 +35,6 @@ coef_names <- function(model) {
 # acho que teria q sumarizar a posteriori junto com o ajuste do modelo
 # não sei se é o ideal. Talvez seja melhor usar o tidy para extrair essas
 # coisas mesmo.
-# #' @export
 # coef.survival_ln_mixture <- function(object, ...) {
 #     post <- extract_posterior(object)
 #     post <- posterior::merge_chains(post)

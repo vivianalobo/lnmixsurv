@@ -96,11 +96,11 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
                                      chains = 1, cores = 1) {
   if (chains > 1) rlang::warn("Check the posterior draws for label switch problem.")
   if (cores > 1) {
-    posterior_dist <- parallel_lognormal_mixture_gibbs_cpp(
+    posterior_dist <- parallel_lognormal_mixture_gibbs(
       predictors, outcome_times, outcome_status, iter, chains, cores, 0
     )
   } else {
-    posterior_dist <- sequential_lognormal_mixture_gibbs_cpp(
+    posterior_dist <- sequential_lognormal_mixture_gibbs(
       predictors, outcome_times, outcome_status, iter, chains, 0
     )
   }
