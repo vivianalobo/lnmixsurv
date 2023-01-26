@@ -1,21 +1,34 @@
-nobs <- function(model) {
-    return(model$nobs)
+#' Extract the number of observations from `survival_ln_mixture` fit.
+#' 
+#' Extract the number of observations used in a `survival_ln_mixture` fit.
+#' 
+#' @param model A fitted `survival_ln_mixture` object.
+#' 
+#' @return A single integer.
+#' 
+#' @export
+nobs.survival_ln_mixture <- function(model, ...) {
+  return(model$nobs)
 }
 
 extract_posterior <- function(model) {
-    return(model$posterior)
+  return(model$posterior)
 }
 
 extract_formula <- function(model) {
-    return(deparse(model$blueprint$formula))
+  # Trocar NULL por 1 para caso onde so tem intercepto
+  formula <- gsub("NULL", "1", deparse(a$blueprint$formula))
+  return(formula)
 }
 
 npredictors <- function(model) {
-    return(ncol(model$blueprint$ptypes$predictors))
+  return(ncol(model$blueprint$ptypes$predictors) + model$blueprint$intercept)
 }
 
 coef_names <- function(model) {
-    return(colnames(model$blueprint$ptypes$predictors))
+  intercepto <- ifelse(model$blueprint$intercept, "(Intercept)", "")
+  cov <- colnames(model$blueprint$ptypes$predictors)
+  return(c(intercepto, cov))
 }
 
 # Eu quero um método para extrair os coeficientes?

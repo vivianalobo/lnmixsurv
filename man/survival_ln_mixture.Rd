@@ -4,49 +4,63 @@
 \alias{survival_ln_mixture}
 \alias{survival_ln_mixture.default}
 \alias{survival_ln_mixture.formula}
-\alias{survival_ln_mixture.recipe}
-\title{Fit a \code{survival_ln_mixture}}
+\title{Lognormal mixture model}
 \usage{
-survival_ln_mixture(x, ...)
+survival_ln_mixture(
+  formula,
+  data,
+  intercept = TRUE,
+  iter = 1000,
+  warmup = floor(iter/10),
+  thin = 1,
+  chains = 1,
+  cores = 1,
+  ...
+)
 
-\method{survival_ln_mixture}{default}(x, ...)
+\method{survival_ln_mixture}{default}(formula, ...)
 
 \method{survival_ln_mixture}{formula}(formula, data, intercept = TRUE, ...)
-
-\method{survival_ln_mixture}{recipe}(x, data, intercept = TRUE, ...)
 }
 \arguments{
-\item{...}{Not currently used, but required for extensibility.}
-
 \item{formula}{A formula specifying the outcome terms on the left-hand side,
-and the predictor terms on the right-hand side.
-\itemize{
-\item The outcome must be a \strong{survival::Surv} object.
-}}
+and the predictor terms on the right-hand side. The outcome must be a \link[survival:Surv]{survival::Surv}
+object.}
 
-\item{data}{When a \strong{recipe} or \strong{formula} is used, \code{data} is specified as:
-\itemize{
-\item A \strong{data frame} containing both the predictors and the outcome.
-\item The outcome must be a \strong{survival::Surv} objetc.
-}}
+\item{data}{A \strong{data frame} containing both the predictors and the outcome.}
+
+\item{intercept}{A logical. Should an intercept be included in the processed data?}
+
+\item{iter}{A positive integer specifying the number of iterations for each chain (including warmup).}
+
+\item{warmup}{A positive integer specifying the number of warmup (aka burnin) iterations per chain.
+The number of warmup iterations should be smaller than iter.}
+
+\item{thin}{A positive integer specifying the period for saving samples.}
+
+\item{chains}{A positive integer specifying the number of Markov chains.}
+
+\item{cores}{Number of cores to use when executing the chains in parallel. The number of
+cores used is limited by the number of avaliable cores and the number of chains. The number
+of available cores can be checked with \code{parallel::detectCores(logical = FALSE)}.}
+
+\item{...}{Not currently used, but required for extensibility.}
 }
 \value{
-A \code{survival_ln_mixture} object.
+A \code{survival_ln_mixture} object, which is a list with the following componentes:
+
+\item{posterior}{A \link[posterior:draws_matrix]{posterior::draws_matrix} with the posterior of the parameters of the model.}
+\item{nobs}{A integer holding the number of observations used to generate the fit.}
+\item{blueprint}{The blueprint component of the output of \link[hardhat:mold]{hardhat::mold}}
 }
 \description{
-\code{survival_ln_mixture()} fits a model.
+\code{survival_ln_mixture()} fits a lognormal mixture model, as described in (referencia artigo viviana).
+Colocar mais detalhes sobre o modelo (como a equacao) em details.
 }
 \examples{
 
 # Formula interface
 library(survival)
-mod <- survival_ln_mixture(Surv(time, status == 2), lung)
-
-
-# Recipes interface
-library(recipes)
-dados <- lung \%>\% mutate(outcome = Surv(time, status == 2))
-rec <- recipe(outcome ~ sex, dados)
-mod3 <- survival_ln_mixture(rec, dados)
+mod <- survival_ln_mixture(Surv(time, status == 2)~NULL, lung, intercept = TRUE)
 
 }
