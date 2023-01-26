@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^\.lintr$
 ^\.vscode$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

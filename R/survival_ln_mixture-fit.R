@@ -48,6 +48,7 @@
 #' @export
 survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10),
                                 thin = 1, chains = 1, cores = 1, ...) {
+  rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
 

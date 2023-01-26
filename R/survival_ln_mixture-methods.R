@@ -9,6 +9,7 @@
 #'
 #' @export
 nobs.survival_ln_mixture <- function(object, ...) { # nolint: object_name_linter.
+  rlang::check_dots_empty(...)
   return(object$nobs)
 }
 

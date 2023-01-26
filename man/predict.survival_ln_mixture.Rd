@@ -35,6 +35,7 @@ otherwise the predictions will fail.
 \examples{
 
 # Categorical variables must be converted to factor before the fit.
+require(survival)
 set.seed(1)
 mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 # Would result in error

@@ -23,6 +23,7 @@
 #' @examples
 #'
 #' # Categorical variables must be converted to factor before the fit.
+#' require(survival)
 #' set.seed(1)
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 #' # Would result in error
@@ -73,6 +74,18 @@ get_survival_ln_mixture_predict_function <- function(type) {
 # ------------------------------------------------------------------------------
 # Implementation
 
+predict_survival_ln_mixture_time <- function(model, predictors) {
+  rlang::abort("Not implemented")
+}
+
+predict_survival_ln_mixture_survival <- function(model, predictors, time) {
+  extract_surv_haz(model, predictors, time, "survival")
+}
+
+predict_survival_ln_mixture_hazard <- function(model, predictors, time) {
+  extract_surv_haz(model, predictors, time, "hazard")
+}
+
 extract_surv_haz <- function(model, predictors, time, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
 
@@ -112,16 +125,18 @@ extract_surv_haz <- function(model, predictors, time, type = "survival") {
   tibble::tibble(.pred = purrr::map(predictions, ~ tibble::tibble(.time = time, !!pred_name := .x)))
 }
 
-predict_survival_ln_mixture_time <- function(model, predictors) {
-  rlang::abort("Not implemented")
-  # predictions <- rep(1L, times = nrow(predictors))
-  # hardhat::spruce_numeric(predictions)
+sob_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
+  s <- sob_lognormal(t, ma, sigmaa) * theta + sob_lognormal(t, mb, sigmab) * (1 - theta)
+  return(s)
 }
 
-predict_survival_ln_mixture_survival <- function(model, predictors, time) {
-  extract_surv_haz(model, predictors, time, "survival")
+falha_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
+  sob_mix <- sob_lognormal_mix(t, ma, mb, sigmaa, sigmab, theta)
+  dlnorm_mix <- theta * stats::dlnorm(t, ma, sigmaa) + (1 - theta) * stats::dlnorm(t, mb, sigmab)
+  return(dlnorm_mix / sob_mix)
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors, time) {
-  extract_surv_haz(model, predictors, time, "hazard")
+sob_lognormal <- function(t, m, sigma) {
+  s <- stats::pnorm((-log(t) + m) / sigma)
+  return(s)
 }
