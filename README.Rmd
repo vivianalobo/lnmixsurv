@@ -1,0 +1,103 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# persistencia
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
+The goal of persistencia is to provide an easy interface to the bayesian lognormal mixture model described in (incluir artigo da Viviana).
+An usual formula-type model is implemented in `survival_ln_mixture`, with the usual `suvival::Surv(time, event) ~ cov` interface.
+The model tries to follow the [conventions for R modeling packages](https://tidymodels.github.io/model-implementation-principles/),
+and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
+
+An extension to the models defined by [parsnip](https://parsnip.tidymodels.org/index.html) and [censored](https://censored.tidymodels.org/articles/examples.html)
+is also provided, adding the `survival_ln_mixture` engine to the `survival_reg` model.
+
+The underlying algorithm implementation is a gibbs sampler (incluir detalhes sobre prioris e etc) and is implemmented in `C++`, using `RcppArmadillo` for the linear algebra operations
+and `OpenMP` to provide a parallelized way of generating multiple chains.
+
+## Installation
+
+You can install the development version of persistencia from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("vitorcapdeville/persistencia")
+```
+
+## Example
+
+The model can be used with the usual formula interface or using the `tidymodels` and `censored` structure.
+
+```{r example}
+library(persistencia)
+library(dplyr)
+lung$sex <- factor(lung$sex)
+set.seed(1)
+mod <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+mod
+```
+
+For the tidymodels approach, when using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions,
+and the original variables can only have their roles updated with `update_role`.
+
+```{r example_tidymodels}
+library(tidymodels)
+tidymodels_prefer()
+
+dados <- lung |> mutate(outcome = Surv(time, status == 2))
+rec <- recipe(outcome ~ sex, dados) |>
+  step_mutate(sex = factor(sex)) |>
+  step_dummy(sex)
+
+mod_spec <- survival_reg() |>
+  set_engine("survival_ln_mixture") |>
+  set_mode("censored regression")
+
+wflw <- workflow() |>
+  add_model(mod_spec) |>
+  add_recipe(rec)
+
+set.seed(1)
+mod_tidy <- wflw |> fit(dados)
+mod_tidy
+```
+
+The predicitons are easy to obtain from a fit.
+
+```{r prediction}
+library(ggplot2)
+library(purrr)
+library(dplyr)
+library(tidyr)
+
+models <- list(formula = mod, tidymodels = mod_tidy)
+new_data <- lung |> distinct(sex)
+pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
+
+bind_rows(pred_sob, .id = "modelo") %>%
+  group_by(modelo) %>%
+  dplyr::mutate(id = new_data$sex) %>%
+  ungroup() %>%
+  tidyr::unnest(cols = .pred) %>%
+  ggplot(aes(x = .time, y = .pred_survival, col = id)) +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(~modelo)
+```
