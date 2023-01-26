@@ -1,13 +1,13 @@
 #' Extract the number of observations from `survival_ln_mixture` fit.
-#' 
+#'
 #' Extract the number of observations used in a `survival_ln_mixture` fit.
-#' 
+#'
 #' @param model A fitted `survival_ln_mixture` object.
-#' 
+#'
 #' @return A single integer.
-#' 
+#'
 #' @export
-nobs.survival_ln_mixture <- function(model, ...) {
+nobs.survival_ln_mixture <- function(model, ...) { # nolint: object_name_linter.
   return(model$nobs)
 }
 
@@ -17,7 +17,7 @@ extract_posterior <- function(model) {
 
 extract_formula <- function(model) {
   # Trocar NULL por 1 para caso onde so tem intercepto
-  formula <- gsub("NULL", "1", deparse(a$blueprint$formula))
+  formula <- gsub("NULL", "1", deparse(model$blueprint$formula))
   return(formula)
 }
 
