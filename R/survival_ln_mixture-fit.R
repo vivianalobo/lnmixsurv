@@ -39,7 +39,7 @@
 #'
 #' # Formula interface
 #' library(survival)
-#' mod <- survival_ln_mixture(Surv(time, status == 2)~NULL, lung, intercept = TRUE)
+#' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
 survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10),
