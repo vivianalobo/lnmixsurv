@@ -4,6 +4,7 @@
 \name{reexports}
 \alias{reexports}
 \alias{tidy}
+\alias{nobs}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -12,5 +13,7 @@ below to see their documentation.
 
 \describe{
   \item{generics}{\code{\link[generics]{tidy}}}
+
+  \item{stats}{\code{\link[stats]{nobs}}}
 }}
 

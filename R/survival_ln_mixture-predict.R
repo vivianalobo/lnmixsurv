@@ -1,4 +1,4 @@
-#' Predict from a `survival_ln_mixture`
+#' Predict from a Lognormal Mixture Model
 #'
 #' @param object A `survival_ln_mixture` object.
 #'
@@ -7,26 +7,35 @@
 #' @param type A single character. The type of predictions to generate.
 #' Valid options are:
 #'
-#' - `"time"` for the survival time.
+#' - `"time"` for the survival time. **not implmeented**
 #' - `"survival"` for the survival probability.
 #' - `"hazard"` for the hazard.
 #'
 #' @param ... Not used, but required for extensibility.
 #'
+#' @note Categorical predictos must be converted to factores before the fit,
+#' otherwise the predictions will fail.
 #' @return
 #'
 #' A tibble of predictions. The number of rows in the tibble is guaranteed
 #' to be the same as the number of rows in `new_data`.
 #'
 #' @examples
-#' train <- mtcars[1:20, ]
-#' test <- mtcars[21:32, -1]
 #'
-#' # Fit
-#' mod <- survival_ln_mixture(mpg ~ cyl + log(drat), train)
+#' # Categorical variables must be converted to factor before the fit.
+#' set.seed(1)
+#' mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
+#' # Would result in error
+#' \dontrun{
+#' predict(mod, data.frame(sex = 1), time = 100)
+#' }
 #'
-#' # Predict, with preprocessing
-#' predict(mod, test)
+#' # Correct way
+#' lung$sex <- factor(lung$sex)
+#' set.seed(1)
+#' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+#' # Note: the categorical predictors must be character.
+#' predict(mod2, data.frame(sex = "1"), time = 100)
 #'
 #' @export
 predict.survival_ln_mixture <- function(object, new_data, type = "survival", ...) {

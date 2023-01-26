@@ -26,6 +26,9 @@
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
+#' @note Categorical predictos must be converted to factores before the fit,
+#' otherwise the predictions will fail.
+#'
 #' @return
 #'
 #' A `survival_ln_mixture` object, which is a list with the following componentes:
@@ -39,6 +42,7 @@
 #'
 #' # Formula interface
 #' library(survival)
+#' set.seed(1)
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export

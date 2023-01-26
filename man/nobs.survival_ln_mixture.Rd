@@ -4,10 +4,12 @@
 \alias{nobs.survival_ln_mixture}
 \title{Extract the number of observations from \code{survival_ln_mixture} fit.}
 \usage{
-\method{nobs}{survival_ln_mixture}(model, ...)
+\method{nobs}{survival_ln_mixture}(object, ...)
 }
 \arguments{
-\item{model}{A fitted \code{survival_ln_mixture} object.}
+\item{object}{A fitted \code{survival_ln_mixture} object.}
+
+\item{...}{Not used.}
 }
 \value{
 A single integer.

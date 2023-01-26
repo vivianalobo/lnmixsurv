@@ -210,8 +210,9 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs(
     arma::cube phi_b(iter, chains, 1);
     arma::cube theta(iter, chains, 1);
     omp_set_dynamic(0);
+    bool erro = false;
 
-#pragma omp parallel for private(current_post) shared(y, x, delta, valor_inicial_beta, ret, iter) num_threads(cores)
+#pragma omp parallel for private(current_post) shared(y, x, delta, valor_inicial_beta, ret, iter, erro) num_threads(cores)
     for (int i = 0; i < chains; i++) {
 
         bool exception_caught = true;
@@ -222,7 +223,7 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs(
         }
         catch (...)
         {
-            std::cout << "Erro na cadeia " << i << "\n";
+            erro = true;
         }
         if (!exception_caught) {
             beta_a.col(i) = current_post(0);
@@ -232,6 +233,7 @@ arma::field<arma::cube> parallel_lognormal_mixture_gibbs(
             theta.col(i) = current_post(4);
         }
     }
+    if (erro) Rcpp::warning("One or more chains were not generated because of some error.");
     ret(0) = beta_a;
     ret(1) = beta_b;
     ret(2) = phi_a;
@@ -257,6 +259,7 @@ arma::field<arma::cube> sequential_lognormal_mixture_gibbs(
     arma::cube phi_a(iter, chains, 1);
     arma::cube phi_b(iter, chains, 1);
     arma::cube theta(iter, chains, 1);
+    bool erro = false;
 
     for (int i = 0; i < chains; i++) {
 
@@ -268,7 +271,7 @@ arma::field<arma::cube> sequential_lognormal_mixture_gibbs(
         }
         catch (...)
         {
-            std::cout << "Erro na cadeia " << i << "\n";
+            erro = true;
         }
         if (!exception_caught) {
             beta_a.col(i) = current_post(0);
@@ -278,6 +281,7 @@ arma::field<arma::cube> sequential_lognormal_mixture_gibbs(
             theta.col(i) = current_post(4);
         }
     }
+    if (erro) Rcpp::warning("One or more chains were not generated because of some error.");
     ret(0) = beta_a;
     ret(1) = beta_b;
     ret(2) = phi_a;

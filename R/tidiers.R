@@ -1,7 +1,7 @@
 #' Funcao auxiliar para calcular intervalo de credibilidade usando quantis.
 #' @noRd
-interval <- function(x, conf.level) {
-  ret <- unname(quantile(x, probs = c(1 - conf.level, conf.level)))
+interval <- function(x, conf.level) { # nolint: object_name_linter.
+  ret <- unname(stats::quantile(x, probs = c(1 - conf.level, conf.level)))
   return(c("conf.low" = ret[1], "conf.high" = ret[2]))
 }
 
@@ -21,7 +21,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
   if ("auxiliary" %in% effects) {
     vars <- c(vars, "phi_a", "phi_b", "theta_a")
   }
-  measures <- c("estimate" = median, "std.error" = mad)
+  measures <- c("estimate" = stats::median, "std.error" = stats::mad)
   if (conf.int) {
     measures <- c(measures, c("interval" = function(x) interval(x, conf.level)))
   }

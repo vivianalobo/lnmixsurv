@@ -14,10 +14,10 @@ Imports:
     glue,
     hardhat,
     rlang,
-    survival,
     purrr,
     abind,
-    generics
+    generics,
+    tibble
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
 Depends: 
     RcppTN,

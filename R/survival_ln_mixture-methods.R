@@ -2,13 +2,14 @@
 #'
 #' Extract the number of observations used in a `survival_ln_mixture` fit.
 #'
-#' @param model A fitted `survival_ln_mixture` object.
+#' @param object A fitted `survival_ln_mixture` object.
+#' @param ... Not used.
 #'
 #' @return A single integer.
 #'
 #' @export
-nobs.survival_ln_mixture <- function(model, ...) { # nolint: object_name_linter.
-  return(model$nobs)
+nobs.survival_ln_mixture <- function(object, ...) { # nolint: object_name_linter.
+  return(object$nobs)
 }
 
 extract_posterior <- function(model) {
