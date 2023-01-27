@@ -1,0 +1,93 @@
+---
+title: "Using survival_ln_mixture with parsnip"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using survival_ln_mixture with parsnip}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+The package also provide a `parsnip` egine that can be used with the `survival_reg` model fron `censored` package.
+
+```{r example_tidymodels}
+library(tidymodels)
+library(censored)
+require(persistencia)
+tidymodels_prefer()
+
+mod_spec <- survival_reg() |>
+    set_engine("survival_ln_mixture", intercept = TRUE) |>
+    set_mode("censored regression")
+
+set.seed(1)
+mod_fit <- mod_spec |>
+    fit(Surv(time, status == 2) ~ sex, lung)
+mod_fit
+```
+
+When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions,
+and the original variables can only have their roles updated with `update_role`.
+
+Also, creating the outcome inside a step_mutate requires that more columns than necessary are available to make predictions.
+
+A possible way around is to create a column with the Surv object before the recipe.
+
+```{r example_recipe}
+require(dplyr)
+
+dados <- lung |> mutate(outcome = Surv(time, status == 2))
+rec <- recipe(outcome ~ sex, dados) |>
+    step_mutate(sex = factor(sex)) |>
+    step_dummy(sex)
+
+# Create a worlflow object with the new recipe and the previous
+# model specification
+wflw <- workflow() |>
+    add_model(mod_spec) |>
+    add_recipe(rec)
+
+set.seed(1)
+mod_tidy <- wflw |> fit(dados)
+mod_tidy
+```
+
+```{r}
+mod_spec <- survival_reg() |>
+    set_engine("survival_ln_mixture", intercept = TRUE) |>
+    set_mode("censored regression")
+
+rec <- recipe(outcome ~ sex, dados) |>
+    step_mutate(sex = factor(sex)) |>
+    step_dummy(sex)
+
+set.seed(1)
+workflow() |>
+    add_model(mod_spec) |>
+    add_recipe(rec) |>
+    fit(dados)
+
+# Setting one_hot doesn't work well with the intercpet arg.
+rec <- recipe(outcome ~ sex, dados) |>
+    step_mutate(sex = factor(sex)) |>
+    step_dummy(sex, one_hot = TRUE)
+
+set.seed(1)
+workflow() |>
+    add_model(mod_spec) |>
+    add_recipe(rec) |>
+    fit(dados)
+
+mod_spec <- survival_reg() |>
+    set_engine("survival_ln_mixture", intercept = FALSE) |>
+    set_mode("censored regression")
+lung$sex <- factor(lung$sex)
+mod_spec |>
+    fit(Surv(time, status == 2) ~ sex, lung)
+```

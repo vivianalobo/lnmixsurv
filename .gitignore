@@ -10,3 +10,4 @@ src/*.dll
 TODO
 .lintr
 docs
+inst/doc

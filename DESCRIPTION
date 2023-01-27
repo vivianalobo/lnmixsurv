@@ -24,7 +24,10 @@ Depends:
     parsnip (>= 0.2.0),
     survival
 Suggests: 
-    parallel
+    knitr,
+    parallel,
+    rmarkdown
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
+VignetteBuilder: knitr

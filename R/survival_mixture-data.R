@@ -4,7 +4,10 @@ make_survival_reg_survival_ln_mixture <- function() {
     mode = "censored regression",
     eng = "survival_ln_mixture"
   )
-  parsnip::set_dependency("survival_reg", eng = "survival_ln_mixture", pkg = "persistencia")
+  parsnip::set_dependency(
+      "survival_reg",
+      eng = "survival_ln_mixture", pkg = "persistencia"
+  )
 
   parsnip::set_fit(
     model = "survival_reg",
