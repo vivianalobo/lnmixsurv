@@ -25,6 +25,8 @@ of the posterior uncertainty intervals are included.}
 intervals. Only used if \code{conf.int = TRUE}.}
 
 \item{digits}{How many significant digits should be displayed?}
+
+\item{...}{Not used.}
 }
 \value{
 A \code{data.frame} without rownames. When \code{effects="fixed"} (the default), tidy.survival_ln_mixutre

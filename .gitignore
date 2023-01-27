@@ -11,3 +11,6 @@ TODO
 .lintr
 docs
 inst/doc
+README.html
+/doc/
+/Meta/
