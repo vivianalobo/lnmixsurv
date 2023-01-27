@@ -9,8 +9,10 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-    collapse = TRUE,
-    comment = "#>"
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>"
 )
 ```
 
@@ -23,71 +25,48 @@ require(persistencia)
 tidymodels_prefer()
 
 mod_spec <- survival_reg() |>
-    set_engine("survival_ln_mixture", intercept = TRUE) |>
-    set_mode("censored regression")
-
+  set_engine("survival_ln_mixture", intercept = FALSE) |>
+  set_mode("censored regression")
+dados <- lung
+dados$sex <- factor(dados$sex)
 set.seed(1)
 mod_fit <- mod_spec |>
-    fit(Surv(time, status == 2) ~ sex, lung)
+  fit(Surv(time, status == 2) ~ sex, dados)
 mod_fit
 ```
 
-When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions,
-and the original variables can only have their roles updated with `update_role`.
+When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions (like `survival::Surv`).
+A possible way to use them is to set both the time and event indicator as outcomes (or predictors) and then construct the `Surv` object
+in a `step_mutate`, with the role seted to `"outcome"`. 
 
-Also, creating the outcome inside a step_mutate requires that more columns than necessary are available to make predictions.
+In order to make predictions in the usual way, is then necessary to remove the original time and event indicator, and set 
+both steps with `skip = TRUE`, to prevent them from being baked when predicting, and thus, not needing to set these variables in
+`new_data`.
 
-A possible way around is to create a column with the Surv object before the recipe.
+```{r}
+rec <- recipe(time + status ~ sex, lung) |>
+  step_mutate(sex = factor(sex)) |>
+  step_mutate(outcome = Surv(time, status == 2), role = "outcome", skip = TRUE) |>
+  step_rm(time, status, skip = TRUE)
 
-```{r example_recipe}
-require(dplyr)
-
-dados <- lung |> mutate(outcome = Surv(time, status == 2))
-rec <- recipe(outcome ~ sex, dados) |>
-    step_mutate(sex = factor(sex)) |>
-    step_dummy(sex)
-
-# Create a worlflow object with the new recipe and the previous
-# model specification
 wflw <- workflow() |>
-    add_model(mod_spec) |>
-    add_recipe(rec)
+  add_model(mod_spec) |>
+  add_recipe(rec)
 
 set.seed(1)
-mod_tidy <- wflw |> fit(dados)
+mod_tidy <- wflw |> fit(lung)
 mod_tidy
 ```
 
+The predictions work as usual.
+
 ```{r}
-mod_spec <- survival_reg() |>
-    set_engine("survival_ln_mixture", intercept = TRUE) |>
-    set_mode("censored regression")
+new_data <- lung |> distinct(sex)
+mod_fit |>
+  predict(new_data |> mutate(sex = as.character(sex)), type = "survival", time = 100) |>
+  tidyr::unnest(cols = .pred)
 
-rec <- recipe(outcome ~ sex, dados) |>
-    step_mutate(sex = factor(sex)) |>
-    step_dummy(sex)
-
-set.seed(1)
-workflow() |>
-    add_model(mod_spec) |>
-    add_recipe(rec) |>
-    fit(dados)
-
-# Setting one_hot doesn't work well with the intercpet arg.
-rec <- recipe(outcome ~ sex, dados) |>
-    step_mutate(sex = factor(sex)) |>
-    step_dummy(sex, one_hot = TRUE)
-
-set.seed(1)
-workflow() |>
-    add_model(mod_spec) |>
-    add_recipe(rec) |>
-    fit(dados)
-
-mod_spec <- survival_reg() |>
-    set_engine("survival_ln_mixture", intercept = FALSE) |>
-    set_mode("censored regression")
-lung$sex <- factor(lung$sex)
-mod_spec |>
-    fit(Surv(time, status == 2) ~ sex, lung)
+mod_tidy |>
+  predict(new_data, type = "survival", time = 100) |>
+  tidyr::unnest(cols = .pred)
 ```

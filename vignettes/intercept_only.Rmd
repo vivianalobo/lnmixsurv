@@ -1,0 +1,33 @@
+---
+title: "Intercept only fits"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Intercept only fits}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>"
+)
+```
+
+Intercept only fits should be done setting `intercept = TRUE` and using `NULL` for the left side of the formula.
+
+```{r setup}
+library(persistencia)
+set.seed(1)
+mod1 <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
+mod1
+```
+
+The predictions can be made with a "empty" data.frame with one row.
+
+```{r}
+predict(mod1, new_data = data.frame(val = NA), type = "survival", time = 100) |>
+  tidyr::unnest(cols = .pred)
+```

@@ -22,12 +22,9 @@ knitr::opts_chunk$set(
 <!-- badges: end -->
 
 The goal of persistencia is to provide an easy interface to the bayesian lognormal mixture model described in (incluir artigo da Viviana).
-An usual formula-type model is implemented in `survival_ln_mixture`, with the usual `suvival::Surv(time, event) ~ cov` interface.
+An usual formula-type model is implemented in `survival_ln_mixture`, with the usual `suvival::Surv()` interface.
 The model tries to follow the [conventions for R modeling packages](https://tidymodels.github.io/model-implementation-principles/),
 and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
-
-An extension to the models defined by [parsnip](https://parsnip.tidymodels.org/index.html) and [censored](https://censored.tidymodels.org/articles/examples.html)
-is also provided, adding the `survival_ln_mixture` engine to the `survival_reg` model.
 
 The underlying algorithm implementation is a gibbs sampler (incluir detalhes sobre prioris e etc) and is implemmented in `C++`, using `RcppArmadillo` for the linear algebra operations
 and `OpenMP` to provide a parallelized way of generating multiple chains.
@@ -40,64 +37,41 @@ You can install the development version of persistencia from [GitHub](https://gi
 # install.packages("devtools")
 devtools::install_github("vitorcapdeville/persistencia")
 ```
+## parsnip and censored extension
 
-## Example
+An extension to the models defined by [parsnip](https://parsnip.tidymodels.org/index.html) and [censored](https://censored.tidymodels.org/articles/examples.html)
+is also provided, adding the `survival_ln_mixture` engine to the `parsnip::survival_reg()` model.
 
-The model can be used with the usual formula interface or using the `tidymodels` and `censored` structure.
+The following models, engines, and prediction type are available/extended trhough `persistencia`:
 
-```{r example}
-library(persistencia)
+```{r, echo=FALSE, message=FALSE}
+library(censored)
 library(dplyr)
-lung$sex <- factor(lung$sex)
-set.seed(1)
-mod <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
-mod
-```
-
-For the tidymodels approach, when using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions,
-and the original variables can only have their roles updated with `update_role`.
-
-```{r example_tidymodels}
-library(tidymodels)
-tidymodels_prefer()
-
-dados <- lung |> mutate(outcome = Surv(time, status == 2))
-rec <- recipe(outcome ~ sex, dados) |>
-  step_mutate(sex = factor(sex)) |>
-  step_dummy(sex)
-
-mod_spec <- survival_reg() |>
-  set_engine("survival_ln_mixture") |>
-  set_mode("censored regression")
-
-wflw <- workflow() |>
-  add_model(mod_spec) |>
-  add_recipe(rec)
-
-set.seed(1)
-mod_tidy <- wflw |> fit(dados)
-mod_tidy
-```
-
-The predicitons are easy to obtain from a fit.
-
-```{r prediction}
-library(ggplot2)
 library(purrr)
-library(dplyr)
 library(tidyr)
+library(persistencia)
+yep <- cli::symbol$tick
+nope <- cli::symbol$cross
+mod_names <- get_from_env("models")
+model_info <-
+  map_dfr(mod_names, ~ get_from_env(paste0(.x, "_predict")) %>% mutate(model = .x)) %>%
+  select(model, engine, mode, type)
+pkg_info <-
+  map_dfr(mod_names, ~ get_from_env(paste0(.x, "_pkgs")) %>% mutate(model = .x)) %>%
+  select(model, engine, pkg) %>%
+  unnest(cols = pkg) %>%
+  filter(pkg == "persistencia") %>%
+  select(!pkg)
 
-models <- list(formula = mod, tidymodels = mod_tidy)
-new_data <- lung |> distinct(sex)
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
-
-bind_rows(pred_sob, .id = "modelo") %>%
-  group_by(modelo) %>%
-  dplyr::mutate(id = new_data$sex) %>%
-  ungroup() %>%
-  tidyr::unnest(cols = .pred) %>%
-  ggplot(aes(x = .time, y = .pred_survival, col = id)) +
-  geom_line() +
-  theme_bw() +
-  facet_wrap(~modelo)
+model_info %>%
+  filter(mode == "censored regression") %>%
+  select(model, engine, mode, type) %>%
+  pivot_wider(
+    names_from = type,
+    values_from = mode,
+    values_fill = nope,
+    values_fn = function(x) yep
+  ) %>%
+  inner_join(pkg_info, by = c("model", "engine")) %>%
+  knitr::kable()
 ```

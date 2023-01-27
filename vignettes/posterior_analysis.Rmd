@@ -1,0 +1,28 @@
+---
+title: "Posterior analysis with bayesplot"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Posterior analysis with bayesplot}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+A `survival_ln_mixture` object holds the posterior chain as a `?posterior::draws_matrix` object, and
+can be analysed using the Stan ecosystem tools, like `bayesplot`.
+
+```{r setup}
+library(persistencia)
+library(bayesplot)
+lung$sex <- factor(lung$sex)
+set.seed(1)
+mod1 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, data = lung)
+
+mcmc_trace(mod1$posterior)
+```

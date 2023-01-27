@@ -1,0 +1,75 @@
+---
+title: "Get started"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Get started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>",
+  out.width = "100%"
+)
+```
+
+The model can be used with the usual formula interface or using the `tidymodels` and `censored` structure.
+
+Formula interface:
+
+```{r example}
+library(persistencia)
+
+lung$sex <- factor(lung$sex)
+set.seed(1)
+mod1 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+mod1
+```
+
+Tidymodels approach:
+
+```{r}
+library(censored)
+mod_spec <- survival_reg() |>
+  set_engine("survival_ln_mixture", intercept = TRUE) |>
+  set_mode("censored regression")
+set.seed(1)
+mod2 <- mod_spec |>
+  fit(Surv(time, status == 2) ~ sex, lung)
+```
+
+The estimates are easily obtained using tidy method. See `?tidy.survival_ln_mixture` for extra options.
+
+```{r}
+tidy(mod1)
+tidy(mod2)
+```
+
+
+The predicitons are easy to obtain from a fit.
+
+```{r prediction}
+library(ggplot2)
+library(purrr)
+library(dplyr)
+library(tidyr)
+
+models <- list(formula = mod1, tidymodels = mod2)
+
+new_data <- lung |> distinct(sex)
+pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
+
+bind_rows(pred_sob, .id = "modelo") %>%
+  group_by(modelo) %>%
+  dplyr::mutate(id = new_data$sex) %>%
+  ungroup() %>%
+  tidyr::unnest(cols = .pred) %>%
+  ggplot(aes(x = .time, y = .pred_survival, col = id)) +
+  geom_line() +
+  theme_bw() +
+  facet_wrap(~modelo)
+```
