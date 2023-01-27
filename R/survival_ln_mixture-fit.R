@@ -100,6 +100,15 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
                                      iter = 1000, warmup = floor(iter / 10), thin = 1,
                                      chains = 1, cores = 1) {
   if (chains > 1) rlang::warn("Check the posterior draws for label switch problem.")
+  number_of_predictors <- ncol(predictors)
+  if (number_of_predictors < 1) {
+    rlang::abort(
+      c(
+        "The model must contain at least one predictor.",
+        i = "When using outcome ~ NULL, intercept must be explicitly set to TRUE."
+      )
+    )
+  }
   if (cores > 1) {
     posterior_dist <- parallel_lognormal_mixture_gibbs(
       predictors, outcome_times, outcome_status, iter, chains, cores, 0
@@ -113,7 +122,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   posterior_dist <- abind::abind(posterior_dist)
 
   grupos <- c("a", "b")
-  preds <- seq_len(ncol(predictors))
+  preds <- seq_len(number_of_predictors)
   names_beta <- glue::glue_data(expand.grid(preds, grupos), "beta_{Var2}[{Var1}]")
   names_phi <- glue::glue("phi_{grupos}")
 
