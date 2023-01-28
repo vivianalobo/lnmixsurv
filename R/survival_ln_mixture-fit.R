@@ -99,7 +99,6 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
                                      iter = 1000, warmup = floor(iter / 10), thin = 1,
                                      chains = 1, cores = 1) {
-  if (chains > 1) rlang::warn("Check the posterior draws for label switch problem.")
   number_of_predictors <- ncol(predictors)
   if (number_of_predictors < 1) {
     rlang::abort(
@@ -129,11 +128,15 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   dimnames(posterior_dist)[[3]] <- c(names_beta, names_phi, "theta_a")
 
   # Ajustar labels.
-  theta <- apply(posterior_dist[, , "theta_a"], 2, median)
+  theta <- apply(posterior_dist[, , "theta_a", drop = FALSE], 2, stats::median)
   mudar <- which(theta < 0.5)
   posterior_dist[, mudar, "theta_a"] <- 1 - posterior_dist[, mudar, "theta_a"]
-  label_old <- c("beta_a[1]", "beta_a[2]", "beta_b[1]", "beta_b[2]", "phi_a", "phi_b")
-  label_new <- c("beta_b[1]", "beta_b[2]", "beta_a[1]", "beta_a[2]", "phi_b", "phi_a")
+  label_old <- c(names_beta, "phi_a", "phi_b")
+  label_new <- c(
+    names_beta[seq_len(number_of_predictors)],
+    names_beta[seq_len(number_of_predictors) + number_of_predictors],
+    "phi_b", "phi_a"
+  )
   posterior_dist[, mudar, label_old] <- posterior_dist[, mudar, label_new]
 
 
