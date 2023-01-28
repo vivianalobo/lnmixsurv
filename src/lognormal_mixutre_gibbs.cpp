@@ -4,7 +4,7 @@
 
 #include <RcppArmadillo.h>
 #include <mvnorm.h>
-#include "RcppTN.h"
+#include <truncnorm.h>
 // #include <progress.hpp>
 // #include <progress_bar.hpp>
 #include <omp.h> 
@@ -32,7 +32,7 @@ arma::colvec rtn1_vec(arma::uword n, arma::colvec mean, double sd, arma::colvec 
     arma::colvec ret(n);
     for (arma::uword i = 0; i < n; i++)
     {
-        ret(i) = RcppTN::rtn1(mean(i), sd, low(i), high);
+        ret(i) = r_truncnorm(mean(i), sd, low(i), high);
     }
     return ret;
 }

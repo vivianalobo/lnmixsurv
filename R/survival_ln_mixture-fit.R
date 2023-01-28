@@ -126,7 +126,16 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   names_beta <- glue::glue_data(expand.grid(preds, grupos), "beta_{Var2}[{Var1}]")
   names_phi <- glue::glue("phi_{grupos}")
 
-  dimnames(posterior_dist)[[length(dimnames(posterior_dist))]] <- c(names_beta, names_phi, "theta_a")
+  dimnames(posterior_dist)[[3]] <- c(names_beta, names_phi, "theta_a")
+
+  # Ajustar labels.
+  theta <- apply(posterior_dist[, , "theta_a"], 2, median)
+  mudar <- which(theta < 0.5)
+  posterior_dist[, mudar, "theta_a"] <- 1 - posterior_dist[, mudar, "theta_a"]
+  label_old <- c("beta_a[1]", "beta_a[2]", "beta_b[1]", "beta_b[2]", "phi_a", "phi_b")
+  label_new <- c("beta_b[1]", "beta_b[2]", "beta_a[1]", "beta_a[2]", "phi_b", "phi_a")
+  posterior_dist[, mudar, label_old] <- posterior_dist[, mudar, label_new]
+
 
   posterior_dist <- posterior::as_draws_matrix(posterior_dist)
   posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))

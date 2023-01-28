@@ -20,7 +20,6 @@ Imports:
     tibble
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
 Depends: 
-    RcppTN,
     parsnip (>= 0.2.0),
     survival
 Suggests: 
