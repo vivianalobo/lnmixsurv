@@ -10,3 +10,6 @@
 ^doc$
 ^Meta$
 ^data-raw$
+^codecov\.yml$
+^persistencia-report\.html$
+^lib$

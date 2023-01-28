@@ -1,3 +1,5 @@
+# nocov start
+
 make_survival_reg_survival_ln_mixture <- function() {
   parsnip::set_model_engine(
     "survival_reg",
@@ -71,3 +73,5 @@ make_survival_reg_survival_ln_mixture <- function() {
     )
   )
 }
+
+# nocov end
