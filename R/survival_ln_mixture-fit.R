@@ -88,6 +88,7 @@ survival_ln_mixture_bridge <- function(processed, ...) {
   new_survival_ln_mixture(
     posterior = fit$posterior,
     nobs = fit$nobs,
+    predictors_name = fit$predictors_name,
     blueprint = processed$blueprint
   )
 }
@@ -121,8 +122,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   posterior_dist <- abind::abind(posterior_dist)
 
   grupos <- c("a", "b")
-  preds <- seq_len(number_of_predictors)
-  names_beta <- glue::glue_data(expand.grid(preds, grupos), "beta_{Var2}[{Var1}]")
+  preds <- colnames(predictors)
+  names_beta <- glue::glue_data(expand.grid(preds, grupos), "{Var1}_{Var2}")
   names_phi <- glue::glue("phi_{grupos}")
 
   dimnames(posterior_dist)[[3]] <- c(names_beta, names_phi, "theta_a")
@@ -144,5 +145,5 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))
   posterior_dist <- posterior::thin_draws(posterior_dist, thin = thin)
 
-  list(posterior = posterior_dist, nobs = length(outcome_times))
+  list(posterior = posterior_dist, nobs = length(outcome_times), predictors_name = preds)
 }

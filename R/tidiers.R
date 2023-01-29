@@ -48,7 +48,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
   rlang::check_dots_empty(...)
   vars <- c()
   if ("fixed" %in% effects) {
-    vars <- c(vars, "beta_a", "beta_b")
+    vars <- c(vars, glue::glue("{x$predictors_name}_a"), glue::glue("{x$predictors_name}_b"))
   }
   if ("auxiliary" %in% effects) {
     vars <- c(vars, "phi_a", "phi_b", "theta_a")

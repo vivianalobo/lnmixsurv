@@ -8,11 +8,11 @@
        observations: 10000
        predictors:   2
       ------
-                 estimate   std.error
-      beta_a[1] 3.4264007 0.022319628
-      beta_a[2] 0.4888544 0.019117639
-      beta_b[1] 4.0448076 0.006356691
-      beta_b[2] 0.8095204 0.010001643
+                     estimate   std.error
+      (Intercept)_a 3.4264007 0.022319628
+      x1_a          0.4888544 0.019117639
+      (Intercept)_b 4.0448076 0.006356691
+      x1_b          0.8095204 0.010001643
       
       Auxiliary parameter(s):
                 estimate  std.error

@@ -3,8 +3,8 @@ test_that("tiders work as expected", {
     obtained <- tidy(mod, conf.int = TRUE)
     expected <- structure(list(
         term = c(
-            "beta_a[1]", "beta_a[2]", "beta_b[1]",
-            "beta_b[2]"
+            "(Intercept)_a", "x1_a", "(Intercept)_b",
+            "x1_b"
         ), estimate = c(
             3.42640069809889, 0.488854437096543,
             4.04480760255212, 0.809520356761791

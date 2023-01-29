@@ -102,8 +102,8 @@ extract_surv_haz <- function(model, predictors, time, type = "survival") {
   }
 
   qntd_iteracoes <- posterior::niterations(post)
-  beta_a <- posterior::subset_draws(post, "beta_a")
-  beta_b <- posterior::subset_draws(post, "beta_b")
+  beta_a <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_a"))
+  beta_b <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_b"))
   phi_a <- posterior::subset_draws(post, "phi_a")
   phi_b <- posterior::subset_draws(post, "phi_b")
   theta_a <- posterior::subset_draws(post, "theta_a")

@@ -34,8 +34,8 @@ test_that("fit works as expected with simulated data", {
     colnames(post_summary)[1] <- "term"
     post_tidy <- tidy(mod, effects = c("fixed", "auxiliary"))
     expected_result <- structure(list(term = c(
-        "beta_a[1]", "beta_a[2]", "beta_b[1]",
-        "beta_b[2]", "phi_a", "phi_b", "theta_a"
+        "(Intercept)_a", "x1_a", "(Intercept)_b",
+        "x1_b", "phi_a", "phi_b", "theta_a"
     ), estimate = c(
         3.42640069809889,
         0.488854437096543, 4.04480760255212, 0.809520356761791, 26.5081614971505,
