@@ -1,5 +1,5 @@
 test_that("tiders work as expected", {
-    mod <- new_survival_ln_fit_with_fixed_rng()
+    mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
     obtained <- tidy(mod, conf.int = TRUE)
     expected <- structure(list(
         term = c(

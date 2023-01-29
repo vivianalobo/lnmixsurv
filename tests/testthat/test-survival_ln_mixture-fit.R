@@ -23,13 +23,13 @@ test_that("survival_ln_mixture doesnt work with xy specification", {
     )
 })
 
-test_that("survival_ln_mixture works with intercept only fit",{
-    mod <- new_survival_ln_fit_with_fixed_rng_intercept_only()
+test_that("survival_ln_mixture works with intercept only fit", {
+    mod <- readRDS(test_path("fixtures", "ln_fit_with_intercept_only.rds"))
     expect_equal(tidy(mod)$estimate, c(3.8243392, 4.6485868))
 })
 
 test_that("fit works as expected with simulated data", {
-    mod <- new_survival_ln_fit_with_fixed_rng()
+    mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
     post_summary <- posterior::summarise_draws(mod$posterior, estimate = stats::median, std.error = stats::mad)
     colnames(post_summary)[1] <- "term"
     post_tidy <- tidy(mod, effects = c("fixed", "auxiliary"))

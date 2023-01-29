@@ -1,4 +1,4 @@
 test_that("print method works", {
-  mod <- new_survival_ln_fit_with_fixed_rng()
+  mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
   expect_snapshot(mod)
 })
