@@ -1,7 +1,7 @@
 Package: persistencia
 Type: Package
 Title: What the package does (short line)
-Version: 1.0
+Version: 1.0.1
 Date: 2023-01-19
 Author: Who wrote it
 Maintainer: Who to complain to <yourfault@somewhere.net>
@@ -17,7 +17,8 @@ Imports:
     purrr,
     abind,
     generics,
-    tibble
+    tibble,
+    dplyr
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
 Depends: 
     parsnip (>= 0.2.0),
@@ -27,7 +28,6 @@ Suggests:
     knitr,
     parallel,
     rmarkdown,
-    dplyr,
     tidyr,
     bayesplot,
     censored,

@@ -1,3 +1,5 @@
+globalVariables(".pred")
+
 #' Tidying method for a Lognormal Mixture model.
 #'
 #' These method tidy the estimates from `survival_ln_mixture` fits into a summary.
@@ -69,4 +71,28 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
 interval <- function(x, conf.level) { # nolint: object_name_linter.
   ret <- unname(stats::quantile(x, probs = c(1 - conf.level, conf.level)))
   return(c("conf.low" = ret[1], "conf.high" = ret[2]))
+}
+
+#' Augment data with information from a survival_ln_mixture object
+#'
+#' Include information about hazard and survival distribution for each individual
+#' in a dataset.
+#'
+#' @param x A `survival_ln_mixture` object.
+#' @param newdata A `base::data.frame()` or `tibble::tiblle()` containing all
+#' the original predictors used to create x.
+#' @param time a vector with the times where the hazard and survival distribuition
+#' will be evaluated.
+#' @param ... Not used.
+#'
+#' @return A `tibble::tibble()` with the original covarates and ther survvial and hazard
+#' distributions.
+#'
+#' @export
+augment.survival_ln_mixture <- function(x, newdata, time, ...) {
+  haz <- predict.survival_ln_mixture(x, newdata, type = "hazard", time = time)
+  surv <- predict.survival_ln_mixture(x, newdata, type = "survival", time = time)
+  haz <- dplyr::rename(haz, .hazard = .pred)
+  surv <- dplyr::rename(surv, .survival = .pred)
+  return(dplyr::bind_cols(tibble::as_tibble(newdata), .hazard = haz, .survival = surv))
 }
