@@ -134,8 +134,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   posterior_dist[, mudar, "theta_a"] <- 1 - posterior_dist[, mudar, "theta_a"]
   label_old <- c(names_beta, "phi_a", "phi_b")
   label_new <- c(
-    names_beta[seq_len(number_of_predictors)],
     names_beta[seq_len(number_of_predictors) + number_of_predictors],
+    names_beta[seq_len(number_of_predictors)],
     "phi_b", "phi_a"
   )
   posterior_dist[, mudar, label_old] <- posterior_dist[, mudar, label_new]

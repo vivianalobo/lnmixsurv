@@ -24,9 +24,8 @@ Formula interface:
 ```{r example}
 library(persistencia)
 
-lung$sex <- factor(lung$sex)
 set.seed(1)
-mod1 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE)
 mod1
 ```
 
@@ -39,7 +38,7 @@ mod_spec <- survival_reg() |>
   set_mode("censored regression")
 set.seed(1)
 mod2 <- mod_spec |>
-  fit(Surv(time, status == 2) ~ sex, lung)
+  fit(Surv(y, delta) ~ x, sim_data$data)
 ```
 
 The estimates are easily obtained using tidy method. See `?tidy.survival_ln_mixture` for extra options.
@@ -60,12 +59,12 @@ library(tidyr)
 
 models <- list(formula = mod1, tidymodels = mod2)
 
-new_data <- lung |> distinct(sex)
+new_data <- sim_data$data |> distinct(x)
 pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
 
 bind_rows(pred_sob, .id = "modelo") %>%
   group_by(modelo) %>%
-  dplyr::mutate(id = new_data$sex) %>%
+  dplyr::mutate(id = new_data$x) %>%
   ungroup() %>%
   tidyr::unnest(cols = .pred) %>%
   ggplot(aes(x = .time, y = .pred_survival, col = id)) +

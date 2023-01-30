@@ -21,7 +21,7 @@ Imports:
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
 Depends: 
     parsnip (>= 0.2.0),
-    R (>= 2.10),
+    R (>= 3.5.0),
     survival
 Suggests: 
     knitr,

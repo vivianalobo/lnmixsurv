@@ -28,9 +28,7 @@ require(purrr)
 require(dplyr)
 require(ggplot2)
 
-dados <- lung %>%
-  mutate(x = ifelse(sex == 1, "M", "F"), delta = status - 1) %>%
-  rename(y = time)
+dados <- sim_data$data
 new_data <- dados %>% distinct(x)
 formula <- Surv(y, delta) ~ x
 ```

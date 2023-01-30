@@ -27,11 +27,10 @@ tidymodels_prefer()
 mod_spec <- survival_reg() |>
   set_engine("survival_ln_mixture", intercept = FALSE) |>
   set_mode("censored regression")
-dados <- lung
-dados$sex <- factor(dados$sex)
+dados <- sim_data$data
 set.seed(1)
 mod_fit <- mod_spec |>
-  fit(Surv(time, status == 2) ~ sex, dados)
+  fit(Surv(y, delta) ~ x, dados)
 mod_fit
 ```
 
@@ -44,26 +43,26 @@ both steps with `skip = TRUE`, to prevent them from being baked when predicting,
 `new_data`.
 
 ```{r}
-rec <- recipe(time + status ~ sex, lung) |>
-  step_mutate(sex = factor(sex)) |>
-  step_mutate(outcome = Surv(time, status == 2), role = "outcome", skip = TRUE) |>
-  step_rm(time, status, skip = TRUE)
+rec <- recipe(y + delta ~ x, dados) |>
+  step_mutate(z = x) |>
+  step_mutate(outcome = Surv(y, delta), role = "outcome", skip = TRUE) |>
+  step_rm(y, delta, x, skip = TRUE)
 
 wflw <- workflow() |>
   add_model(mod_spec) |>
   add_recipe(rec)
 
 set.seed(1)
-mod_tidy <- wflw |> fit(lung)
+mod_tidy <- wflw |> fit(dados)
 mod_tidy
 ```
 
 The predictions work as usual.
 
 ```{r}
-new_data <- lung |> distinct(sex)
+new_data <- dados |> distinct(x)
 mod_fit |>
-  predict(new_data |> mutate(sex = as.character(sex)), type = "survival", time = 100) |>
+  predict(new_data, type = "survival", time = 100) |>
   tidyr::unnest(cols = .pred)
 
 mod_tidy |>
