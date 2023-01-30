@@ -18,7 +18,7 @@ Imports:
     abind,
     generics,
     tibble
-LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, RcppTN
+LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
 Depends: 
     parsnip (>= 0.2.0),
     R (>= 3.5.0),
