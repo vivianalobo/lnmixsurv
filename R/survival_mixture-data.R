@@ -49,13 +49,11 @@ make_survival_reg_survival_ln_mixture <- function() {
           object = quote(object$fit),
           new_data = quote(new_data),
           type = "hazard",
-          time = quote(time),
-          interval = quote(interval),
-          level = quote(level)
+          time = quote(time)
         )
     )
   )
-
+  
   parsnip::set_pred(
     model = "survival_reg",
     eng = "survival_ln_mixture",

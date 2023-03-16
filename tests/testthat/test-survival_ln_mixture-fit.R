@@ -44,7 +44,7 @@ test_that("fit works as expected with simulated data", {
     0.00635669062167443,
     0.0100016430850216, 0.0223196277628254, 0.0191176391183816, 1.37813558584402,
     0.120429036758056, 0.013495809879222
-  )), row.names = c(NA, -7L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"))
+  )), row.names = c(NA, -7L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"), num_args = list())
 
   expect_equal(mod$nobs, 10000)
   expect_equal(post_summary, post_tidy)
