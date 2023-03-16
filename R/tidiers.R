@@ -57,7 +57,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
   }
   measures <- c("estimate" = stats::median, "std.error" = stats::mad)
   if (conf.int) {
-    measures <- c(measures, c("interval" = function(x) interval(x, conf.level)))
+    measures <- c(measures, c("interval" = function(x) credibility_interval(x, conf.level)))
   }
   post <- posterior::subset_draws(x$posterior, variable = vars)
   post <- posterior::merge_chains(post)
@@ -68,7 +68,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
 
 #' Funcao auxiliar para calcular intervalo de credibilidade usando quantis.
 #' @noRd
-interval <- function(x, conf.level) { # nolint: object_name_linter.
+credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
   ret <- unname(stats::quantile(x, probs = c(1 - conf.level, conf.level)))
   return(c("conf.low" = ret[1], "conf.high" = ret[2]))
 }

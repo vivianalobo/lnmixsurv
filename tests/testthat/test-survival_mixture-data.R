@@ -15,16 +15,16 @@ test_that("parsnip specification works", {
 
 test_that("parsnip survival prediction works", {
   new_data <- data.frame(x = c("0", "1"))
-  pred <- predict(mod, new_data, type = "survival", time = c(20, 100))
-  expected <- predict(f_fit, new_data, type = "survival", time = c(20, 100))
+  pred <- predict(mod, new_data = new_data, type = "survival", time = c(20, 100), interval = "credible")
+  expected <- predict(f_fit, new_data = new_data, type = "survival", time = c(20, 100), interval = "credible")
 
   expect_equal(pred, expected)
 })
 
 test_that("parsnip hazard prediction works", {
   new_data <- data.frame(x = c("0", "1"))
-  pred <- predict(mod, new_data, type = "hazard", time = c(20, 100))
-  expected <- predict(f_fit, new_data, type = "hazard", time = c(20, 100))
+  pred <- predict(mod, new_data = new_data, type = "hazard", time = c(20, 100), interval = "credible")
+  expected <- predict(f_fit, new_data = new_data, type = "hazard", time = c(20, 100), interval = "credible")
 
   expect_equal(pred, expected)
 })

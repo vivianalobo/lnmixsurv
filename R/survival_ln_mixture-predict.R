@@ -11,6 +11,12 @@
 #' - `"survival"` for the survival probability.
 #' - `"hazard"` for the hazard.
 #'
+#' @param time For type = "hazard" or type = "survival", the times for the distribution.
+#'
+#' @param interval should interval estimates be added? Options are "none" and "credible".
+#'
+#' @param level the tail area of the intervals. Default value is 0.95.
+#'
 #' @param ... Not used, but required for extensibility.
 #'
 #' @note Categorical predictos must be converted to factores before the fit,
@@ -78,16 +84,17 @@ predict_survival_ln_mixture_time <- function(model, predictors) {
   rlang::abort("Not implemented")
 }
 
-predict_survival_ln_mixture_survival <- function(model, predictors, time) {
-  extract_surv_haz(model, predictors, time, "survival")
+predict_survival_ln_mixture_survival <- function(model, predictors, time, interval = "none", level = 0.95) {
+  extract_surv_haz(model, predictors, time, interval, level, "survival")
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors, time) {
-  extract_surv_haz(model, predictors, time, "hazard")
+predict_survival_ln_mixture_hazard <- function(model, predictors, time, interval = "none", level = 0.95) {
+  extract_surv_haz(model, predictors, time, interval, level, "hazard")
 }
 
-extract_surv_haz <- function(model, predictors, time, type = "survival") {
+extract_surv_haz <- function(model, predictors, time, interval = "none", level = 0.95, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
+  rlang::arg_match(interval, c("none", "credible"))
 
   fun <- switch(type,
     survival = sob_lognormal_mix,
@@ -119,10 +126,20 @@ extract_surv_haz <- function(model, predictors, time, type = "survival") {
     )
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
-
   pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
+  pred <- purrr::map(predictions, ~ tibble::tibble(.time = time, !!pred_name := .x))
 
-  tibble::tibble(.pred = purrr::map(predictions, ~ tibble::tibble(.time = time, !!pred_name := .x)))
+  if (interval == "credible") {
+    lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))
+    upper <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, level))
+    pred <- purrr::pmap(list(pred, lower, upper), function(x, y, z) {
+      x$.pred_lower <- y
+      x$.pred_upper <- z
+      return(x)
+    })
+  }
+
+  tibble::tibble(.pred = pred)
 }
 
 sob_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {

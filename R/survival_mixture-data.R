@@ -7,8 +7,8 @@ make_survival_reg_survival_ln_mixture <- function() {
     eng = "survival_ln_mixture"
   )
   parsnip::set_dependency(
-      "survival_reg",
-      eng = "survival_ln_mixture", pkg = "persistencia"
+    "survival_reg",
+    eng = "survival_ln_mixture", pkg = "persistencia"
   )
 
   parsnip::set_fit(
@@ -39,25 +39,6 @@ make_survival_reg_survival_ln_mixture <- function() {
     model = "survival_reg",
     eng = "survival_ln_mixture",
     mode = "censored regression",
-    type = "survival",
-    value = list(
-      pre = NULL,
-      post = NULL,
-      func = c(fun = "predict"),
-      args =
-        list(
-          object = quote(object$fit),
-          new_data = quote(new_data),
-          type = "survival",
-          time = quote(time)
-        )
-    )
-  )
-
-  parsnip::set_pred(
-    model = "survival_reg",
-    eng = "survival_ln_mixture",
-    mode = "censored regression",
     type = "hazard",
     value = list(
       pre = NULL,
@@ -68,7 +49,30 @@ make_survival_reg_survival_ln_mixture <- function() {
           object = quote(object$fit),
           new_data = quote(new_data),
           type = "hazard",
-          time = quote(time)
+          time = quote(time),
+          interval = quote(interval),
+          level = quote(level)
+        )
+    )
+  )
+
+  parsnip::set_pred(
+    model = "survival_reg",
+    eng = "survival_ln_mixture",
+    mode = "censored regression",
+    type = "survival",
+    value = list(
+      pre = NULL,
+      post = NULL,
+      func = c(fun = "predict"),
+      args =
+        list(
+          object = quote(object$fit),
+          new_data = quote(new_data),
+          type = "survival",
+          time = quote(time),
+          interval = quote(interval),
+          level = quote(level)
         )
     )
   )
