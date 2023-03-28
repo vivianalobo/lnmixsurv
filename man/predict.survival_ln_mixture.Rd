@@ -20,6 +20,12 @@ Valid options are:
 }}
 
 \item{...}{Not used, but required for extensibility.}
+
+\item{time}{For type = "hazard" or type = "survival", the times for the distribution.}
+
+\item{interval}{should interval estimates be added? Options are "none" and "credible".}
+
+\item{level}{the tail area of the intervals. Default value is 0.95.}
 }
 \value{
 A tibble of predictions. The number of rows in the tibble is guaranteed
