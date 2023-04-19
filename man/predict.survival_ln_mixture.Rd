@@ -21,7 +21,7 @@ Valid options are:
 
 \item{...}{Not used, but required for extensibility.}
 
-\item{time}{For type = "hazard" or type = "survival", the times for the distribution.}
+\item{eval_time}{For type = "hazard" or type = "survival", the times for the distribution.}
 
 \item{interval}{should interval estimates be added? Options are "none" and "credible".}
 
@@ -35,7 +35,7 @@ to be the same as the number of rows in \code{new_data}.
 Predict from a Lognormal Mixture Model
 }
 \note{
-Categorical predictos must be converted to factores before the fit,
+Categorical predictors must be converted to factors before the fit,
 otherwise the predictions will fail.
 }
 \examples{
@@ -46,7 +46,7 @@ set.seed(1)
 mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 # Would result in error
 \dontrun{
-predict(mod, data.frame(sex = 1), time = 100)
+predict(mod, data.frame(sex = 1), eval_time = 100)
 }
 
 # Correct way
@@ -54,6 +54,6 @@ lung$sex <- factor(lung$sex)
 set.seed(1)
 mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 # Note: the categorical predictors must be character.
-predict(mod2, data.frame(sex = "1"), time = 100)
+predict(mod2, data.frame(sex = "1"), eval_time = 100)
 
 }

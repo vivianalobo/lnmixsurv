@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```
 
 This vignette shows a brief comparison of the survival_ln_mixture with other survival models, 
-available trhough `censored`.
+available through `censored`.
 
 We begin by loading the packages and preparing the data.
 
@@ -71,7 +71,7 @@ Finally, thanks to the great parsnip API, we can fit and predict all models at o
 ```{r}
 set.seed(8975)
 models <- map(specs, ~ fit(.x, formula, dados))
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
+pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", eval_time = seq(120)))
 ```
 
 The following plot compares each model with the Kaplan-Meier estimates of the survival function.

@@ -81,7 +81,7 @@ credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
 #' @param x A `survival_ln_mixture` object.
 #' @param newdata A `base::data.frame()` or `tibble::tiblle()` containing all
 #' the original predictors used to create x.
-#' @param time a vector with the times where the hazard and survival distribuition
+#' @param eval_time a vector with the times where the hazard and survival distribuition
 #' will be evaluated.
 #' @param ... Not used.
 #'
@@ -89,9 +89,9 @@ credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
 #' distributions.
 #'
 #' @export
-augment.survival_ln_mixture <- function(x, newdata, time, ...) {
-  haz <- predict.survival_ln_mixture(x, newdata, type = "hazard", time = time)
-  surv <- predict.survival_ln_mixture(x, newdata, type = "survival", time = time)
+augment.survival_ln_mixture <- function(x, newdata, eval_time, ...) {
+  haz <- predict.survival_ln_mixture(x, newdata, type = "hazard", eval_time = eval_time)
+  surv <- predict.survival_ln_mixture(x, newdata, type = "survival", eval_time = eval_time)
   haz <- dplyr::rename(haz, .hazard = .pred)
   surv <- dplyr::rename(surv, .survival = .pred)
   return(dplyr::bind_cols(tibble::as_tibble(newdata), .hazard = haz, .survival = surv))

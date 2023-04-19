@@ -4,7 +4,7 @@
 \alias{augment.survival_ln_mixture}
 \title{Augment data with information from a survival_ln_mixture object}
 \usage{
-\method{augment}{survival_ln_mixture}(x, newdata, time, ...)
+\method{augment}{survival_ln_mixture}(x, newdata, eval_time, ...)
 }
 \arguments{
 \item{x}{A \code{survival_ln_mixture} object.}
@@ -12,7 +12,7 @@
 \item{newdata}{A \code{base::data.frame()} or \code{tibble::tiblle()} containing all
 the original predictors used to create x.}
 
-\item{time}{a vector with the times where the hazard and survival distribuition
+\item{eval_time}{a vector with the times where the hazard and survival distribuition
 will be evaluated.}
 
 \item{...}{Not used.}
