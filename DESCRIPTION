@@ -1,7 +1,7 @@
 Package: persistencia
 Type: Package
 Title: What the package does (short line)
-Version: 1.0.1.9000
+Version: 1.0.2
 Date: 2023-01-19
 Author: Who wrote it
 Maintainer: Who to complain to <yourfault@somewhere.net>
@@ -12,7 +12,7 @@ Imports:
     posterior,
     stats,
     glue,
-    hardhat,
+    hardhat (>= 1.3.0),
     rlang,
     purrr,
     abind,
@@ -21,7 +21,7 @@ Imports:
     dplyr
 LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
 Depends: 
-    parsnip (>= 0.2.0),
+    parsnip (>= 1.1.0),
     R (>= 3.5.0),
     survival
 Suggests: 
@@ -30,7 +30,7 @@ Suggests:
     rmarkdown,
     tidyr,
     bayesplot,
-    censored,
+    censored (>= 0.2.0),
     ggplot2,
     ggsurvfit,
     tidymodels,
