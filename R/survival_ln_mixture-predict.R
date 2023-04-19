@@ -11,7 +11,7 @@
 #' - `"survival"` for the survival probability.
 #' - `"hazard"` for the hazard.
 #'
-#' @param time For type = "hazard" or type = "survival", the times for the distribution.
+#' @param eval_time For type = "hazard" or type = "survival", the times for the distribution.
 #'
 #' @param interval should interval estimates be added? Options are "none" and "credible".
 #'
@@ -19,7 +19,7 @@
 #'
 #' @param ... Not used, but required for extensibility.
 #'
-#' @note Categorical predictos must be converted to factores before the fit,
+#' @note Categorical predictors must be converted to factors before the fit,
 #' otherwise the predictions will fail.
 #' @return
 #'
@@ -34,7 +34,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 #' # Would result in error
 #' \dontrun{
-#' predict(mod, data.frame(sex = 1), time = 100)
+#' predict(mod, data.frame(sex = 1), eval_time = 100)
 #' }
 #'
 #' # Correct way
@@ -42,7 +42,7 @@
 #' set.seed(1)
 #' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 #' # Note: the categorical predictors must be character.
-#' predict(mod2, data.frame(sex = "1"), time = 100)
+#' predict(mod2, data.frame(sex = "1"), eval_time = 100)
 #'
 #' @export
 predict.survival_ln_mixture <- function(object, new_data, type = "survival", ...) {
@@ -84,15 +84,15 @@ predict_survival_ln_mixture_time <- function(model, predictors) {
   rlang::abort("Not implemented")
 }
 
-predict_survival_ln_mixture_survival <- function(model, predictors, time, interval = "none", level = 0.95) {
-  extract_surv_haz(model, predictors, time, interval, level, "survival")
+predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+  extract_surv_haz(model, predictors, eval_time, interval, level, "survival")
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors, time, interval = "none", level = 0.95) {
-  extract_surv_haz(model, predictors, time, interval, level, "hazard")
+predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+  extract_surv_haz(model, predictors, eval_time, interval, level, "hazard")
 }
 
-extract_surv_haz <- function(model, predictors, time, interval = "none", level = 0.95, type = "survival") {
+extract_surv_haz <- function(model, predictors, eval_time, interval = "none", level = 0.95, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
   rlang::arg_match(interval, c("none", "credible"))
 
@@ -122,12 +122,12 @@ extract_surv_haz <- function(model, predictors, time, interval = "none", level =
   surv_haz <- list()
   for (i in seq_len(ncol(m_a))) {
     surv_haz[[i]] <- vapply(
-      time, function(t) fun(t, m_a[, i], m_b[, i], sigma_a, sigma_b, theta_a), numeric(qntd_iteracoes)
+      eval_time, function(t) fun(t, m_a[, i], m_b[, i], sigma_a, sigma_b, theta_a), numeric(qntd_iteracoes)
     )
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
   pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
-  pred <- purrr::map(predictions, ~ tibble::tibble(.time = time, !!pred_name := .x))
+  pred <- purrr::map(predictions, ~ tibble::tibble(.time = eval_time, !!pred_name := .x))
 
   if (interval == "credible") {
     lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))

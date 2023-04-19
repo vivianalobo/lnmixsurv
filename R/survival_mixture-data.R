@@ -49,7 +49,7 @@ make_survival_reg_survival_ln_mixture <- function() {
           object = quote(object$fit),
           new_data = quote(new_data),
           type = "hazard",
-          time = quote(time)
+          eval_time = quote(eval_time)
         )
     )
   )
@@ -68,7 +68,7 @@ make_survival_reg_survival_ln_mixture <- function() {
           object = quote(object$fit),
           new_data = quote(new_data),
           type = "survival",
-          time = quote(time),
+          eval_time = quote(eval_time),
           interval = quote(interval),
           level = quote(level)
         )

@@ -1,7 +1,7 @@
 test_that("survival prediction works", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
   new_data <- data.frame(x = c("0", "1"))
-  pred <- predict(mod, new_data, type = "survival", time = c(20, 100), interval = "credible")
+  pred <- predict(mod, new_data, type = "survival", eval_time = c(20, 100), interval = "credible")
 
   expected <- structure(list(.pred = list(structure(list(
     .time = c(20, 100),
@@ -28,7 +28,7 @@ test_that("survival prediction works", {
 test_that("hazard prediction works", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
   new_data <- data.frame(x = c("0", "1"))
-  pred <- predict(mod, new_data = new_data, type = "hazard", time = c(20, 100), interval = "credible")
+  pred <- predict(mod, new_data = new_data, type = "hazard", eval_time = c(20, 100), interval = "credible")
 
   expected <- structure(list(.pred = list(structure(list(
     .time = c(20, 100),

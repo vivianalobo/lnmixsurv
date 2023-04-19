@@ -62,10 +62,10 @@ The predictions work as usual.
 ```{r}
 new_data <- dados |> distinct(x)
 mod_fit |>
-  predict(new_data, type = "survival", time = 100) |>
+  predict(new_data, type = "survival", eval_time = 100) |>
   tidyr::unnest(cols = .pred)
 
 mod_tidy |>
-  predict(new_data, type = "survival", time = 100) |>
+  predict(new_data, type = "survival", eval_time = 100) |>
   tidyr::unnest(cols = .pred)
 ```

@@ -60,7 +60,7 @@ library(tidyr)
 models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", time = seq(120)))
+pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", eval_time = seq(120)))
 
 bind_rows(pred_sob, .id = "modelo") %>%
   group_by(modelo) %>%
