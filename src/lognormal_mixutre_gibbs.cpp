@@ -191,8 +191,8 @@ arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
     ret(0) = arma::mat(beta.col(0)).t();
     ret(1) = arma::mat(beta.col(1)).t();
     ret(2) = phi_a;
-    ret(3) = phi_b,
-        ret(4) = theta;
+    ret(3) = phi_b;
+    ret(4) = theta;
     return ret;
 }
 
