@@ -20,9 +20,9 @@
 #'
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
-#' @param cores Number of cores to use when executing the chains in parallel. The number of
-#' cores used is limited by the number of avaliable cores and the number of chains. The number
-#' of available cores can be checked with `parallel::detectCores(logical = FALSE)`.
+#' @param cores Ignored. Parallel runs are disabled.
+#' 
+#' @param numero_componentes number of mixture componentes. Currently, only accepts 2 or 3.
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -47,7 +47,8 @@
 #'
 #' @export
 survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10),
-                                thin = 1, chains = 1, cores = 1, ...) {
+                                thin = 1, chains = 1, cores = 1, numero_componentes = 2, ...) {
+  if (!numero_componentes %in% c(2,3)) stop("Only 2 or 3 componentes supported.") 
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -99,7 +100,7 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 
 survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
                                      iter = 1000, warmup = floor(iter / 10), thin = 1,
-                                     chains = 1, cores = 1) {
+                                     chains = 1, cores = 1, numero_componentes = 2) {
   number_of_predictors <- ncol(predictors)
   if (number_of_predictors < 1) {
     rlang::abort(
@@ -109,37 +110,40 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
       )
     )
   }
-  if (cores > 1) {
-    posterior_dist <- parallel_lognormal_mixture_gibbs(
-      predictors, outcome_times, outcome_status, iter, chains, cores, 0
-    )
-  } else {
-    posterior_dist <- sequential_lognormal_mixture_gibbs(
-      predictors, outcome_times, outcome_status, iter, chains, 0
-    )
-  }
+  if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
+  
+  fun <- switch(numero_componentes - 1,
+    sequential_lognormal_mixture_gibbs_2_componentes,
+    sequential_lognormal_mixture_gibbs_3_componentes
+  )
+  
+  posterior_dist <- fun(predictors, outcome_times, outcome_status, iter, chains, 0)
+  
 
   posterior_dist <- abind::abind(posterior_dist)
 
-  grupos <- c("a", "b")
+  grupos <- letters[1:numero_componentes]
   preds <- colnames(predictors)
   names_beta <- glue::glue_data(expand.grid(preds, grupos), "{Var1}_{Var2}")
   names_phi <- glue::glue("phi_{grupos}")
+  names_theta <- glue::glue("theta_{grupos}")
 
-  dimnames(posterior_dist)[[3]] <- c(names_beta, names_phi, "theta_a")
+  dimnames(posterior_dist)[[3]] <- c(names_beta, names_phi, names_theta)
 
   # Ajustar labels.
-  theta <- apply(posterior_dist[, , "theta_a", drop = FALSE], 2, stats::median)
-  mudar <- which(theta < 0.5)
-  posterior_dist[, mudar, "theta_a"] <- 1 - posterior_dist[, mudar, "theta_a"]
-  label_old <- c(names_beta, "phi_a", "phi_b")
+  theta <- apply(posterior_dist[, , names_theta, drop = FALSE], 3, stats::median)
+  
+  ordem <- order(theta, decreasing = TRUE)
+  label_old <- dimnames(posterior_dist)[[3]]
   label_new <- c(
-    names_beta[seq_len(number_of_predictors) + number_of_predictors],
-    names_beta[seq_len(number_of_predictors)],
-    "phi_b", "phi_a"
+    glue::glue_data(expand.grid(preds, grupos[ordem]), "{Var1}_{Var2}"),
+    names_phi[ordem],
+    names_theta[ordem]
   )
-  posterior_dist[, mudar, label_old] <- posterior_dist[, mudar, label_new]
-
+  posterior_dist[,,label_old] <- posterior_dist[,,label_new]
+  remover_menor_theta = -which(dimnames(posterior_dist)[[3]] == names_theta[numero_componentes])
+  posterior_dist <- posterior_dist[,,remover_menor_theta]
+  
 
   posterior_dist <- posterior::as_draws_matrix(posterior_dist)
   posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))

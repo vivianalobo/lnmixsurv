@@ -27,8 +27,7 @@ An usual formula-type model is implemented in `survival_ln_mixture`, with the us
 The model tries to follow the [conventions for R modeling packages](https://tidymodels.github.io/model-implementation-principles/),
 and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
 
-The underlying algorithm implementation is a gibbs sampler (incluir detalhes sobre prioris e etc) and is implemmented in `C++`, using `RcppArmadillo` for the linear algebra operations
-and `OpenMP` to provide a parallelized way of generating multiple chains.
+The underlying algorithm implementation is a gibbs sampler (incluir detalhes sobre prioris e etc) and is implemmented in `C++`, using `RcppArmadillo` for the linear algebra operations.
 
 ## Installation
 

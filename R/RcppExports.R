@@ -24,11 +24,14 @@ NULL
 #' @noRd
 NULL
 
-parallel_lognormal_mixture_gibbs <- function(x, y, delta, iter, chains, cores = 1L, valor_inicial_beta = 0) {
-    .Call(`_persistencia_parallel_lognormal_mixture_gibbs`, x, y, delta, iter, chains, cores, valor_inicial_beta)
+#' Gibbs sampling for a three componentes mixture model
+NULL
+
+sequential_lognormal_mixture_gibbs_2_componentes <- function(x, y, delta, iter, chains, valor_inicial_beta = 0) {
+    .Call(`_persistencia_sequential_lognormal_mixture_gibbs_2_componentes`, x, y, delta, iter, chains, valor_inicial_beta)
 }
 
-sequential_lognormal_mixture_gibbs <- function(x, y, delta, iter, chains, valor_inicial_beta = 0) {
-    .Call(`_persistencia_sequential_lognormal_mixture_gibbs`, x, y, delta, iter, chains, valor_inicial_beta)
+sequential_lognormal_mixture_gibbs_3_componentes <- function(x, y, delta, iter, chains, valor_inicial_beta = 0) {
+    .Call(`_persistencia_sequential_lognormal_mixture_gibbs_3_componentes`, x, y, delta, iter, chains, valor_inicial_beta)
 }
 
