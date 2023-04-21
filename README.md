@@ -31,7 +31,7 @@ You can install the development version of persistencia from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("vitorcapdeville/persistencia")
+devtools::install_github("vivianalobo/persistencia")
 ```
 
 ## parsnip and censored extension
