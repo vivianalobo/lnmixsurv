@@ -48,12 +48,15 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
                                      ...) {
   rlang::arg_match(effects, c("fixed", "auxiliary"))
   rlang::check_dots_empty(...)
+  all_vars = colnames(x$posterior)
   vars <- c()
   if ("fixed" %in% effects) {
-    vars <- c(vars, glue::glue("{x$predictors_name}_a"), glue::glue("{x$predictors_name}_b"))
+    predictors_vars <- all_vars[startsWith(all_vars, x$predictors_name)]
+    vars <- c(vars, predictors_vars)
   }
   if ("auxiliary" %in% effects) {
-    vars <- c(vars, "phi_a", "phi_b", "theta_a")
+    auxiliary_vars = all_vars[startsWith(all_vars, "phi") | startsWith(all_vars, "theta")]
+    vars <- c(vars, auxiliary_vars)
   }
   measures <- c("estimate" = stats::median, "std.error" = stats::mad)
   if (conf.int) {

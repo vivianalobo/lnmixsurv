@@ -90,6 +90,7 @@ survival_ln_mixture_bridge <- function(processed, ...) {
     posterior = fit$posterior,
     nobs = fit$nobs,
     predictors_name = fit$predictors_name,
+    mixture_groups = fit$mixture_groups,
     blueprint = processed$blueprint
   )
 }
@@ -149,5 +150,5 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
   posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))
   posterior_dist <- posterior::thin_draws(posterior_dist, thin = thin)
 
-  list(posterior = posterior_dist, nobs = length(outcome_times), predictors_name = preds)
+  list(posterior = posterior_dist, nobs = length(outcome_times), predictors_name = preds, mixture_groups = grupos)
 }

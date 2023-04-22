@@ -107,22 +107,17 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   if (qntd_chains > 1) {
     post <- posterior::merge_chains(post)
   }
-
   qntd_iteracoes <- posterior::niterations(post)
-  beta_a <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_a"))
-  beta_b <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_b"))
-  phi_a <- posterior::subset_draws(post, "phi_a")
-  phi_b <- posterior::subset_draws(post, "phi_b")
-  theta_a <- posterior::subset_draws(post, "theta_a")
-  m_a <- beta_a %*% t(predictors)
-  m_b <- beta_b %*% t(predictors)
-  sigma_a <- sqrt(1 / phi_a)
-  sigma_b <- sqrt(1 / phi_b)
+  beta <- lapply(model$mixture_groups, function(x) posterior::subset_draws(post, glue::glue("{model$predictors_name}_{x}")))
+  phi <- posterior::subset_draws(post, "phi", regex = TRUE)
+  theta <- posterior::subset_draws(post, "theta", regex = TRUE)
+  m <- lapply(beta, function(x) x %*% t(predictors))
+  sigma <- sqrt(1 / phi)
 
   surv_haz <- list()
-  for (i in seq_len(ncol(m_a))) {
+  for (i in seq_len(length(model$predictors_name))) {
     surv_haz[[i]] <- vapply(
-      eval_time, function(t) fun(t, m_a[, i], m_b[, i], sigma_a, sigma_b, theta_a), numeric(qntd_iteracoes)
+      eval_time, function(t) fun(t, lapply(m, function(x) x[,i]), sigma, theta), numeric(qntd_iteracoes)
     )
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
@@ -142,14 +137,18 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   tibble::tibble(.pred = pred)
 }
 
-sob_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
-  s <- sob_lognormal(t, ma, sigmaa) * theta + sob_lognormal(t, mb, sigmab) * (1 - theta)
+sob_lognormal_mix <- function(t, m, sigma, theta) {
+  componentes <- vapply(seq_len(length(m) - 1), function(x) sob_lognormal(t, m[[x]], sigma[,x]) * theta[, x], numeric(nrow(sigma)))
+  componentes <- cbind(componentes, sob_lognormal(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(theta, 1, sum)))
+  s <- apply(componentes, 1, sum)
   return(s)
 }
 
-falha_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
-  sob_mix <- sob_lognormal_mix(t, ma, mb, sigmaa, sigmab, theta)
-  dlnorm_mix <- theta * stats::dlnorm(t, ma, sigmaa) + (1 - theta) * stats::dlnorm(t, mb, sigmab)
+falha_lognormal_mix <- function(t, m, sigma, theta) {
+  sob_mix <- sob_lognormal_mix(t, m, sigma, theta)
+  componentes <- vapply(seq_len(length(m) - 1), function(x) stats::dlnorm(t, m[[x]], sigma[,x]) * theta[, x], numeric(nrow(sigma)))
+  componentes <- cbind(componentes, stats::dlnorm(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(theta, 1, sum)))
+  dlnorm_mix <- apply(componentes, 1, sum)
   return(dlnorm_mix / sob_mix)
 }
 

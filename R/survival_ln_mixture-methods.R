@@ -27,33 +27,4 @@ npredictors <- function(model) {
   return(ncol(model$blueprint$ptypes$predictors) + model$blueprint$intercept)
 }
 
-# coef_names <- function(model) {
-#   intercepto <- ifelse(model$blueprint$intercept, "(Intercept)", "")
-#   cov <- colnames(model$blueprint$ptypes$predictors)
-#   return(c(intercepto, cov))
-# }
 
-# Eu quero um método para extrair os coeficientes?
-# acho que teria q sumarizar a posteriori junto com o ajuste do modelo
-# não sei se é o ideal. Talvez seja melhor usar o tidy para extrair essas
-# coisas mesmo.
-# coef.survival_ln_mixture <- function(object, ...) {
-#     post <- extract_posterior(object)
-#     post <- posterior::merge_chains(post)
-#     post <- posterior::subset_draws(post, variable = c("beta_a", "beta_b"))
-#     return(as.vector(posterior::summarise_draws(post, median)$median))
-# }
-
-# se.survival_ln_mixture <- function(object, ...){
-#     post <- extract_posterior(object)
-#     post <- posterior::merge_chains(post)
-#     post <- posterior::subset_draws(post, variable = c("beta_a", "beta_b"))
-#     return(as.vector(posterior::summarise_draws(post, mad)$mad))
-# }
-
-# sigma.survival_ln_mixture <- function(object, ...){
-#     post <- extract_posterior(object)
-#     post <- posterior::merge_chains(post)
-#     post <- posterior::subset_draws(post, variable = c("beta_a", "beta_b"))
-#     return(as.vector(posterior::summarise_draws(post, mad)$mad))
-# }
