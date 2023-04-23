@@ -39,7 +39,7 @@
 #'
 #' # Correct way
 #' lung$sex <- factor(lung$sex)
-#' set.seed(3)
+#' set.seed(1)
 #' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 #' # Note: the categorical predictors must be character.
 #' predict(mod2, data.frame(sex = "1"), eval_time = 100)
@@ -115,7 +115,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   sigma <- sqrt(1 / phi)
 
   surv_haz <- list()
-  for (i in seq_len(length(model$predictors_name))) {
+  for (i in seq_len(nrow(predictors))) {
     surv_haz[[i]] <- vapply(
       eval_time, function(t) fun(t, lapply(m, function(x) x[,i]), sigma, theta), numeric(qntd_iteracoes)
     )
