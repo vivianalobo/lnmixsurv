@@ -47,4 +47,4 @@ available/extended trhough `persistencia`:
 
 | model        | engine              | time | survival | linear_pred | raw | quantile | hazard |
 |:-------------|:--------------------|:-----|:---------|:------------|:----|:---------|:-------|
-| survival_reg | survival_ln_mixture | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
+| survival_reg | survival_ln_mixture | ✖    | ✔        | ✖           | ✖   | ✔        | ✔      |
