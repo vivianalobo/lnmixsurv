@@ -39,7 +39,7 @@
 #'
 #' # Correct way
 #' lung$sex <- factor(lung$sex)
-#' set.seed(1)
+#' set.seed(3)
 #' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 #' # Note: the categorical predictors must be character.
 #' predict(mod2, data.frame(sex = "1"), eval_time = 100)
@@ -122,7 +122,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
   pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
-  pred <- purrr::map(predictions, ~ tibble::tibble(.time = eval_time, !!pred_name := .x))
+  pred <- purrr::map(predictions, ~ tibble::tibble(.eval_time = eval_time, !!pred_name := .x))
 
   if (interval == "credible") {
     lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))

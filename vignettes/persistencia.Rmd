@@ -67,7 +67,7 @@ bind_rows(pred_sob, .id = "modelo") %>%
   dplyr::mutate(id = new_data$x) %>%
   ungroup() %>%
   tidyr::unnest(cols = .pred) %>%
-  ggplot(aes(x = .time, y = .pred_survival, col = id)) +
+  ggplot(aes(x = .eval_time, y = .pred_survival, col = id)) +
   geom_line() +
   theme_bw() +
   facet_wrap(~modelo)

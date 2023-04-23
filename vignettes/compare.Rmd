@@ -41,8 +41,8 @@ km <- survfit2(formula, dados)
 
 # Manipulating the KM to format that matches parsnip predictions.
 surv_km <- tidy_survfit(km, type = "surv") %>%
-  select(.time = time, .pred_survival = estimate, id = strata) %>%
-  tidyr::nest(.pred = c(.time, .pred_survival))
+  select(.eval_time = time, .pred_survival = estimate, id = strata) %>%
+  tidyr::nest(.pred = c(.eval_time, .pred_survival))
 ```
 
 The we build our `parsnip` specifications and store them in a list.
@@ -85,9 +85,9 @@ all_preds <- bind_rows(pred_sob, .id = "modelo") %>%
 
 km_fit <- surv_km %>%
   tidyr::unnest(cols = .pred) %>%
-  filter(.time < 120)
+  filter(.eval_time < 120)
 
-ggplot(aes(x = .time, y = .pred_survival, col = id), data = all_preds) +
+ggplot(aes(x = .eval_time, y = .pred_survival, col = id), data = all_preds) +
   theme_bw() +
   geom_line() +
   facet_wrap(~modelo) +

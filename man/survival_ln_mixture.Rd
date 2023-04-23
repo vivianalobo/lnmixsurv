@@ -15,6 +15,7 @@ survival_ln_mixture(
   thin = 1,
   chains = 1,
   cores = 1,
+  numero_componentes = 2,
   ...
 )
 
@@ -40,9 +41,9 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{chains}{A positive integer specifying the number of Markov chains.}
 
-\item{cores}{Number of cores to use when executing the chains in parallel. The number of
-cores used is limited by the number of avaliable cores and the number of chains. The number
-of available cores can be checked with \code{parallel::detectCores(logical = FALSE)}.}
+\item{cores}{Ignored. Parallel runs are disabled.}
+
+\item{numero_componentes}{number of mixture componentes. Currently, only accepts 2 or 3.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

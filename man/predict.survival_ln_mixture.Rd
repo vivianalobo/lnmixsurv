@@ -51,7 +51,7 @@ predict(mod, data.frame(sex = 1), eval_time = 100)
 
 # Correct way
 lung$sex <- factor(lung$sex)
-set.seed(1)
+set.seed(3)
 mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 # Note: the categorical predictors must be character.
 predict(mod2, data.frame(sex = "1"), eval_time = 100)
