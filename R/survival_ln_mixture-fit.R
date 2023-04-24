@@ -48,7 +48,6 @@
 #' @export
 survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10),
                                 thin = 1, chains = 1, cores = 1, numero_componentes = 2, ...) {
-  if (!numero_componentes %in% c(2,3)) stop("Only 2 or 3 componentes supported.") 
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
