@@ -14,7 +14,7 @@ coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph
 The goal of lnmixsurv is provide an easy interface for the Bayesian
 lognormal mixture model as described in article Lapse risk modelling in insurance:
 a Bayesian mixture approach. An usual formula-type model is implemented in `survival_ln_mixture`, with
-the usual `suvival::Surv()` interface. The model tries to follow the
+the usual `suvival::Surv()` interface. The model follows the
 [conventions for R modeling
 packages](https://tidymodels.github.io/model-implementation-principles/),
 and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
