@@ -11,9 +11,9 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph/badge.svg)](https://app.codecov.io/gh/vitorcapdeville/persistencia?branch=master)
 <!-- badges: end -->
 
-The goal of persistencia is to provide an easy interface to the bayesian
-lognormal mixture model described in (incluir artigo da Viviana). An
-usual formula-type model is implemented in `survival_ln_mixture`, with
+The goal of lnmixsurv is provide an easy interface for the Bayesian
+lognormal mixture model as described in article Lapse risk modelling in insurance:
+a Bayesian mixture approach. An usual formula-type model is implemented in `survival_ln_mixture`, with
 the usual `suvival::Surv()` interface. The model tries to follow the
 [conventions for R modeling
 packages](https://tidymodels.github.io/model-implementation-principles/),
