@@ -16,3 +16,4 @@ README.html
 /Meta/
 persistencia-report.html
 lib/*
+*.DS_Store

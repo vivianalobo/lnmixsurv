@@ -13,3 +13,4 @@
 ^codecov\.yml$
 ^persistencia-report\.html$
 ^lib$
+^LICENSE\.md$
