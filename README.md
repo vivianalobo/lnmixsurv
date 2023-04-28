@@ -19,8 +19,7 @@ the usual `suvival::Surv()` interface. The model follows the
 packages](https://tidymodels.github.io/model-implementation-principles/),
 and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
 
-The underlying algorithm implementation is a gibbs sampler (incluir
-detalhes sobre prioris e etc) and is implemmented in `C++`, using
+The underlying algorithm implementation is via Gibbs sampler techniques and is implemmented in `C++`, using
 `RcppArmadillo` for the linear algebra operations and `OpenMP` to
 provide a parallelized way of generating multiple chains.
 
