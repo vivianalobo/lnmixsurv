@@ -5,7 +5,8 @@ Version: 1.0.2
 Date: 2023-01-19
 Author: Viviana das Gra\u00e7cas Ribeiro Lobo, Tha\u00eds Cristina Oliveira da Fonseca, Mariane Branco Alves
 Maintainer: Viviana das Gra\u00e7as Ribeiro Lobo <viviana@dme.ufrj.br>
-Description: More about what it does (maybe more than one line)
+Description: A flexible survival mixture model that extends the usual survival model and accommodates different behaviour over time 
+via mixtures of parametric models and considering censored survival times. The proposal combines the mixture distributions and data augmentation techniques.
 License: What license is it under?
 Imports: 
     Rcpp,
