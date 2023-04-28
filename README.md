@@ -31,7 +31,7 @@ You can install the development version of persistencia from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("vivianalobo/persistencia")
+devtools::install_github("vivianalobo/lnmixsurv")
 ```
 
 ## parsnip and censored extension
