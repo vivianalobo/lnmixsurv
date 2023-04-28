@@ -1,13 +1,18 @@
 Package: lnmixsurv
 Type: Package
-Title: Lapse risk modelling via mixture Log-Normal survival model
+Title: Bayesian Mixture Log-Normal survival model
 Version: 1.0.2
 Date: 2023-01-19
-Author: Viviana das Gra\u00e7cas Ribeiro Lobo, Tha\u00eds Cristina Oliveira da Fonseca, Mariane Branco Alves
-Maintainer: Viviana das Gra\u00e7as Ribeiro Lobo <viviana@dme.ufrj.br>
-Description: A flexible survival mixture model that extends the usual survival model and accommodates different behaviour over time 
-via mixtures of parametric models and considering censored survival times. The proposal combines the mixture distributions and data augmentation techniques.
-License: What license is it under?
+Authors@R: c(
+    person("Viviana das Gra\u00e7cas Ribeiro Lobo",
+    email = "viviana@dme.ufrj.br", role = c("cre", "aut")),
+    person("Tha\u00eds Cristina Oliveira da Fonseca", role = "aut"),
+    person("Mariane Branco Alves", role = "aut"))
+Description: Bayesian Survival models via the mixture of Log-Normal distribution 
+    extends the well-known survival models and accommodates different behaviour over time and considers higher censored survival times. 
+    The proposal combines mixture distributions Fruhwirth-Schnatter(2006) <https://doi.org/10.1007/s11336-009-9121-4>,  and data augmentation techniques Tanner and Wong
+    (1987) <https://doi/abs/10.1080/01621459.1987.10478458>.
+License: GPL (>= 3)
 Imports: 
     Rcpp,
     posterior,
