@@ -42,7 +42,7 @@ also provided, adding the `survival_ln_mixture` engine to the
 `parsnip::survival_reg()` model.
 
 The following models, engines, and prediction type are
-available/extended trhough `persistencia`:
+available/extended trhough `lnmixsurv`:
 
 | model        | engine              | time | survival | linear_pred | raw | quantile | hazard |
 |:-------------|:--------------------|:-----|:---------|:------------|:----|:---------|:-------|
