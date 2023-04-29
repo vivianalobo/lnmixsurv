@@ -4,7 +4,15 @@
 \alias{predict.survival_ln_mixture}
 \title{Predict from a Lognormal Mixture Model}
 \usage{
-\method{predict}{survival_ln_mixture}(object, new_data, type = "survival", ...)
+\method{predict}{survival_ln_mixture}(
+  object,
+  new_data,
+  type,
+  eval_time,
+  interval = "none",
+  level = 0.95,
+  ...
+)
 }
 \arguments{
 \item{object}{A \code{survival_ln_mixture} object.}
@@ -19,13 +27,13 @@ Valid options are:
 \item \code{"hazard"} for the hazard.
 }}
 
-\item{...}{Not used, but required for extensibility.}
-
 \item{eval_time}{For type = "hazard" or type = "survival", the times for the distribution.}
 
 \item{interval}{should interval estimates be added? Options are "none" and "credible".}
 
 \item{level}{the tail area of the intervals. Default value is 0.95.}
+
+\item{...}{Not used, but required for extensibility.}
 }
 \value{
 A tibble of predictions. The number of rows in the tibble is guaranteed
@@ -46,7 +54,7 @@ set.seed(1)
 mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 # Would result in error
 \dontrun{
-predict(mod, data.frame(sex = 1), eval_time = 100)
+predict(mod, data.frame(sex = 1), type = "survival", eval_time = 100)
 }
 
 # Correct way
@@ -54,6 +62,6 @@ lung$sex <- factor(lung$sex)
 set.seed(1)
 mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 # Note: the categorical predictors must be character.
-predict(mod2, data.frame(sex = "1"), eval_time = 100)
+predict(mod2, data.frame(sex = "1"), type = "survival", eval_time = 100)
 
 }

@@ -34,7 +34,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 #' # Would result in error
 #' \dontrun{
-#' predict(mod, data.frame(sex = 1), eval_time = 100)
+#' predict(mod, data.frame(sex = 1), type = "survival", eval_time = 100)
 #' }
 #'
 #' # Correct way
@@ -42,13 +42,13 @@
 #' set.seed(1)
 #' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 #' # Note: the categorical predictors must be character.
-#' predict(mod2, data.frame(sex = "1"), eval_time = 100)
+#' predict(mod2, data.frame(sex = "1"), type = "survival", eval_time = 100)
 #'
 #' @export
-predict.survival_ln_mixture <- function(object, new_data, type = "survival", ...) {
+predict.survival_ln_mixture <- function(object, new_data, type, eval_time, interval = "none", level = 0.95, ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_predict_types())
-  predict_survival_ln_mixture_bridge(type, object, forged$predictors, ...)
+  predict_survival_ln_mixture_bridge(type, object, forged$predictors, eval_time, interval, level, ...)
 }
 
 valid_survival_ln_mixture_predict_types <- function() {
@@ -58,11 +58,11 @@ valid_survival_ln_mixture_predict_types <- function() {
 # ------------------------------------------------------------------------------
 # Bridge
 
-predict_survival_ln_mixture_bridge <- function(type, model, predictors, ...) {
+predict_survival_ln_mixture_bridge <- function(type, model, predictors, eval_time, interval, level, ...) {
   predictors <- as.matrix(predictors)
 
   predict_function <- get_survival_ln_mixture_predict_function(type)
-  predictions <- predict_function(model, predictors, ...)
+  predictions <- predict_function(model, predictors, eval_time, interval, level, ...)
 
   hardhat::validate_prediction_size(predictions, predictors)
 
@@ -80,15 +80,15 @@ get_survival_ln_mixture_predict_function <- function(type) {
 # ------------------------------------------------------------------------------
 # Implementation
 
-predict_survival_ln_mixture_time <- function(model, predictors) {
+predict_survival_ln_mixture_time <- function(model, predictors, eval_time, interval, level) {
   rlang::abort("Not implemented")
 }
 
-predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, interval, level) {
   extract_surv_haz(model, predictors, eval_time, interval, level, "survival")
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval, level) {
   extract_surv_haz(model, predictors, eval_time, interval, level, "hazard")
 }
 
