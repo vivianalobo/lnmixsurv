@@ -22,7 +22,7 @@ The model can be used with the usual formula interface or using the `tidymodels`
 Formula interface:
 
 ```{r example}
-library(persistencia)
+library(lnmixsurv)
 
 set.seed(1)
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE)

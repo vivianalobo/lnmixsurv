@@ -25,6 +25,6 @@ NULL
 NULL
 
 sequential_lognormal_mixture_gibbs <- function(x, y, delta, iter, chains, valor_inicial_beta = 0, numero_componentes = 2L) {
-    .Call(`_persistencia_sequential_lognormal_mixture_gibbs`, x, y, delta, iter, chains, valor_inicial_beta, numero_componentes)
+    .Call(`_lnmixsurv_sequential_lognormal_mixture_gibbs`, x, y, delta, iter, chains, valor_inicial_beta, numero_componentes)
 }
 

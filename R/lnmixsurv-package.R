@@ -2,7 +2,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @useDynLib persistencia, .registration = TRUE
+#' @useDynLib lnmixsurv, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 #' @import survival
 #' @import parsnip

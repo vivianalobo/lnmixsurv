@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# persistencia
+# lnmixsurv
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
@@ -31,11 +31,11 @@ The underlying algorithm implementation is a gibbs sampler (incluir detalhes sob
 
 ## Installation
 
-You can install the development version of persistencia from [GitHub](https://github.com/) with:
+You can install the development version of lnmixsurv from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("vivianalobo/persistencia")
+devtools::install_github("vivianalobo/lnmixsurv")
 ```
 ## parsnip and censored extension
 
@@ -49,7 +49,7 @@ library(censored)
 library(dplyr)
 library(purrr)
 library(tidyr)
-library(persistencia)
+library(lnmixsurv)
 yep <- cli::symbol$tick
 nope <- cli::symbol$cross
 mod_names <- get_from_env("models")
@@ -60,7 +60,7 @@ pkg_info <-
   map_dfr(mod_names, ~ get_from_env(paste0(.x, "_pkgs")) %>% mutate(model = .x)) %>%
   select(model, engine, pkg) %>%
   unnest(cols = pkg) %>%
-  filter(pkg == "persistencia") %>%
+  filter(pkg == "lnmixsurv") %>%
   select(!pkg)
 
 model_info %>%

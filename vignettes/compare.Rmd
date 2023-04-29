@@ -22,7 +22,7 @@ available through `censored`.
 We begin by loading the packages and preparing the data.
 
 ```{r setup}
-library(persistencia)
+library(lnmixsurv)
 require(censored)
 require(purrr)
 require(dplyr)

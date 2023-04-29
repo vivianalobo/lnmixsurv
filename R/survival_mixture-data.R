@@ -8,7 +8,7 @@ make_survival_reg_survival_ln_mixture <- function() {
   )
   parsnip::set_dependency(
     "survival_reg",
-    eng = "survival_ln_mixture", pkg = "persistencia"
+    eng = "survival_ln_mixture", pkg = "lnmixsurv"
   )
 
   parsnip::set_fit(
@@ -18,7 +18,7 @@ make_survival_reg_survival_ln_mixture <- function() {
     value = list(
       interface = "formula",
       protect = c("formula", "data"),
-      func = c(pkg = "persistencia", fun = "survival_ln_mixture"),
+      func = c(pkg = "lnmixsurv", fun = "survival_ln_mixture"),
       defaults = list()
     )
   )

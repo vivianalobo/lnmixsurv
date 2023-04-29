@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // sequential_lognormal_mixture_gibbs
 arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(arma::mat x, arma::colvec y, arma::colvec delta, int iter, int chains, double valor_inicial_beta, int numero_componentes);
-RcppExport SEXP _persistencia_sequential_lognormal_mixture_gibbs(SEXP xSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP iterSEXP, SEXP chainsSEXP, SEXP valor_inicial_betaSEXP, SEXP numero_componentesSEXP) {
+RcppExport SEXP _lnmixsurv_sequential_lognormal_mixture_gibbs(SEXP xSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP iterSEXP, SEXP chainsSEXP, SEXP valor_inicial_betaSEXP, SEXP numero_componentesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -30,11 +30,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_persistencia_sequential_lognormal_mixture_gibbs", (DL_FUNC) &_persistencia_sequential_lognormal_mixture_gibbs, 7},
+    {"_lnmixsurv_sequential_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_sequential_lognormal_mixture_gibbs, 7},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_persistencia(DllInfo *dll) {
+RcppExport void R_init_lnmixsurv(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
