@@ -11,6 +11,6 @@
 ^Meta$
 ^data-raw$
 ^codecov\.yml$
-^persistencia-report\.html$
+^lnmixsurv-report\.html$
 ^lib$
 ^LICENSE\.md$

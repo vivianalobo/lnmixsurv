@@ -11,26 +11,9 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// parallel_lognormal_mixture_gibbs
-arma::field<arma::cube> parallel_lognormal_mixture_gibbs(arma::mat x, arma::colvec y, arma::colvec delta, int iter, int chains, int cores, double valor_inicial_beta);
-RcppExport SEXP _persistencia_parallel_lognormal_mixture_gibbs(SEXP xSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP iterSEXP, SEXP chainsSEXP, SEXP coresSEXP, SEXP valor_inicial_betaSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type y(ySEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< int >::type iter(iterSEXP);
-    Rcpp::traits::input_parameter< int >::type chains(chainsSEXP);
-    Rcpp::traits::input_parameter< int >::type cores(coresSEXP);
-    Rcpp::traits::input_parameter< double >::type valor_inicial_beta(valor_inicial_betaSEXP);
-    rcpp_result_gen = Rcpp::wrap(parallel_lognormal_mixture_gibbs(x, y, delta, iter, chains, cores, valor_inicial_beta));
-    return rcpp_result_gen;
-END_RCPP
-}
 // sequential_lognormal_mixture_gibbs
-arma::field<arma::cube> sequential_lognormal_mixture_gibbs(arma::mat x, arma::colvec y, arma::colvec delta, int iter, int chains, double valor_inicial_beta);
-RcppExport SEXP _persistencia_sequential_lognormal_mixture_gibbs(SEXP xSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP iterSEXP, SEXP chainsSEXP, SEXP valor_inicial_betaSEXP) {
+arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(arma::mat x, arma::colvec y, arma::colvec delta, int iter, int chains, double valor_inicial_beta, int numero_componentes);
+RcppExport SEXP _lnmixsurv_sequential_lognormal_mixture_gibbs(SEXP xSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP iterSEXP, SEXP chainsSEXP, SEXP valor_inicial_betaSEXP, SEXP numero_componentesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -40,18 +23,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iter(iterSEXP);
     Rcpp::traits::input_parameter< int >::type chains(chainsSEXP);
     Rcpp::traits::input_parameter< double >::type valor_inicial_beta(valor_inicial_betaSEXP);
-    rcpp_result_gen = Rcpp::wrap(sequential_lognormal_mixture_gibbs(x, y, delta, iter, chains, valor_inicial_beta));
+    Rcpp::traits::input_parameter< int >::type numero_componentes(numero_componentesSEXP);
+    rcpp_result_gen = Rcpp::wrap(sequential_lognormal_mixture_gibbs(x, y, delta, iter, chains, valor_inicial_beta, numero_componentes));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_persistencia_parallel_lognormal_mixture_gibbs", (DL_FUNC) &_persistencia_parallel_lognormal_mixture_gibbs, 7},
-    {"_persistencia_sequential_lognormal_mixture_gibbs", (DL_FUNC) &_persistencia_sequential_lognormal_mixture_gibbs, 6},
+    {"_lnmixsurv_sequential_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_sequential_lognormal_mixture_gibbs, 7},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_persistencia(DllInfo *dll) {
+RcppExport void R_init_lnmixsurv(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

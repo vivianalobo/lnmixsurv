@@ -5,9 +5,6 @@
 #include <RcppArmadillo.h>
 #include <mvnorm.h>
 #include <truncnorm.h>
-// #include <progress.hpp>
-// #include <progress_bar.hpp>
-#include <omp.h> 
 
 arma::colvec dnorm_vec(arma::colvec y, arma::colvec mean, double sd, bool log)
 {
@@ -26,6 +23,30 @@ arma::colvec rbernoulli(int n, arma::colvec prob)
     return arma::conv_to<arma::vec>::from(ret);
 }
 
+// Realiza n amostras de uma dsitribuicao categorica.
+// prob deve ser uma matriz n x k, onde n é o numero de observacoes
+// e k o numero de categorias.
+arma::colvec rcat(int n, arma::mat prob)
+{
+    int k = prob.n_cols;
+    arma::colvec unif(n, arma::fill::randu);
+    arma::colvec ret(n);
+    arma::mat cumsum_prob = arma::cumsum(prob, 1);
+    for (int obs = 0; obs < n; obs++)
+    {
+        for (int i = 0; i < k; i++)
+        {
+            if (unif(obs) < cumsum_prob(obs, i))
+            {
+                ret(obs) = i;
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
+
 // rtn1 mas com alguns argumentos especificos vetorizados.
 arma::colvec rtn1_vec(arma::uword n, arma::colvec mean, double sd, arma::colvec low, double high)
 {
@@ -37,15 +58,49 @@ arma::colvec rtn1_vec(arma::uword n, arma::colvec mean, double sd, arma::colvec 
     return ret;
 }
 
-arma::colvec calcular_prob(arma::colvec log_y, double theta, arma::mat x, arma::mat beta, double sd_a, double sd_b)
+// Random number generator for a dirichlet distribution.
+// source: https://www.mjdenny.com/blog.html
+arma::mat rdirichlet(int num_samples, arma::vec alpha_m)
 {
-    // n x p * p x 2 = n x 2
+    int distribution_size = alpha_m.n_elem;
+    // each row will be a draw from a Dirichlet
+    arma::mat distribution = arma::zeros(num_samples, distribution_size);
+
+    for (int i = 0; i < num_samples; ++i)
+    {
+        double sum_term = 0;
+        // loop through the distribution and draw Gamma variables
+        for (int j = 0; j < distribution_size; ++j)
+        {
+            double cur = R::rgamma(alpha_m[j], 1.0);
+            distribution(i, j) = cur;
+            sum_term += cur;
+        }
+        // now normalize
+        for (int j = 0; j < distribution_size; ++j)
+        {
+            distribution(i, j) = distribution(i, j) / sum_term;
+        }
+    }
+    return (distribution);
+}
+
+arma::mat calcular_prob(arma::colvec log_y, arma::rowvec theta, arma::mat x, arma::mat beta, arma::rowvec sd)
+{
+    // n = numero de observacoes
+    // p = numero de covariaveis
+    // k = numero de componentes
+    // n x p * p x k = n x k
+    int n = log_y.size();
+    int k = theta.size();
     arma::mat mean = x * beta;
-    arma::colvec mean_a = mean.col(0);
-    arma::colvec mean_b = mean.col(1);
-    arma::colvec pr1 = theta * dnorm_vec(log_y, mean_a, sd_a, false);
-    arma::colvec pr2 = (1 - theta) * dnorm_vec(log_y, mean_b, sd_b, false);
-    return pr1 / (pr1 + pr2);
+    arma::mat prob(n, k);
+    for (int i = 0; i < k; i++)
+    {
+        prob.col(i) = theta(i) * dnorm_vec(log_y, mean.col(i), sd(i), false);
+    }
+    arma::colvec sum_prob = arma::sum(prob, 1);    
+    return prob / arma::repmat(sum_prob, 1, k);
 }
 
 //' Realiza passo da augmentation.
@@ -94,198 +149,96 @@ arma::colvec gerar_beta(arma::colvec y, arma::mat x, double phi)
 //' @param delta [nx1]
 //'
 //' @noRd
-arma::field<arma::mat> lognormal_mixture_gibbs_cpp(
+arma::field<arma::cube> lognormal_mixture_gibbs(
     arma::mat x, arma::colvec y, arma::colvec delta,
-    arma::uword iter = 1000, double valor_inicial_beta = 0)
+    arma::uword iter = 1000, double valor_inicial_beta = 0,
+    int numero_componentes_mistura = 2)
 {
 
     int numero_observacoes = y.size();
     int numero_covariaveis = x.n_cols;
-    int numero_componentes_mistura = 2;
 
-    arma::field<arma::mat> ret(5);
+    arma::field<arma::cube> ret(3);
     arma::colvec log_y = log(y);
-    arma::uvec cens = (delta == 0);
-    arma::colvec theta(iter);
-    arma::colvec phi_a(iter);
-    arma::colvec phi_b(iter);
-    arma::cube beta(numero_covariaveis, numero_componentes_mistura, iter);
     arma::colvec c = arma::colvec(log_y);
+    arma::uvec cens = (delta == 0);
+    arma::cube theta(1, numero_componentes_mistura, iter);
+    arma::cube phi(1, numero_componentes_mistura, iter);
+    arma::cube beta(numero_covariaveis, numero_componentes_mistura, iter);
 
     // valores iniciais
-    theta(0) = R::runif(0, 1);
-    phi_a(0) = R::runif(0, 1);
-    phi_b(0) = R::runif(0, 1);
+    theta.slice(0) = rdirichlet(1, arma::vec(numero_componentes_mistura, arma::fill::ones));
+    for (int i = 0; i < numero_componentes_mistura; i++) {
+        phi.slice(0).col(i) = R::runif(0, 1);
+    }
 
     beta.slice(0) = arma::mat(numero_covariaveis, numero_componentes_mistura, arma::fill::value(valor_inicial_beta));
 
     // variaveis auxiliares usadas no for
-    double sd_a;
-    double sd_b;
-    arma::colvec prob(numero_observacoes);
-    arma::uvec idxA;
-    arma::uvec idxB;
-    arma::mat XA;
-    arma::mat XB;
-    arma::colvec yA;
-    arma::colvec yB;
+    arma::rowvec sd;
+    arma::mat prob(numero_observacoes, numero_componentes_mistura);
     arma::colvec I(numero_observacoes);
-    int A;
-    int B;
-
-    arma::colvec aux_beta_a(numero_covariaveis);
-    arma::colvec aux_beta_b(numero_covariaveis);
-
+    arma::field<arma::uvec> idx(numero_componentes_mistura);
+    arma::colvec idx_sizes(numero_componentes_mistura);
     arma::mat beta_corrente(numero_covariaveis, numero_componentes_mistura);
 
-
-    // Progress pro(iter, true);
-    for (arma::uword it = 1; it <= iter - 1; it++)
-    {
-        // if (Progress::check_abort())
-        // {
-        //     return Rcpp::List::create(
-        //         Rcpp::_["beta"] = beta,
-        //         Rcpp::_["phi_a"] = phi_a,
-        //         Rcpp::_["phi_b"] = phi_b,
-        //         Rcpp::_["theta"] = theta);
-        // }
-
-        // pro.increment();
+    for (arma::uword it = 1; it <= iter - 1; it++) {
 
         beta_corrente = beta.slice(it - 1);
-        aux_beta_a = beta_corrente.col(0);
-        aux_beta_b = beta_corrente.col(1);
 
-        sd_a = 1 / sqrt(phi_a(it - 1));
-        sd_b = 1 / sqrt(phi_b(it - 1));
+        sd = 1 / sqrt(phi.slice(it - 1));
 
         // probability
-        prob = calcular_prob(log_y, theta(it - 1), x, beta_corrente, sd_a, sd_b);
+        prob = calcular_prob(log_y, theta.slice(it - 1), x, beta_corrente, sd);
+        
         // mixture
-        I = rbernoulli(numero_observacoes, prob);
+        I = rcat(numero_observacoes, prob);
 
-        idxA = arma::find(I == 1);
-        idxB = arma::find(I == 0);
 
-        realizar_augmentation(log_y, c, x, cens, aux_beta_a, sd_a, I, 1);
-        realizar_augmentation(log_y, c, x, cens, aux_beta_b, sd_b, I, 0);
-
+        for (int k = 0; k < numero_componentes_mistura; k++) {
+            realizar_augmentation(log_y, c, x, cens, beta_corrente.col(k), sd(k), I, k);
+            idx(k) = arma::find(I == k);
+            idx_sizes(k) = idx(k).size();
+        }
+        
         // theta
-        A = idxA.size();
-        B = idxB.size();
-        theta(it) = R::rbeta(1 + A, 1 + B);
+
+        theta.slice(it) = rdirichlet(1, 1 + idx_sizes);
 
         // phi
-        XA = x.rows(idxA);
-        XB = x.rows(idxB);
-        yA = log_y.elem(idxA);
-        yB = log_y.elem(idxB);
+        for (int k = 0; k < numero_componentes_mistura; k++) {
+            phi.slice(it).col(k) = gerar_phi(idx_sizes(k), log_y.elem(idx(k)), x.rows(idx(k)), beta_corrente.col(k));
+        }
 
-        phi_a(it) = gerar_phi(A, yA, XA, aux_beta_a);
-        phi_b(it) = gerar_phi(B, yB, XB, aux_beta_b);
-
-        beta.slice(it).col(0) = gerar_beta(yA, XA, phi_a(it));
-        beta.slice(it).col(1) = gerar_beta(yB, XB, phi_b(it));
+        for (int k = 0; k < numero_componentes_mistura; k++) {
+            beta.slice(it).col(k) = gerar_beta(log_y.elem(idx(k)), x.rows(idx(k)), phi.slice(it)(0, k));
+        }
+        
     }
-    ret(0) = arma::mat(beta.col(0)).t();
-    ret(1) = arma::mat(beta.col(1)).t();
-    ret(2) = phi_a;
-    ret(3) = phi_b;
-    ret(4) = theta;
+    ret(0) = beta;
+    ret(1) = phi;
+    ret(2) = theta;
     return ret;
 }
 
+
 // [[Rcpp::export]]
-arma::field<arma::cube> parallel_lognormal_mixture_gibbs(
+arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(
     arma::mat x, arma::colvec y, arma::colvec delta,
-    int iter, int chains, int cores = 1, double valor_inicial_beta = 0)
+    int iter, int chains, double valor_inicial_beta = 0, int numero_componentes = 2)
 {
+    arma::field<arma::field<arma::cube>> ret(chains);
 
-    arma::field<arma::mat> current_post(5);
-    arma::field<arma::cube> ret(5);
-    arma::cube beta_a(iter, chains, x.n_cols);
-    arma::cube beta_b(iter, chains, x.n_cols);
-    arma::cube phi_a(iter, chains, 1);
-    arma::cube phi_b(iter, chains, 1);
-    arma::cube theta(iter, chains, 1);
-    omp_set_dynamic(0);
-    bool erro = false;
-
-#pragma omp parallel for private(current_post) shared(y, x, delta, valor_inicial_beta, ret, iter, erro) num_threads(cores)
-    for (int i = 0; i < chains; i++) {
-
-        bool exception_caught = true;
+    for (int i = 0; i < chains; i++)
+    {
         try
         {
-            current_post = lognormal_mixture_gibbs_cpp(x, y, delta, iter, valor_inicial_beta);
-            exception_caught = false;
+            ret(i) = lognormal_mixture_gibbs(x, y, delta, iter, valor_inicial_beta, numero_componentes);
         }
         catch (...)
         {
-            erro = true;
-        }
-        if (!exception_caught) {
-            beta_a.col(i) = current_post(0);
-            beta_b.col(i) = current_post(1);
-            phi_a.col(i) = current_post(2);
-            phi_b.col(i) = current_post(3);
-            theta.col(i) = current_post(4);
+            Rcpp::warning("One or more chains were not generated because of some error.");
         }
     }
-    if (erro) Rcpp::warning("One or more chains were not generated because of some error.");
-    ret(0) = beta_a;
-    ret(1) = beta_b;
-    ret(2) = phi_a;
-    ret(3) = phi_b;
-    ret(4) = theta;
-    return ret;
-}
-
-// TODO: Não deveria ter essa repeticao de codigo com relacao ao parallel,
-// mas o parallel com 1 core está demorando absurdos e nao to conseguindo
-// resolver. Talvez depois tester com C++ puro para ver se o problema 
-// aparece lá tb ou só no R
-// [[Rcpp::export]]
-arma::field<arma::cube> sequential_lognormal_mixture_gibbs(
-    arma::mat x, arma::colvec y, arma::colvec delta,
-    int iter, int chains, double valor_inicial_beta = 0)
-{
-
-    arma::field<arma::mat> current_post(5);
-    arma::field<arma::cube> ret(5);
-    arma::cube beta_a(iter, chains, x.n_cols);
-    arma::cube beta_b(iter, chains, x.n_cols);
-    arma::cube phi_a(iter, chains, 1);
-    arma::cube phi_b(iter, chains, 1);
-    arma::cube theta(iter, chains, 1);
-    bool erro = false;
-
-    for (int i = 0; i < chains; i++) {
-
-        bool exception_caught = true;
-        try
-        {
-            current_post = lognormal_mixture_gibbs_cpp(x, y, delta, iter, valor_inicial_beta);
-            exception_caught = false;
-        }
-        catch (...)
-        {
-            erro = true;
-        }
-        if (!exception_caught) {
-            beta_a.col(i) = current_post(0);
-            beta_b.col(i) = current_post(1);
-            phi_a.col(i) = current_post(2);
-            phi_b.col(i) = current_post(3);
-            theta.col(i) = current_post(4);
-        }
-    }
-    if (erro) Rcpp::warning("One or more chains were not generated because of some error.");
-    ret(0) = beta_a;
-    ret(1) = beta_b;
-    ret(2) = phi_a;
-    ret(3) = phi_b;
-    ret(4) = theta;
     return ret;
 }

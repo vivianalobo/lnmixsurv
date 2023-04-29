@@ -34,7 +34,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
 #' # Would result in error
 #' \dontrun{
-#' predict(mod, data.frame(sex = 1), eval_time = 100)
+#' predict(mod, data.frame(sex = 1), type = "survival", eval_time = 100)
 #' }
 #'
 #' # Correct way
@@ -42,13 +42,13 @@
 #' set.seed(1)
 #' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
 #' # Note: the categorical predictors must be character.
-#' predict(mod2, data.frame(sex = "1"), eval_time = 100)
+#' predict(mod2, data.frame(sex = "1"), type = "survival", eval_time = 100)
 #'
 #' @export
-predict.survival_ln_mixture <- function(object, new_data, type = "survival", ...) {
+predict.survival_ln_mixture <- function(object, new_data, type, eval_time, interval = "none", level = 0.95, ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_predict_types())
-  predict_survival_ln_mixture_bridge(type, object, forged$predictors, ...)
+  predict_survival_ln_mixture_bridge(type, object, forged$predictors, eval_time, interval, level, ...)
 }
 
 valid_survival_ln_mixture_predict_types <- function() {
@@ -58,11 +58,11 @@ valid_survival_ln_mixture_predict_types <- function() {
 # ------------------------------------------------------------------------------
 # Bridge
 
-predict_survival_ln_mixture_bridge <- function(type, model, predictors, ...) {
+predict_survival_ln_mixture_bridge <- function(type, model, predictors, eval_time, interval, level, ...) {
   predictors <- as.matrix(predictors)
 
   predict_function <- get_survival_ln_mixture_predict_function(type)
-  predictions <- predict_function(model, predictors, ...)
+  predictions <- predict_function(model, predictors, eval_time, interval, level, ...)
 
   hardhat::validate_prediction_size(predictions, predictors)
 
@@ -80,15 +80,15 @@ get_survival_ln_mixture_predict_function <- function(type) {
 # ------------------------------------------------------------------------------
 # Implementation
 
-predict_survival_ln_mixture_time <- function(model, predictors) {
+predict_survival_ln_mixture_time <- function(model, predictors, eval_time, interval, level) {
   rlang::abort("Not implemented")
 }
 
-predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, interval, level) {
   extract_surv_haz(model, predictors, eval_time, interval, level, "survival")
 }
 
-predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval = "none", level = 0.95) {
+predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval, level) {
   extract_surv_haz(model, predictors, eval_time, interval, level, "hazard")
 }
 
@@ -107,27 +107,22 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   if (qntd_chains > 1) {
     post <- posterior::merge_chains(post)
   }
-
   qntd_iteracoes <- posterior::niterations(post)
-  beta_a <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_a"))
-  beta_b <- posterior::subset_draws(post, glue::glue("{model$predictors_name}_b"))
-  phi_a <- posterior::subset_draws(post, "phi_a")
-  phi_b <- posterior::subset_draws(post, "phi_b")
-  theta_a <- posterior::subset_draws(post, "theta_a")
-  m_a <- beta_a %*% t(predictors)
-  m_b <- beta_b %*% t(predictors)
-  sigma_a <- sqrt(1 / phi_a)
-  sigma_b <- sqrt(1 / phi_b)
+  beta <- lapply(model$mixture_groups, function(x) posterior::subset_draws(post, glue::glue("{model$predictors_name}_{x}")))
+  phi <- posterior::subset_draws(post, "phi", regex = TRUE)
+  theta <- posterior::subset_draws(post, "theta", regex = TRUE)
+  m <- lapply(beta, function(x) x %*% t(predictors))
+  sigma <- sqrt(1 / phi)
 
   surv_haz <- list()
-  for (i in seq_len(ncol(m_a))) {
+  for (i in seq_len(nrow(predictors))) {
     surv_haz[[i]] <- vapply(
-      eval_time, function(t) fun(t, m_a[, i], m_b[, i], sigma_a, sigma_b, theta_a), numeric(qntd_iteracoes)
+      eval_time, function(t) fun(t, lapply(m, function(x) x[,i]), sigma, theta), numeric(qntd_iteracoes)
     )
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
   pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
-  pred <- purrr::map(predictions, ~ tibble::tibble(.time = eval_time, !!pred_name := .x))
+  pred <- purrr::map(predictions, ~ tibble::tibble(.eval_time = eval_time, !!pred_name := .x))
 
   if (interval == "credible") {
     lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))
@@ -142,14 +137,18 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   tibble::tibble(.pred = pred)
 }
 
-sob_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
-  s <- sob_lognormal(t, ma, sigmaa) * theta + sob_lognormal(t, mb, sigmab) * (1 - theta)
+sob_lognormal_mix <- function(t, m, sigma, theta) {
+  componentes <- vapply(seq_len(length(m) - 1), function(x) sob_lognormal(t, m[[x]], sigma[,x]) * theta[, x], numeric(nrow(sigma)))
+  componentes <- cbind(componentes, sob_lognormal(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(theta, 1, sum)))
+  s <- apply(componentes, 1, sum)
   return(s)
 }
 
-falha_lognormal_mix <- function(t, ma, mb, sigmaa, sigmab, theta) {
-  sob_mix <- sob_lognormal_mix(t, ma, mb, sigmaa, sigmab, theta)
-  dlnorm_mix <- theta * stats::dlnorm(t, ma, sigmaa) + (1 - theta) * stats::dlnorm(t, mb, sigmab)
+falha_lognormal_mix <- function(t, m, sigma, theta) {
+  sob_mix <- sob_lognormal_mix(t, m, sigma, theta)
+  componentes <- vapply(seq_len(length(m) - 1), function(x) stats::dlnorm(t, m[[x]], sigma[,x]) * theta[, x], numeric(nrow(sigma)))
+  componentes <- cbind(componentes, stats::dlnorm(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(theta, 1, sum)))
+  dlnorm_mix <- apply(componentes, 1, sum)
   return(dlnorm_mix / sob_mix)
 }
 

@@ -21,7 +21,7 @@ The package also provide a `parsnip` egine that can be used with the `survival_r
 ```{r example_tidymodels}
 library(tidymodels)
 library(censored)
-require(persistencia)
+require(lnmixsurv)
 tidymodels_prefer()
 
 mod_spec <- survival_reg() |>

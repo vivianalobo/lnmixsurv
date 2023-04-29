@@ -19,8 +19,8 @@ knitr::opts_chunk$set(
 Intercept only fits should be done setting `intercept = TRUE` and using `NULL` for the left side of the formula.
 
 ```{r setup}
-library(persistencia)
-set.seed(1)
+library(lnmixsurv)
+set.seed(2)
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL, sim_data$data, intercept = TRUE)
 mod1
 ```

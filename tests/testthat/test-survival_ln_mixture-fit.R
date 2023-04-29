@@ -1,4 +1,3 @@
-
 test_that("outcome must be Surv object", {
   expect_error(
     survival_ln_mixture(y ~ x, sim_data$data)
@@ -25,7 +24,7 @@ test_that("survival_ln_mixture doesnt work with xy specification", {
 
 test_that("survival_ln_mixture works with intercept only fit", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_intercept_only.rds"))
-  expect_equal(tidy(mod)$estimate, c(3.8243392, 4.6485868))
+  expect_equal(tidy(mod)$estimate, c(4.2963336, 3.3744406))
 })
 
 test_that("fit works as expected with simulated data", {
@@ -33,18 +32,21 @@ test_that("fit works as expected with simulated data", {
   post_summary <- posterior::summarise_draws(mod$posterior, estimate = stats::median, std.error = stats::mad)
   colnames(post_summary)[1] <- "term"
   post_tidy <- tidy(mod, effects = c("fixed", "auxiliary"))
-  expected_result <- structure(list(term = c(
-    "(Intercept)_a", "x1_a", "(Intercept)_b",
-    "x1_b", "phi_a", "phi_b", "theta_a"
-  ), estimate = c(
-    4.04480760255212,
-    0.809520356761791, 3.42640069809889, 0.488854437096543, 26.5081614971505,
-    3.17737806452232, 0.505594778717908
-  ), std.error = c(
-    0.00635669062167443,
-    0.0100016430850216, 0.0223196277628254, 0.0191176391183816, 1.37813558584402,
-    0.120429036758056, 0.013495809879222
-  )), row.names = c(NA, -7L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"), num_args = list())
+  expected_result <- structure(
+    list(term = c(
+      "(Intercept)_a", "x1_a", "(Intercept)_b",
+      "x1_b", "phi_a", "phi_b", "theta_a"
+    ), estimate = c(
+      4.04383317528908,
+      0.808460445960304, 3.42274214257205, 0.490255319956356, 26.2474165212266,
+      3.20167513966913, 0.509004401094003
+    ), std.error = c(
+      0.00692710161402975,
+      0.00981968616603306, 0.021024321470229, 0.0193884470889992, 1.35605325669462,
+      0.117143971551536, 0.0136747703418031
+    )),
+    row.names = c(NA, -7L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"), num_args = list()
+  )
 
   expect_equal(mod$nobs, 10000)
   expect_equal(post_summary, post_tidy)
