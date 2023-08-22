@@ -9,6 +9,7 @@ ln_fit_with_covariates <- withr::with_rng_version(
         survival_ln_mixture(survival::Surv(y, delta) ~ x, sim_data$data) # nolint: object_usage_linter.
     )
 )
+
 saveRDS(ln_fit_with_covariates, paste0(path, "ln_fit_with_covariates.rds"))
 
 ln_fit_with_intercept_only <- withr::with_rng_version(

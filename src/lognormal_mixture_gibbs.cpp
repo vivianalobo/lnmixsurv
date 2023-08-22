@@ -1,10 +1,8 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
-#define ARMA_64BIT_WORD 1
-#include <RcppArmadillo.h>
 
-// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins("cpp11")]]
 
+#include <RcppArmadillo.h>
 using namespace Rcpp;
 
 /* AUXILIARY FUNCTIONS */
@@ -159,10 +157,9 @@ arma::mat makeSymmetric(const arma::mat X) {
     return out;
 }
 
-// [[Rcpp::export]]
-arma::field<arma::cube> lognormal_mixture_gibbs(const int& Niter, const int& G, 
-                                  const arma::vec& y, const arma::ivec& delta, 
-                                  const arma::mat& X, const double& a = 2) {
+arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int G, 
+                                  arma::vec exp_y, arma::ivec delta, 
+                                  arma::mat X, double a) {
     
     // add verifications for robustiness. Skipping for the sake of simplicity.
     
@@ -172,6 +169,9 @@ arma::field<arma::cube> lognormal_mixture_gibbs(const int& Niter, const int& G,
     int p = X.n_cols;
     int nColsOutput = (p + 2) * G;
     int N = X.n_rows;
+    
+    arma::vec y = log(exp_y);
+    
     arma::field<arma::cube> out_cube(3);
     
     // The output matrix should have Niter rows (1 row for each iteration) and
@@ -200,11 +200,14 @@ arma::field<arma::cube> lognormal_mixture_gibbs(const int& Niter, const int& G,
     
     double sumtau;
     
-    // EM alg with 250 steps to find initial values close to
+    // EM alg with 150 steps to find initial values close to
     // the MLE
-    for (int iter = 0; iter < 100; iter++) {
+    for (int iter = 0; iter < 150; iter++) {
         
-        Rcout << "EM Iter: " << iter + 1 << "\n";
+        if (iter % 50 == 0) {
+            Rcout << "EM Iter: " << iter << "/" << 150 << "\n";
+        }
+        
         // Initializing values
         if(iter == 0) {
             eta_em = rdirichlet(repl(1, G));
@@ -424,24 +427,24 @@ arma::field<arma::cube> lognormal_mixture_gibbs(const int& Niter, const int& G,
         phi_cube.slice(iter) = phi.t();
         
         for (int g = 0; g < G; g++) {
-            beta_cube.slice(iter).row(g) = beta.row(g).t();
+            beta_cube.slice(iter).col(g) = beta.row(g).t();
         }
         
         if(iter % 500 == 0) {
-            Rcout << "MCMC Iter: " << iter + 1 << "\n";
+            Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
         }
     }
     
-    out_cube(0) = eta_cube;
-    out_cube(1) = beta_cube;
-    out_cube(2) = phi_cube;
+    out_cube(0) = beta_cube;
+    out_cube(1) = phi_cube;
+    out_cube(2) = eta_cube;
     return out_cube;
 }
 
 // [[Rcpp::export]]
 arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(
-        const int& Niter, const int& G, const int& chains, const arma::vec& y, 
-        const arma::ivec& delta, const arma::mat& X, double a = 2) {
+        int Niter, int G, int chains, arma::vec y, 
+        arma::ivec delta, arma::mat X, double a) {
     
     arma::field<arma::field<arma::cube>> ret(chains);
     

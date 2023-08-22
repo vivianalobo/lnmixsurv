@@ -98,10 +98,14 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 # ------------------------------------------------------------------------------
 # Implementation
 
-survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
-                                     iter = 1000, warmup = floor(iter / 10), thin = 1,
-                                     chains = 1, cores = 1, numero_componentes = 2) {
+survival_ln_mixture_impl <- function(predictors, outcome_times, 
+                                     outcome_status, iter = 1000, 
+                                     warmup = floor(iter / 10), thin = 1,
+                                     chains = 1, cores = 1, 
+                                     numero_componentes = 2) {
+  
   number_of_predictors <- ncol(predictors)
+  
   if (number_of_predictors < 1) {
     rlang::abort(
       c(
@@ -110,10 +114,12 @@ survival_ln_mixture_impl <- function(predictors, outcome_times, outcome_status,
       )
     )
   }
+  
   if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
   
-  
-  posterior_dist <- sequential_lognormal_mixture_gibbs(predictors, outcome_times, outcome_status, iter, chains, 0, numero_componentes)
+  posterior_dist <- sequential_lognormal_mixture_gibbs(
+    iter, numero_componentes, chains, log(outcome_times), outcome_status,
+    predictors, a = 2)
   
   grupos <- letters[seq_len(numero_componentes)]
   pred_names <- colnames(predictors)
