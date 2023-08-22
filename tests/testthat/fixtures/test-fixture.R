@@ -22,4 +22,5 @@ ln_fit_with_intercept_only <- withr::with_rng_version(
         )
     )
 )
+
 saveRDS(ln_fit_with_intercept_only, paste0(path, "ln_fit_with_intercept_only.rds"))

@@ -118,7 +118,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(
-    iter, numero_componentes, chains, log(outcome_times), outcome_status,
+    iter, numero_componentes, chains, outcome_times, outcome_status,
     predictors, a = 2)
   
   grupos <- letters[seq_len(numero_componentes)]

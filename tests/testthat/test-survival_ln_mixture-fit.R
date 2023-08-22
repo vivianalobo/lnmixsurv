@@ -24,7 +24,7 @@ test_that("survival_ln_mixture doesnt work with xy specification", {
 
 test_that("survival_ln_mixture works with intercept only fit", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_intercept_only.rds"))
-  expect_equal(tidy(mod)$estimate, c(1.457353, 1.233633))
+  expect_equal(tidy(mod)$estimate, c(4.345570, 3.434564))
 })
 
 test_that("fit works as expected with simulated data", {
@@ -37,13 +37,13 @@ test_that("fit works as expected with simulated data", {
       "(Intercept)_a", "x1_a", "(Intercept)_b",
       "x1_b", "phi_a", "phi_b", "theta_a"
     ), estimate = c(
-      1.3956390,
-      0.1806862, 1.2153782, 0.1479326, 487.8716967,
-      35.5621535, 0.5103092
+      4.0445757,
+      0.8090734, 3.4245488, 0.4915648, 26.3862345,
+      3.1816509, 0.5088579
     ), std.error = c(
-      0.001518476,
-      0.002307636, 0.004641445, 0.006147595, 21.18129631,
-      1.04788310, 0.01014782
+      0.006236653,
+      0.009518335, 0.019522311, 0.021621560, 1.34253028,
+      0.10961297, 0.01305763
     )),
     row.names = c(NA, -7L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"), num_args = list()
   )

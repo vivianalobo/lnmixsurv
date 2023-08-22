@@ -7,18 +7,20 @@ test_that("survival prediction works", {
     list(.pred = list(structure(list(.eval_time = c(
       20,
       100
-    ), .pred_survival = c(0.890695166273467, 0.00959208655672782), .pred_lower = c(0.884838116393057, 0.00730165088523564), .pred_upper = c(
-      0.896598543618103,
-      0.0120560317734822
+    ), .pred_survival = c(0.89078442, 0.00974128), 
+    .pred_lower = c(0.885100441, 0.007757679), 
+    .pred_upper = c(
+      0.89646205,
+      0.01220202
     )), row.names = c(NA, -2L), class = c(
       "tbl_df",
       "tbl", "data.frame"
     )), structure(list(
       .eval_time = c(20, 100),
-      .pred_survival = c(0.975038970820135, 0.510000163508516),
-      .pred_lower = c(0.972255921061828, 0.498098556543236), .pred_upper = c(
-        0.977622037662899,
-        0.521275512802539
+      .pred_survival = c(0.9752529, 0.5107449),
+      .pred_lower = c(0.9723125, 0.4994297), .pred_upper = c(
+        0.9777107,
+        0.5218468
       )
     ), row.names = c(NA, -2L), class = c(
       "tbl_df",
@@ -38,17 +40,19 @@ test_that("hazard prediction works", {
   expected <- structure(list(.pred = list(structure(list(.eval_time = c(
     20,
     100
-  ), .pred_hazard = c(0.0146964470697921, 0.0568396736398598), .pred_lower = c(0.0140778684863756, 0.0496863207587222), .pred_upper = c(
-    0.0152862604886661,
-    0.0684146856583835
+  ), .pred_hazard = c(0.01464948, 0.05653027), 
+  .pred_lower = c(0.01405532, 0.04934615), 
+  .pred_upper = c(
+    0.01523202,
+    0.06480105
   )), row.names = c(NA, -2L), class = c(
     "tbl_df",
     "tbl", "data.frame"
   )), structure(list(
     .eval_time = c(20, 100),
-    .pred_hazard = c(0.00470521245746177, 0.0122878523767787),
-    .pred_lower = c(0.00434427274450936, 0.0114296201171799),
-    .pred_upper = c(0.00509330799796965, 0.0132225119770675)
+    .pred_hazard = c(0.004655651, 0.012265091),
+    .pred_lower = c(0.004307983, 0.011422636),
+    .pred_upper = c(0.005084482, 0.013103554)
   ), row.names = c(
     NA,
     -2L
