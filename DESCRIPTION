@@ -24,7 +24,7 @@ Imports:
     generics,
     tibble,
     dplyr
-LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress
+LinkingTo: Rcpp, RcppArmadillo
 Depends: 
     parsnip (>= 1.1.0),
     R (>= 3.5.0),
