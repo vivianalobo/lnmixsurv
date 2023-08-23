@@ -11,14 +11,14 @@ survival_ln_mixture(
   data,
   intercept = TRUE,
   iter = 1000,
-  EM_iter = 150,
   warmup = floor(iter/10),
   thin = 1,
   chains = 1,
   cores = 1,
   numero_componentes = 2,
   proposal_variance = 2,
-  show_progress = F,
+  show_progress = FALSE,
+  em_iter = 150,
   ...
 )
 
@@ -37,8 +37,6 @@ object.}
 
 \item{iter}{A positive integer specifying the number of iterations for each chain (including warmup).}
 
-\item{EM_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
-
 \item{warmup}{A positive integer specifying the number of warmup (aka burnin) iterations per chain.
 The number of warmup iterations should be smaller than iter.}
 
@@ -53,6 +51,8 @@ The number of warmup iterations should be smaller than iter.}
 \item{proposal_variance}{The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
 
 \item{show_progress}{Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.}
+
+\item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

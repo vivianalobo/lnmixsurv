@@ -24,8 +24,8 @@ int numeric_sample(const arma::ivec& groups,
                    const arma::vec& probs) {
     double u = R::runif(0, 1);
     double cumulativeProb = 0.0;
-    
-    for (int i = 0; i < probs.n_elem; ++i) {
+    int n = probs.n_elem;
+    for (int i = 0; i < n; ++i) {
         cumulativeProb += probs(i);
         
         if (u <= cumulativeProb) {
@@ -50,8 +50,8 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
     arma::mat mean = X * beta.t();
     arma::vec sd = 1.0 / sqrt(phi);
     double denom;
-    
-    for (int i = 0; i < y.n_rows; i++) {
+    int n = y.n_elem;
+    for (int i = 0; i < n; i++) {
         denom = 0;
         
         for (int g = 0; g < G; g++) {
@@ -146,9 +146,10 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
 
 arma::mat makeSymmetric(const arma::mat X) {
     arma::mat out(X.n_rows, X.n_cols);
-    
-    for(int r = 0; r < X.n_rows; r++) {
-        for(int c = 0; c < X.n_cols; c++) {
+    int rows = X.n_rows;
+    int cols = X.n_cols;
+    for(int r = 0; r < rows; r++) {
+        for(int c = 0; c < cols; c++) {
             out(r, c) = X(r, c);
             out(c, r) = X(r, c);
         }
@@ -157,7 +158,7 @@ arma::mat makeSymmetric(const arma::mat X) {
     return out;
 }
 
-arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int EMiter, int G, 
+arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
                                   arma::mat X, double a, bool show_output) {
     
@@ -202,10 +203,10 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int EMiter, int G,
     
     // EM alg with 150 steps to find initial values close to
     // the MLE
-    for (int iter = 0; iter < EMiter; iter++) {
+    for (int iter = 0; iter < em_iter; iter++) {
         
         if ((iter % 50 == 0) && show_output) {
-            Rcout << "EM Iter: " << iter << "/" << 150 << "\n";
+            Rcout << "EM Iter: " << iter << "/" << em_iter << "\n";
         }
         
         // Initializing values
@@ -239,7 +240,7 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int EMiter, int G,
         // M-step
         for(int g = 0; g < G; g++) {
             Wg = arma::diagmat(tau.col(g));
-            double sumtau = arma::sum(tau.col(g));
+            sumtau = arma::sum(tau.col(g));
             
             eta_em(g) = sumtau/N;
             
@@ -443,14 +444,14 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int EMiter, int G,
 
 // [[Rcpp::export]]
 arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(
-        int Niter, int EMiter, int G, int chains, arma::vec y, 
+        int Niter, int em_iter, int G, int chains, arma::vec y, 
         arma::ivec delta, arma::mat X, double a, bool show_output = false) {
     
     arma::field<arma::field<arma::cube>> ret(chains);
     
     for (int i = 0; i < chains; i++) {
         try {
-            ret(i) = lognormal_mixture_gibbs(Niter, EMiter, G, y, delta, X, a, show_output);
+            ret(i) = lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, show_output);
         } catch (...) {
             Rcpp::warning("One or more chains were not generated because of some error.");
         }
