@@ -25,7 +25,7 @@ Formula interface:
 library(lnmixsurv)
 
 set.seed(1)
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE, show_output = FALSE)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE)
 mod1
 ```
 

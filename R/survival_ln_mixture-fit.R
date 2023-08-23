@@ -12,6 +12,8 @@
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
 #' @param iter A positive integer specifying the number of iterations for each chain (including warmup).
+#' 
+#' @param EM_iter A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.
 #'
 #' @param warmup A positive integer specifying the number of warmup (aka burnin) iterations per chain.
 #' The number of warmup iterations should be smaller than iter.
@@ -26,7 +28,7 @@
 #'
 #' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
 #' 
-#' @param show_output Indicates if the code shows output, i.e., the progress of the EM algorithm and the Gibbs Sampler.
+#' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
 #' 
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -50,7 +52,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_output = F, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, EM_iter = 150, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = F, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -102,12 +104,13 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 # Implementation
 
 survival_ln_mixture_impl <- function(predictors, outcome_times, 
-                                     outcome_status, iter = 1000, 
+                                     outcome_status, iter = 1000,
+                                     EM_iter = 150,
                                      warmup = floor(iter / 10), thin = 1,
                                      chains = 1, cores = 1, 
                                      numero_componentes = 2,
                                      proposal_variance = 1,
-                                     show_output = F) {
+                                     show_progress = F) {
   
   number_of_predictors <- ncol(predictors)
   
@@ -123,8 +126,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(
-    iter, numero_componentes, chains, outcome_times, outcome_status,
-    predictors, proposal_variance, show_output)
+    iter, EM_iter, numero_componentes, chains, outcome_times, outcome_status,
+    predictors, proposal_variance, show_progress)
   
   grupos <- letters[seq_len(numero_componentes)]
   pred_names <- colnames(predictors)

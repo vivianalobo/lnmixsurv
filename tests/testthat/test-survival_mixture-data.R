@@ -3,8 +3,7 @@ f_fit <- withr::with_rng_version(
   "4.2.2",
   withr::with_seed(
     1,
-    parsnip::fit(mod_spec, survival::Surv(y, delta) ~ x, data = sim_data$data,
-                 show_output = FALSE) # nolint: object_usage_linter.
+    parsnip::fit(mod_spec, survival::Surv(y, delta) ~ x, data = sim_data$data) # nolint: object_usage_linter.
   )
 )
 
