@@ -123,6 +123,10 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     )
   }
   
+  if (any(outcome_times == 0)) {
+    rlang::abort("One or more events happened at time zero.")
+  }
+  
   if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(

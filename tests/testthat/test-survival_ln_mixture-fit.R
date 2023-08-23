@@ -10,6 +10,13 @@ test_that("only right censored data supported", {
   )
 })
 
+test_that("events at time zero are ano supported", {
+  data_new <- sim_data$data
+  data_new$y[1] <- 0
+  expect_error(
+    survival_ln_mixture(survival::Surv(y, delta, type = "left") ~ x, sim_data$data))
+})
+
 test_that("when using ~NULL, intercept must be TRUE", {
   expect_error(
     survival_ln_mixture(survival::Surv(y, delta) ~ NULL, sim_data$data, intercept = FALSE)
