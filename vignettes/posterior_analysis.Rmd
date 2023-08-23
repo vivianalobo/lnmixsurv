@@ -21,7 +21,7 @@ can be analysed using the Stan ecosystem tools, like `bayesplot`.
 library(lnmixsurv)
 library(bayesplot)
 set.seed(1)
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 2, silent = TRUE)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 2, show_output = FALSE)
 
 mcmc_trace(mod1$posterior)
 ```

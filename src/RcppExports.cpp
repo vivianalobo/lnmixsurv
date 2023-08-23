@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // sequential_lognormal_mixture_gibbs
-arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(int Niter, int G, int chains, arma::vec y, arma::ivec delta, arma::mat X, double a, bool silent);
-RcppExport SEXP _lnmixsurv_sequential_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP GSEXP, SEXP chainsSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP silentSEXP) {
+arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(int Niter, int G, int chains, arma::vec y, arma::ivec delta, arma::mat X, double a, bool show_output);
+RcppExport SEXP _lnmixsurv_sequential_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP GSEXP, SEXP chainsSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP show_outputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -24,8 +24,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::ivec >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< bool >::type silent(silentSEXP);
-    rcpp_result_gen = Rcpp::wrap(sequential_lognormal_mixture_gibbs(Niter, G, chains, y, delta, X, a, silent));
+    Rcpp::traits::input_parameter< bool >::type show_output(show_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(sequential_lognormal_mixture_gibbs(Niter, G, chains, y, delta, X, a, show_output));
     return rcpp_result_gen;
 END_RCPP
 }

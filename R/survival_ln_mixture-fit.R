@@ -24,9 +24,9 @@
 #' 
 #' @param numero_componentes number of mixture componentes >= 2.
 #'
-#' @param a The proposal distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(a, a*G). Large values of "a" may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of "a" does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
+#' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
 #' 
-#' @param silent Indicates if the code shows output or no.
+#' @param show_output Indicates if the code shows output, i.e., the progress of the EM algorithm and the Gibbs Sampler.
 #' 
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -50,7 +50,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, a = 2, silent = F, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_output = F, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -106,8 +106,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      warmup = floor(iter / 10), thin = 1,
                                      chains = 1, cores = 1, 
                                      numero_componentes = 2,
-                                     a = 2,
-                                     silent = F) {
+                                     proposal_variance = 1,
+                                     show_output = F) {
   
   number_of_predictors <- ncol(predictors)
   
@@ -124,7 +124,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(
     iter, numero_componentes, chains, outcome_times, outcome_status,
-    predictors, a, silent)
+    predictors, proposal_variance, show_output)
   
   grupos <- letters[seq_len(numero_componentes)]
   pred_names <- colnames(predictors)

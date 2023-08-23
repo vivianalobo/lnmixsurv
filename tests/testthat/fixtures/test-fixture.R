@@ -6,7 +6,7 @@ ln_fit_with_covariates <- withr::with_rng_version(
     "4.2.2",
     withr::with_seed(
         1,
-        survival_ln_mixture(survival::Surv(y, delta) ~ x, sim_data$data, silent = FALSE) # nolint: object_usage_linter.
+        survival_ln_mixture(survival::Surv(y, delta) ~ x, sim_data$data, show_output = FALSE) # nolint: object_usage_linter.
     )
 )
 
@@ -18,7 +18,7 @@ ln_fit_with_intercept_only <- withr::with_rng_version(
         1,
         survival_ln_mixture(
             survival::Surv(y, delta) ~ NULL, sim_data$data, # nolint: object_usage_linter.
-            intercept = TRUE, silent = FALSE
+            intercept = TRUE, show_output = FALSE
         )
     )
 )

@@ -16,8 +16,8 @@ survival_ln_mixture(
   chains = 1,
   cores = 1,
   numero_componentes = 2,
-  a = 2,
-  silent = F,
+  proposal_variance = 2,
+  show_output = F,
   ...
 )
 
@@ -47,9 +47,9 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{numero_componentes}{number of mixture componentes >= 2.}
 
-\item{a}{The proposal distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(a, a*G). Large values of "a" may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of "a" does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
+\item{proposal_variance}{The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
 
-\item{silent}{Indicates if the code shows output or no.}
+\item{show_output}{Indicates if the code shows output, i.e., the progress of the EM algorithm and the Gibbs Sampler.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
