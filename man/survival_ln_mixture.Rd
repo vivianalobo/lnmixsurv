@@ -16,6 +16,9 @@ survival_ln_mixture(
   chains = 1,
   cores = 1,
   numero_componentes = 2,
+  proposal_variance = 2,
+  show_progress = FALSE,
+  em_iter = 150,
   ...
 )
 
@@ -43,7 +46,13 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{cores}{Ignored. Parallel runs are disabled.}
 
-\item{numero_componentes}{number of mixture componentes. Currently, only accepts 2 or 3.}
+\item{numero_componentes}{number of mixture componentes >= 2.}
+
+\item{proposal_variance}{The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
+
+\item{show_progress}{Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.}
+
+\item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
@@ -59,7 +68,7 @@ A \code{survival_ln_mixture} object, which is a list with the following componen
 Colocar mais detalhes sobre o modelo (como a equacao) em details.
 }
 \note{
-Categorical predictos must be converted to factores before the fit,
+Categorical predictors must be converted to factors before the fit,
 otherwise the predictions will fail.
 }
 \examples{
