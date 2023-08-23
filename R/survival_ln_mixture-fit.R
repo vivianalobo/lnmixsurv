@@ -107,7 +107,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      chains = 1, cores = 1, 
                                      numero_componentes = 2,
                                      a = 2,
-                                     silent = F) {
+                                     silent = TRUE) {
   
   number_of_predictors <- ncol(predictors)
   
