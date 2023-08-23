@@ -16,6 +16,8 @@ survival_ln_mixture(
   chains = 1,
   cores = 1,
   numero_componentes = 2,
+  a = 2,
+  silent = F,
   ...
 )
 
@@ -43,7 +45,11 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{cores}{Ignored. Parallel runs are disabled.}
 
-\item{numero_componentes}{number of mixture componentes. Currently, only accepts 2 or 3.}
+\item{numero_componentes}{number of mixture componentes >= 2.}
+
+\item{a}{The proposal distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(a, a*G). Large values of "a" may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of "a" does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
+
+\item{silent}{Indicates if the code shows output or no.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
@@ -59,7 +65,7 @@ A \code{survival_ln_mixture} object, which is a list with the following componen
 Colocar mais detalhes sobre o modelo (como a equacao) em details.
 }
 \note{
-Categorical predictos must be converted to factores before the fit,
+Categorical predictors must be converted to factors before the fit,
 otherwise the predictions will fail.
 }
 \examples{

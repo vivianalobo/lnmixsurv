@@ -8,6 +8,13 @@
 \description{
 Bayesian Survival models via the mixture of Log-Normal distribution extends the well-known survival models and accommodates different behaviour over time and considers higher censored survival times. The proposal combines mixture distributions Fruhwirth-Schnatter(2006) \url{https://doi.org/10.1007/s11336-009-9121-4}, and data augmentation techniques Tanner and Wong (1987) \url{https://doi/abs/10.1080/01621459.1987.10478458}.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://vivianalobo.github.io/lnmixsurv/}
+}
+
+}
 \author{
 \strong{Maintainer}: Viviana das Graçcas Ribeiro Lobo \email{viviana@dme.ufrj.br}
 

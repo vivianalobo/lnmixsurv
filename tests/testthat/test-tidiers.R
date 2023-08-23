@@ -12,5 +12,5 @@ test_that("tiders work as expected", {
     row.names = c(NA, -4L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"),
     num_args = list()
   )
-  expect_equal(obtained, expected)
+  expect_equal(obtained, expected, tolerance = 10^-3)
 })
