@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,15 +89,15 @@ side of the formula.</p>
 <span><span class="co">#&gt;  observations: 10000</span></span>
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;               estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; (Intercept)_a 3.878745 0.012423441 3.862745  3.895056</span></span>
-<span><span class="co">#&gt; (Intercept)_b 4.877966 0.008098129 4.866686  4.888771</span></span>
+<span><span class="co">#&gt;               estimate  std.error conf.low conf.high</span></span>
+<span><span class="co">#&gt; (Intercept)_a 4.285280 0.02758331 4.245883  4.324665</span></span>
+<span><span class="co">#&gt; (Intercept)_b 3.314452 0.06832045 3.202695  3.383889</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;           estimate   std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_a    2.5020873 0.059685357  2.4273708  2.5866362</span></span>
-<span><span class="co">#&gt; phi_b   45.2678558 4.369270081 40.4549177 51.2295534</span></span>
-<span><span class="co">#&gt; theta_a  0.8212802 0.009767165  0.8075694  0.8330557</span></span></code></pre></div>
+<span><span class="co">#&gt;         estimate std.error  conf.low conf.high</span></span>
+<span><span class="co">#&gt; phi_a   3.022043 0.1445288 2.8201731 3.2104366</span></span>
+<span><span class="co">#&gt; phi_b   3.566819 0.3254065 3.2121055 4.0647799</span></span>
+<span><span class="co">#&gt; theta_a 0.768041 0.0364715 0.7266296 0.8230114</span></span></code></pre></div>
 <p>The predictions can be made with a “empty” data.frame with one
 row.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -106,7 +106,7 @@ row.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100          0.276</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100          0.225</span></span></code></pre></div>
   </main>
 </div>
 

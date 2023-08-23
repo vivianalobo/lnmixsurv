@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,16 +91,16 @@
 <span><span class="co">#&gt;  predictors:   2</span></span>
 <span><span class="co">#&gt; ------</span></span>
 <span><span class="co">#&gt;                estimate   std.error  conf.low conf.high</span></span>
-<span><span class="co">#&gt; (Intercept)_a 4.0438332 0.006927102 4.0355844 4.0537543</span></span>
-<span><span class="co">#&gt; x1_a          0.8084604 0.009819686 0.7963534 0.8215608</span></span>
-<span><span class="co">#&gt; (Intercept)_b 3.4227421 0.021024321 3.3921034 3.4491069</span></span>
-<span><span class="co">#&gt; x1_b          0.4902553 0.019388447 0.4614154 0.5130385</span></span>
+<span><span class="co">#&gt; (Intercept)_a 4.0450591 0.006960651 4.0368484 4.0535325</span></span>
+<span><span class="co">#&gt; x1_a          0.8078811 0.009853255 0.7957613 0.8196514</span></span>
+<span><span class="co">#&gt; (Intercept)_b 3.4288787 0.018535628 3.4052338 3.4531380</span></span>
+<span><span class="co">#&gt; x1_b          0.4871557 0.020870505 0.4608535 0.5150303</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;           estimate  std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_a   26.2474165 1.35605326 24.5316535 28.0389219</span></span>
-<span><span class="co">#&gt; phi_b    3.2016751 0.11714397  3.0565605  3.3568732</span></span>
-<span><span class="co">#&gt; theta_a  0.5090044 0.01367477  0.4936986  0.5278656</span></span></code></pre></div>
+<span><span class="co">#&gt;           estimate std.error   conf.low  conf.high</span></span>
+<span><span class="co">#&gt; phi_a   26.6208008 1.1430650 25.0916235 28.0842100</span></span>
+<span><span class="co">#&gt; phi_b    3.1746332 0.1084798  3.0395890  3.3236950</span></span>
+<span><span class="co">#&gt; theta_a  0.5045805 0.0106873  0.4910925  0.5201306</span></span></code></pre></div>
 <p>Tidymodels approach:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/censored" class="external-link">censored</a></span><span class="op">)</span></span>
@@ -117,18 +117,18 @@
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   term          estimate std.error</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;num&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;num&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)_a    4.04    0.006<span style="text-decoration: underline;">93</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> x1_a             0.808   0.009<span style="text-decoration: underline;">82</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> (Intercept)_b    3.42    0.021<span style="text-decoration: underline;">0</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> x1_b             0.490   0.019<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)_a    4.05    0.006<span style="text-decoration: underline;">96</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> x1_a             0.808   0.009<span style="text-decoration: underline;">85</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> (Intercept)_b    3.43    0.018<span style="text-decoration: underline;">5</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> x1_b             0.487   0.020<span style="text-decoration: underline;">9</span></span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">mod2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   term          estimate std.error</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;num&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;num&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)_a    4.04    0.006<span style="text-decoration: underline;">93</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> x1_a             0.808   0.009<span style="text-decoration: underline;">82</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> (Intercept)_b    3.42    0.021<span style="text-decoration: underline;">0</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> x1_b             0.490   0.019<span style="text-decoration: underline;">4</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> (Intercept)_a    4.05    0.006<span style="text-decoration: underline;">96</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> x1_a             0.808   0.009<span style="text-decoration: underline;">85</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> (Intercept)_b    3.43    0.018<span style="text-decoration: underline;">5</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> x1_b             0.487   0.020<span style="text-decoration: underline;">9</span></span></span></code></pre></div>
 <p>The predicitons are easy to obtain from a fit.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>

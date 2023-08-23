@@ -12,7 +12,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details."><!-- mathjax 
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,6 +67,9 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details.</p>
 <span>  chains <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cores <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  numero_componentes <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  proposal_variance <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  show_progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  em_iter <span class="op">=</span> <span class="fl">150</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -115,7 +118,19 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 
 
 <dt>numero_componentes</dt>
-<dd><p>number of mixture componentes. Currently, only accepts 2 or 3.</p></dd>
+<dd><p>number of mixture componentes &gt;= 2.</p></dd>
+
+
+<dt>proposal_variance</dt>
+<dd><p>The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.</p></dd>
+
+
+<dt>show_progress</dt>
+<dd><p>Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.</p></dd>
+
+
+<dt>em_iter</dt>
+<dd><p>A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.</p></dd>
 
 
 <dt>...</dt>
@@ -139,7 +154,7 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>Categorical predictos must be converted to factores before the fit,
+    <p>Categorical predictors must be converted to factors before the fit,
 otherwise the predictions will fail.</p>
     </div>
 

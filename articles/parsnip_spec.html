@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,16 +101,16 @@ package.</p>
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
 <span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; x0_a 4.043833 0.006927102 4.035584  4.053754</span></span>
-<span><span class="co">#&gt; x1_a 4.852925 0.007595420 4.843822  4.862110</span></span>
-<span><span class="co">#&gt; x0_b 3.422742 0.021024321 3.392103  3.449107</span></span>
-<span><span class="co">#&gt; x1_b 3.909863 0.023209664 3.880353  3.939096</span></span>
+<span><span class="co">#&gt; x0_a 4.045059 0.006960649 4.036848  4.053532</span></span>
+<span><span class="co">#&gt; x1_a 4.852868 0.006676354 4.844516  4.861742</span></span>
+<span><span class="co">#&gt; x0_b 3.428879 0.018535629 3.405234  3.453138</span></span>
+<span><span class="co">#&gt; x1_b 3.916144 0.021143648 3.888087  3.943883</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;           estimate  std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_a   26.2474165 1.35605326 24.5316535 28.0389219</span></span>
-<span><span class="co">#&gt; phi_b    3.2016751 0.11714397  3.0565605  3.3568732</span></span>
-<span><span class="co">#&gt; theta_a  0.5090044 0.01367477  0.4936986  0.5278656</span></span></code></pre></div>
+<span><span class="co">#&gt;           estimate std.error   conf.low  conf.high</span></span>
+<span><span class="co">#&gt; phi_a   26.6208043 1.1430641 25.0916267 28.0842134</span></span>
+<span><span class="co">#&gt; phi_b    3.1746335 0.1084797  3.0395893  3.3236952</span></span>
+<span><span class="co">#&gt; theta_a  0.5045805 0.0106873  0.4910925  0.5201306</span></span></code></pre></div>
 <p>When using <code>recipes</code>, some caution must be taken due to
 the fact that recipes do not support inline functions (like
 <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code>). A possible way to use them is to set both
@@ -153,16 +153,16 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
 <span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; z0_a 4.043833 0.006927102 4.035584  4.053754</span></span>
-<span><span class="co">#&gt; z1_a 4.852925 0.007595420 4.843822  4.862110</span></span>
-<span><span class="co">#&gt; z0_b 3.422742 0.021024321 3.392103  3.449107</span></span>
-<span><span class="co">#&gt; z1_b 3.909863 0.023209664 3.880353  3.939096</span></span>
+<span><span class="co">#&gt; z0_a 4.045059 0.006960649 4.036848  4.053532</span></span>
+<span><span class="co">#&gt; z1_a 4.852868 0.006676354 4.844516  4.861742</span></span>
+<span><span class="co">#&gt; z0_b 3.428879 0.018535629 3.405234  3.453138</span></span>
+<span><span class="co">#&gt; z1_b 3.916144 0.021143648 3.888087  3.943883</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;           estimate  std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_a   26.2474165 1.35605326 24.5316535 28.0389219</span></span>
-<span><span class="co">#&gt; phi_b    3.2016751 0.11714397  3.0565605  3.3568732</span></span>
-<span><span class="co">#&gt; theta_a  0.5090044 0.01367477  0.4936986  0.5278656</span></span></code></pre></div>
+<span><span class="co">#&gt;           estimate std.error   conf.low  conf.high</span></span>
+<span><span class="co">#&gt; phi_a   26.6208043 1.1430641 25.0916267 28.0842134</span></span>
+<span><span class="co">#&gt; phi_b    3.1746335 0.1084797  3.0395893  3.3236952</span></span>
+<span><span class="co">#&gt; theta_a  0.5045805 0.0106873  0.4910925  0.5201306</span></span></code></pre></div>
 <p>The predictions work as usual.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_data</span> <span class="op">&lt;-</span> <span class="va">dados</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
@@ -172,8 +172,8 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">59</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.510</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">95</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.509</span></span>
 <span></span>
 <span><span class="va">mod_tidy</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">new_data</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -181,8 +181,8 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">59</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.510</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">95</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.509</span></span></code></pre></div>
   </main>
 </div>
 
