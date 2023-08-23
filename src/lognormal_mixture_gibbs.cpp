@@ -159,7 +159,7 @@ arma::mat makeSymmetric(const arma::mat X) {
 
 arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
-                                  arma::mat X, double a) {
+                                  arma::mat X, double a, bool silent) {
     
     // add verifications for robustiness. Skipping for the sake of simplicity.
     
@@ -204,7 +204,7 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int G,
     // the MLE
     for (int iter = 0; iter < 150; iter++) {
         
-        if (iter % 50 == 0) {
+        if ((iter % 50 == 0) && (silent == false)) {
             Rcout << "EM Iter: " << iter << "/" << 150 << "\n";
         }
         
@@ -430,7 +430,7 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int G,
             beta_cube.slice(iter).col(g) = beta.row(g).t();
         }
         
-        if(iter % 500 == 0) {
+        if((iter % 500 == 0) && (silent == false)) {
             Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
         }
     }
@@ -444,13 +444,13 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int G,
 // [[Rcpp::export]]
 arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(
         int Niter, int G, int chains, arma::vec y, 
-        arma::ivec delta, arma::mat X, double a) {
+        arma::ivec delta, arma::mat X, double a, bool silent = true) {
     
     arma::field<arma::field<arma::cube>> ret(chains);
     
     for (int i = 0; i < chains; i++) {
         try {
-            ret(i) = lognormal_mixture_gibbs(Niter, G, y, delta, X, a);
+            ret(i) = lognormal_mixture_gibbs(Niter, G, y, delta, X, a, silent);
         } catch (...) {
             Rcpp::warning("One or more chains were not generated because of some error.");
         }
