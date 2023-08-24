@@ -22,7 +22,6 @@ Intercept only fits should be done setting `intercept = TRUE` and using `NULL` f
 library(lnmixsurv)
 set.seed(2)
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL, sim_data$data, intercept = TRUE)
-mod1
 ```
 
 The predictions can be made with a "empty" data.frame with one row.

@@ -22,7 +22,7 @@
 #'
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
-#' @param cores A positive integer specifying the maximum number of cores to run the chain, if parallel = TRUE. Otherwise, the chains will run sequentially on one core.
+#' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
 #' 
 #' @param numero_componentes number of mixture componentes >= 2.
 #'
@@ -32,7 +32,6 @@
 #' 
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #' 
-#' @param parallel If set to FALSE (default), the chains will run sequentially on one core each. If set to TRUE, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and, after that, 2 chains will be run together using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
 #' 
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -56,7 +55,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^25, 1), parallel = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^30, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -116,10 +115,11 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
                                      em_iter = 150,
-                                     starting_seed = sample(1:2^25, 1),
-                                     parallel = FALSE) {
+                                     starting_seed = sample(1:2^30, 1)) {
   
   number_of_predictors <- ncol(predictors)
+  
+  parallel <- cores > 1
   
   if (number_of_predictors < 1) {
     rlang::abort(
@@ -290,7 +290,8 @@ permute_columns <- function(posterior) {
 #' @noRd
 sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_times,  outcome_status, predictors, proposal_variance, starting_seed,  show_progress, warmup, thin) {
   
-  seeds <- sample(1:2^25, chains)
+  set.seed(starting_seed)
+  seeds <- sample(1:2^30, chains)
   
   list_posteriors <- NULL
   
@@ -360,9 +361,10 @@ sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_ti
 #' @return matriz
 #' 
 #' @noRd
-parallel_run <- function(iter, em_iter, chains, cores, numero_componentes, outcome_times,  outcome_status, predictors, proposal_variance, starting_seed,  show_progress, warmup, thin) {
+parallel_run <- function(iter, em_iter, chains, cores, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin) {
   
-  seeds <- sample(1:2^25, chains)
+  set.seed(starting_seed)
+  seeds <- sample(1:2^30, chains)
   
   list_posteriors <- NULL
   

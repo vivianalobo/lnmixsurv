@@ -7,20 +7,20 @@ test_that("survival prediction works", {
     list(.pred = list(structure(list(.eval_time = c(
       20,
       100
-    ), .pred_survival = c(0.891042225, 0.009844677), 
-    .pred_lower = c(0.885530907, 0.007567918), 
+    ), .pred_survival = c(0.890899949, 0.009717829), 
+    .pred_lower = c(0.885061278, 0.007802484), 
     .pred_upper = c(
-      0.89670611,
-      0.01196521
+      0.89698707,
+      0.01228781
     )), row.names = c(NA, -2L), class = c(
       "tbl_df",
       "tbl", "data.frame"
     )), structure(list(
       .eval_time = c(20, 100),
-      .pred_survival = c(0.9750390, 0.5093482),
-      .pred_lower = c(0.9719968, 0.4982551), .pred_upper = c(
-        0.9774285,
-        0.5204384
+      .pred_survival = c(0.9749848, 0.5093512),
+      .pred_lower = c(0.9721684, 0.4983275), .pred_upper = c(
+        0.9777895,
+        0.5200507
       )
     ), row.names = c(NA, -2L), class = c(
       "tbl_df",
@@ -29,7 +29,7 @@ test_that("survival prediction works", {
     class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -2L)
   )
 
-  expect_equal(pred, expected, tolerance = 10^-2)
+  expect_equal(pred, expected)
 })
 
 test_that("hazard prediction works", {
@@ -40,19 +40,19 @@ test_that("hazard prediction works", {
   expected <- structure(list(.pred = list(structure(list(.eval_time = c(
     20,
     100
-  ), .pred_hazard = c(0.01469014, 0.05583335), 
-  .pred_lower = c(0.01407298, 0.04952352), 
+  ), .pred_hazard = c(0.01465875, 0.05620879), 
+  .pred_lower = c(0.01406332, 0.04897837), 
   .pred_upper = c(
-    0.01528858,
-    0.06514244
+    0.01526089,
+    0.06593787
   )), row.names = c(NA, -2L), class = c(
     "tbl_df",
     "tbl", "data.frame"
   )), structure(list(
     .eval_time = c(20, 100),
-    .pred_hazard = c(0.00470530, 0.01216557),
-    .pred_lower = c(0.004359482, 0.011389595),
-    .pred_upper = c(0.00512277, 0.01312007)
+    .pred_hazard = c(0.004698114, 0.012236965),
+    .pred_lower = c(0.004305749, 0.011391576),
+    .pred_upper = c(0.005108614, 0.013169467)
   ), row.names = c(
     NA,
     -2L
@@ -61,5 +61,5 @@ test_that("hazard prediction works", {
     "tbl", "data.frame"
   ), row.names = c(NA, -2L))
 
-  expect_equal(pred, expected, tolerance = 10^-2)
+  expect_equal(pred, expected)
 })

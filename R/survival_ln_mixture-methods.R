@@ -26,5 +26,3 @@ extract_formula <- function(model) {
 npredictors <- function(model) {
   return(ncol(model$blueprint$ptypes$predictors) + model$blueprint$intercept)
 }
-
-
