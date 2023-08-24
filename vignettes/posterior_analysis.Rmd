@@ -20,11 +20,77 @@ can be analysed using the Stan ecosystem tools, like `bayesplot`.
 ```{r setup}
 library(lnmixsurv)
 library(bayesplot)
-set.seed(1)
+set.seed(3)
 
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 6)
 
 color_scheme_set('viridis')
 
 mcmc_trace(mod1$posterior[, 'eta_1'])
+```
+
+Also, we can make run multiple chains in parallel, where each chain will run on one core.
+```{r}
+start <- Sys.time()
+set.seed(3)
+mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 6)
+# Time to run 6 chains sequentially:
+print(Sys.time() - start)
+
+start <- Sys.time()
+set.seed(3)
+mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 6,
+                    cores = 6, parallel = TRUE)
+# Time to run 6 chains in parallel:
+print(Sys.time() - start)
+```
+
+For small runs, we can see that the parallel model is lower because of the time required to build the clusters. We can effectively see this time to build the clusters by running a really small chain.
+```{r}
+start <- Sys.time()
+set.seed(3)
+mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
+                                            data = sim_data$data, 
+                                            iter = 1, em_iter = 1,
+                                            chains = 6)
+
+# Time to run 1 EM iter and 1 MCMC iter on 6 chains, sequentially:
+print(Sys.time() - start)
+
+start <- Sys.time()
+set.seed(3)
+mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
+                                          data = sim_data$data, 
+                                          iter = 1, em_iter = 1,
+                                          chains = 6, cores = 6,
+                                          parallel = TRUE)
+# Time to run 1 EM iter and 1 MCMC iter on 6 chains in parallel:
+print(Sys.time() - start)
+```
+
+However, for longer runs, these few seconds to start the clusters are negligible and the parallel approach will outperform the sequential approach at some point.
+```{r}
+start <- Sys.time()
+set.seed(3)
+mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
+                                           data = sim_data$data, 
+                                           iter = 8000, chains = 6)
+# Time to run 8000 iterations in 6 chains in sequence:
+print(Sys.time() - start)
+
+start <- Sys.time()
+set.seed(3)
+mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
+                                           data = sim_data$data, 
+                                           iter = 8000, chains = 6,
+                                           cores = 6, parallel = TRUE)
+# Time to run 8000 iterations in 6 chains in parallel:
+print(Sys.time() - start)
+```
+
+Since the seed is fixed, we expect to obtain the same chain on both kind of operations. We can make sure this is happening by look at a small portion of the chains.
+```{r}
+mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 1:50, chain = 1, variable = 'eta_1'))
+
+mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 1:50, chain = 1, variable = 'eta_1'))
 ```
