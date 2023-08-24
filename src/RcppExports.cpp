@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // sequential_lognormal_mixture_gibbs
-arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(int Niter, int em_iter, int G, int chains, arma::vec y, arma::ivec delta, arma::mat X, double a, bool show_output);
+arma::mat sequential_lognormal_mixture_gibbs(int Niter, int em_iter, int G, int chains, arma::vec y, arma::ivec delta, arma::mat X, double a, bool show_output);
 RcppExport SEXP _lnmixsurv_sequential_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP em_iterSEXP, SEXP GSEXP, SEXP chainsSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP show_outputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

@@ -23,7 +23,8 @@ Imports:
     abind,
     generics,
     tibble,
-    dplyr
+    dplyr,
+    tidyselect
 LinkingTo: Rcpp, RcppArmadillo
 Depends: 
     parsnip (>= 1.1.0),

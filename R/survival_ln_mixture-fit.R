@@ -133,22 +133,28 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     iter, em_iter, numero_componentes, chains, outcome_times, outcome_status,
     predictors, proposal_variance, show_progress)
   
-  grupos <- letters[seq_len(numero_componentes)]
-  pred_names <- colnames(predictors)
-  posterior_dist <- field_of_fied2array(posterior_dist, pred_names, grupos)
-  posterior_dist <- label_switch_all(posterior_dist, pred_names, grupos)
+  posterior_dist <- give_colnames(posterior_dist, colnames(predictors),
+                                  numero_componentes)
   
-  names_theta = glue::glue("theta_{grupos}")
-  remover_menor_theta = -which(dimnames(posterior_dist)[[3]] == names_theta[numero_componentes])
-  posterior_dist <- posterior_dist[,,remover_menor_theta]
+  posterior_dist <- label_switch_one_chain(posterior_dist)
+  
+  posterior_dist <- permute_columns(posterior_dist)
+  
+  remover_menor_theta <- -which(
+    colnames(posterior_dist) == colnames(
+      posterior_dist |> 
+        dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+  posterior_dist <- posterior_dist[, remover_menor_theta]
   
   posterior_dist <- posterior::as_draws_matrix(posterior_dist)
   posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))
   posterior_dist <- posterior::thin_draws(posterior_dist, thin = thin)
 
-  list(posterior = posterior_dist, nobs = length(outcome_times), predictors_name = pred_names, mixture_groups = grupos)
+  list(posterior = posterior_dist, 
+       nobs = length(outcome_times),
+       predictors_name = colnames(predictors), 
+       mixture_groups = seq_len(numero_componentes))
 }
-
 
 #' Converte um field of cubes (lista de arrays) para uma array representando a posteriori de uma cadeia.
 #' 
@@ -203,31 +209,40 @@ field_of_fied2array <- function(field_of_field, pred_names, grupos){
   return(arrays_joined)
 }
 
-#' corrige o problema do label switch para uma cadeia da posteriori
+#' corrige o problema do label switch para uma cadeia da posteriori, ordenando grupos por proporções de mistura
 #' 
-#' @param posterior_dist_chain uma matriz de dimensao numero_iteracoes x numero_componetes * (2 + numero_covariaveis)
-#' @param pred_names nome das variaveis preditoras
-#' @param grupos nome dado as componetes (usualmente a, b, c)
-#' 
-#' @return matriz de dimensão numero_iteracoes x numero_componetes * (2 + numero_covariaveis) mas com os labels
-#' reorganizados de forma que os thetas das componetes são ordenados de forma decrescente.
+#' @param posterior_dist uma matriz de dimensao numero_iteracoes x numero_componentes de amostras a posteriori
+
+#' @return matriz de dimensão numero_iteracoes x numero_componetes mas com os labels
+#' reorganizados de forma que os etas das componetes são ordenados de forma decrescente.
 #' 
 #' @noRd
-label_switch_one_chain <- function(posterior_dist_chain, pred_names, grupos){
-  names_theta = glue::glue("theta_{grupos}")
-  names_phi = glue::glue("phi_{grupos}")
-  label_old <- dimnames(posterior_dist_chain)[[2]]
+label_switch_one_chain <- function(posterior_dist){
+  obj <- dplyr::as_tibble(posterior_dist)
   
-  theta <- apply(posterior_dist_chain[, names_theta, drop = FALSE], c(2), stats::median)
-  ordem <- order(theta, decreasing = TRUE)
-  label_old <- dimnames(posterior_dist_chain)[[2]]
-  label_new <- c(
-    glue::glue_data(expand.grid(pred_names, grupos[ordem]), "{Var1}_{Var2}"),
-    names_phi[ordem],
-    names_theta[ordem]
-  )
-  posterior_dist_chain[,label_old] <- posterior_dist_chain[,label_new]
-  return(posterior_dist_chain)
+  obj_etas <- obj |>
+    dplyr::select(dplyr::starts_with('eta_'))
+  
+  etas_median <- as.numeric(apply(obj_etas, 2, stats::median))
+  
+  etas_order <- order(etas_median, decreasing = T)
+  
+  new_obj <- NULL
+  
+  for(j in 1:length(etas_order)) {
+    sub_obj <- obj |>
+      dplyr::select(dplyr::ends_with(as.character(etas_order[j])))
+    
+    for(c in 1:ncol(sub_obj)) {
+      names(sub_obj)[c] <- paste0(
+        substr(names(sub_obj)[c],
+               1, nchar(names(sub_obj)[c]) - 1), j)
+    }
+    
+    new_obj <- dplyr::bind_cols(new_obj, sub_obj)
+  }
+  
+  return(new_obj)
 }
 
 #' corrige o problema do label switch para todas as cadeias da posteriori.
@@ -244,5 +259,63 @@ label_switch_all <- function(posterior_dist, pred_names, grupos){
   for(i in seq_len(dim(posterior_dist)[2])){
     posterior_dist[,i,] = label_switch_one_chain(posterior_dist[,i,], pred_names, grupos)
   }
+  return(posterior_dist)
+}
+
+#' Nomeia as colunas da amostra a posteriori
+#' 
+#' @param posterior distribuição a posteriori amostrada
+#' 
+#' @param predictors_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
+#' @param numero_componentes número de componentes envolvidos no ajuste
+#' 
+#' @return matriz
+#' 
+#' @noRd
+give_colnames <- function(posterior, predictors_names, numero_componentes) {
+  number_params <- length(predictors_names)
+  new_names <- NULL
+  
+  for(i in 1:numero_componentes) {
+    for(j in 1:3) { # de 1 a 3 porque 3 grupos de parâmetros são ajustados no modelo: uma proporção de mistura, uma precisão e um grupo de efeitos das covariáveis
+      if(j == 1) { # primeiro grupo, eta: efeitos das covariáveis
+        for(c in 1:number_params) { 
+          new_names <- c(new_names,
+                         paste0(predictors_names[c], '_', i))
+        }
+      } else if (j == 2) { # segundo grupo, phi: precisão
+        new_names <- c(new_names,
+                       paste0('phi_', i))
+      } else { # terceiro grupo, j = 3, proporções de mistura
+        new_names <- c(new_names,
+                       paste0('eta_', i))
+      }
+    }
+  }
+  
+  posterior_dist <- posterior
+  colnames(posterior_dist) <- new_names
+  
+  return(posterior_dist)
+}
+
+#' Permuta as colunas para ficar de acordo: primeiro efeitos das covariáveis dos grupos, depois precisões e, por fim, etas
+#' 
+#' @param posterior distribuição a posteriori amostrada
+#' 
+#' @return matriz
+#' 
+#' @noRd
+permute_columns <- function(posterior) {
+  posterior_dist <- dplyr::as_tibble(posterior)
+  posterior_dist <- dplyr::bind_cols(posterior |> 
+                                       dplyr::select(
+                                         -tidyselect::starts_with('eta'),
+                                         -tidyselect::starts_with('phi')),
+                                     posterior |> 
+                                       dplyr::select(
+                                         tidyselect::starts_with('phi'),
+                                         tidyselect::starts_with('eta')))
+  
   return(posterior_dist)
 }

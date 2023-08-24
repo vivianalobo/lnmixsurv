@@ -158,7 +158,7 @@ arma::mat makeSymmetric(const arma::mat X) {
     return out;
 }
 
-arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
+arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
                                   arma::mat X, double a, bool show_output) {
     
@@ -172,8 +172,6 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int em_iter, int G,
     int N = X.n_rows;
     
     arma::vec y = log(exp_y);
-    
-    arma::field<arma::cube> out_cube(3);
     
     // The output matrix should have Niter rows (1 row for each iteration) and
     // nColsOutput columns (1 column for each element).
@@ -195,9 +193,6 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int em_iter, int G,
     arma::mat means(N, G);
     arma::vec sd(G);
     arma::vec linearComb(N);
-    arma::cube eta_cube(1, G, Niter);
-    arma::cube beta_cube(p, G, Niter);
-    arma::cube phi_cube(1, G, Niter);
     
     double sumtau;
     
@@ -415,47 +410,30 @@ arma::field<arma::cube> lognormal_mixture_gibbs(int Niter, int em_iter, int G,
         // phi = phi.rows(sorteta);
         // eta = eta.rows(sorteta);
         
-        // arma::rowvec newRow = arma::join_rows(eta.row(0), beta.row(0),
-        //                                       phi.row(0));
-        // for (int g = 1; g < G; g++) {
-        //     newRow = arma::join_rows(newRow, eta.row(g), beta.row(g),
-        //                              phi.row(g));
-        // }
-        // 
-        // out.row(iter) = newRow;
-        
-        eta_cube.slice(iter) = eta.t();
-        phi_cube.slice(iter) = phi.t();
-        
-        for (int g = 0; g < G; g++) {
-            beta_cube.slice(iter).col(g) = beta.row(g).t();
+        arma::rowvec newRow = arma::join_rows(beta.row(0),
+                                              phi.row(0),
+                                              eta.row(0));
+        for (int g = 1; g < G; g++) {
+            newRow = arma::join_rows(newRow, beta.row(g),
+                                     phi.row(g),
+                                     eta.row(g));
         }
+
+        out.row(iter) = newRow;
         
         if((iter % 500 == 0) && show_output) {
             Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
         }
     }
     
-    out_cube(0) = beta_cube;
-    out_cube(1) = phi_cube;
-    out_cube(2) = eta_cube;
-    return out_cube;
+    return out;
 }
 
+// for now, just a parser to lognormal_mixture_gibbs
 // [[Rcpp::export]]
-arma::field<arma::field<arma::cube>> sequential_lognormal_mixture_gibbs(
+arma::mat sequential_lognormal_mixture_gibbs(
         int Niter, int em_iter, int G, int chains, arma::vec y, 
         arma::ivec delta, arma::mat X, double a, bool show_output = false) {
-    
-    arma::field<arma::field<arma::cube>> ret(chains);
-    
-    for (int i = 0; i < chains; i++) {
-        try {
-            ret(i) = lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, show_output);
-        } catch (...) {
-            Rcpp::warning("One or more chains were not generated because of some error.");
-        }
-    }
-    
-    return ret;
+
+    return lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, show_output);
 }
