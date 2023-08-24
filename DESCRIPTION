@@ -24,7 +24,8 @@ Imports:
     generics,
     tibble,
     dplyr,
-    tidyselect
+    tidyselect,
+    parallel
 LinkingTo: Rcpp, RcppArmadillo
 Depends: 
     parsnip (>= 1.1.0),

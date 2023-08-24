@@ -9,7 +9,3 @@ lognormal_mixture_gibbs <- function(Niter, em_iter, G, exp_y, delta, X, a, seed,
     .Call(`_lnmixsurv_lognormal_mixture_gibbs`, Niter, em_iter, G, exp_y, delta, X, a, seed, show_output)
 }
 
-sequential_lognormal_mixture_gibbs <- function(Niter, em_iter, G, chains, y, delta, X, a, starting_seed, show_output = FALSE) {
-    .Call(`_lnmixsurv_sequential_lognormal_mixture_gibbs`, Niter, em_iter, G, chains, y, delta, X, a, starting_seed, show_output)
-}
-

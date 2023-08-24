@@ -564,14 +564,3 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
   
   return out;
 }
-// for now, just a parser to lognormal_mixture_gibbs
-// [[Rcpp::export]]
-arma::mat sequential_lognormal_mixture_gibbs(
-        int Niter, int em_iter, int G, int chains, arma::vec y, 
-        arma::ivec delta, arma::mat X, double a, 
-        long int starting_seed,
-        bool show_output = false) {
-
-    return lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, 
-                                   starting_seed, show_output);
-}
