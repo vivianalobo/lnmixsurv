@@ -432,7 +432,48 @@ parallel_run <- function(iter, em_iter, chains, cores, numero_componentes, outco
     
     parallel::stopCluster(cluster_total)
   } else { # cores < chains, cenário mais complicado pois devemos realizar partições das cadeias para rodar no número limitado de cores
-    # ...
+    numero_particoes <- ceiling(chains/cores) # número total de partições necessárias para rodar as cadeias solicitadas limitada pelo número de cores
+    
+    resto_ultima_particao <- chains %% cores # qual resto arredondado no ceiling
+    
+    esquema_cores <- NULL
+    
+    # para cada partição, rodar com o número limitado de cores.
+    # para isso, é necessário criar um vetor definindo com quantos cores será rodada cada partição
+    for(j in 1:numero_particoes) {
+      if(j != numero_particoes) {
+        esquema_cores <- c(esquema_cores, cores)
+      } else {
+        if(resto_ultima_particao != 0) {
+          esquema_cores <- c(esquema_cores, resto_ultima_particao)
+        } else {
+          esquema_cores <- c(esquema_cores, cores)
+        }
+      }
+    }
+    
+    seed_indexer_start = 1;
+    for(j in 1:numero_particoes) {
+      cores_fix <- esquema_cores[j]
+      seed_indexer_final <- seed_indexer_start + cores_fix - 1
+      seeds_fix <- seeds[seed_indexer_start:seed_indexer_final]
+      
+      cluster_total <- parallel::makePSOCKcluster(cores_fix,
+                                                  outfile = "")
+      parallel::clusterExport(cluster_total,
+                              c('lognormal_mixture_gibbs',
+                                'fit_one_chain',
+                                'iter', 'em_iter', 'numero_componentes',
+                                'outcome_times', 'outcome_status',
+                                'predictors', 'proposal_variance',
+                                'show_progress'),
+                              envir = environment())
+      
+      list_posteriors <- append(list_posteriors, 
+                                parallel::clusterApply(cluster_total, seeds_fix, fit_one_chain, iter = iter, em_iter = em_iter, numero_componentes = numero_componentes, outcome_times = outcome_times, outcome_status = outcome_status, predictors = predictors, proposal_variance = proposal_variance, show_progress = show_progress))
+      
+      seed_indexer_start <- seed_indexer_start + cores_fix
+    }
   }
   
   draws_return <- list_posteriors[[1]]
