@@ -555,6 +555,8 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
     }
   }
   
-  Rcout << "Done" << "\n";
+  if(show_output) {
+    Rcout << "Done" << "\n";
+  }
   return out;
 }

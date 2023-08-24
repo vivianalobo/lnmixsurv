@@ -2,7 +2,7 @@ mod_spec <- parsnip::survival_reg(mode = "censored regression", engine = "surviv
 
 set.seed(50)
 f_fit <- parsnip::fit(mod_spec, survival::Surv(y, delta) ~ x, 
-                      data = sim_data$data, starting_seed = 5)
+                      data = sim_data$data)
 
 mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
 
