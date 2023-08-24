@@ -139,7 +139,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   posterior_dist <- label_switch_one_chain(posterior_dist)
   
   posterior_dist <- permute_columns(posterior_dist)
-  
   remover_menor_theta <- -which(
     colnames(posterior_dist) == colnames(
       posterior_dist |> 
