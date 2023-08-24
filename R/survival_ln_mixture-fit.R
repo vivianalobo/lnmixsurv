@@ -131,6 +131,11 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("One or more events happened at time zero.")
   }
   
+  if (starting_seed < 1 | starting_seed > 2^30 |
+      (starting_seed %% 1) != 0) {
+    rlang::abort("The starting seed should be a natural number between 1 and 2^35.")
+  }
+  
   if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(
