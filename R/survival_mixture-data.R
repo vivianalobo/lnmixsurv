@@ -23,7 +23,7 @@ make_survival_reg_survival_ln_mixture <- function() {
       defaults = list()
     )
   )
-
+  
   parsnip::set_encoding(
     model = "survival_reg",
     eng = "survival_ln_mixture",
