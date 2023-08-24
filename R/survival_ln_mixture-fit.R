@@ -116,7 +116,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      show_progress = FALSE,
                                      em_iter = 150,
                                      starting_seed = sample(1:2^30, 1)) {
-  
   number_of_predictors <- ncol(predictors)
   
   parallel <- cores > 1

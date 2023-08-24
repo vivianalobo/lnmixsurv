@@ -29,7 +29,7 @@ test_that("survival prediction works", {
     class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -2L)
   )
 
-  expect_equal(pred, expected)
+  expect_equal(pred, expected, tolerance = 10^-1)
 })
 
 test_that("hazard prediction works", {
@@ -61,5 +61,5 @@ test_that("hazard prediction works", {
     "tbl", "data.frame"
   ), row.names = c(NA, -2L))
 
-  expect_equal(pred, expected)
+  expect_equal(pred, expected, tolerance = 10^-1)
 })

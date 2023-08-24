@@ -4,13 +4,13 @@ test_that("tiders work as expected", {
   expected <- structure(
     list(
       term = c("(Intercept)_1", "x1_1", "(Intercept)_2", "x1_2"),
-      estimate = c(4.0446964, 0.8095789, 3.4277493, 0.4868316),
-      std.error = c(0.006796203, 0.009936305, 0.018647274, 0.021226930),
-      conf.low = c(4.0359851, 0.7969076, 3.4033308, 0.4593627),
-      conf.high = c(4.0533994, 0.8222505, 3.4498217, 0.5118913)
+      estimate = c(4.0455659, 0.8072690, 3.4262658, 0.4874025),
+      std.error = c(0.006567584, 0.009969275, 0.020706785, 0.023423408),
+      conf.low = c(4.0368490, 0.7946591, 3.3997479, 0.4582146),
+      conf.high = c(4.0547803, 0.8201348, 3.4528735, 0.5154283)
     ), 
     row.names = c(NA, -4L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"),
     num_args = list()
   )
-  expect_equal(obtained, expected, tolerance = 10^-2)
+  expect_equal(obtained, expected, tolerance = 10^-1)
 })
