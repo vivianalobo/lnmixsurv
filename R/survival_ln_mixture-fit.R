@@ -289,16 +289,45 @@ permute_columns <- function(posterior) {
 #' @noRd
 sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_times,  outcome_status, predictors, proposal_variance, starting_seed,  show_progress, warmup, thin) {
   
-  set.seed(starting_seed)
-  seeds <- sample(1:2^30, chains)
-  
-  list_posteriors <- NULL
-  
-  for(i in 1:chains) {
-    posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, seeds[i],  show_progress)
+  if(chains > 1) {
+    set.seed(starting_seed)
+    seeds <- sample(1:2^30, chains)
+    
+    list_posteriors <- NULL
+    
+    for(i in 1:chains) {
+      posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, seeds[i],  show_progress)
+      
+      posterior <- give_colnames(posterior, colnames(predictors),
+                                 numero_componentes)
+      
+      posterior <- label_switch_one_chain(posterior)
+      
+      posterior <- permute_columns(posterior)
+      
+      remover_menor_theta <- -which(
+        colnames(posterior) == colnames(
+          posterior |> 
+            dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+      posterior <- posterior[, remover_menor_theta]
+      
+      list_posteriors[[i]] <- posterior |> 
+        posterior::as_draws_matrix()
+    }
+    
+    draws_return <- list_posteriors[[1]]
+    if(length(list_posteriors) >= 2) {
+      for(i in 2:length(list_posteriors)) {
+        draws_return <- posterior::bind_draws(draws_return,
+                                              list_posteriors[[i]],
+                                              along = 'chain')
+      } 
+    }
+  } else {
+    posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress)
     
     posterior <- give_colnames(posterior, colnames(predictors),
-                                    numero_componentes)
+                               numero_componentes)
     
     posterior <- label_switch_one_chain(posterior)
     
@@ -310,18 +339,9 @@ sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_ti
           dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
     posterior <- posterior[, remover_menor_theta]
     
-    list_posteriors[[i]] <- posterior |> 
-      posterior::as_draws_matrix()
+    draws_return <- posterior
   }
   
-  draws_return <- list_posteriors[[1]]
-  if(length(list_posteriors) >= 2) {
-    for(i in 2:length(list_posteriors)) {
-      draws_return <- posterior::bind_draws(draws_return,
-                                            list_posteriors[[i]],
-                                            along = 'chain')
-    } 
-  }
   draws_return <- posterior::as_draws_matrix(draws_return)
   draws_return <- posterior::subset_draws(draws_return, iteration = seq(from = warmup + 1, to = iter))
   draws_return <- posterior::thin_draws(draws_return, thin = thin)

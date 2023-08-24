@@ -2,9 +2,7 @@ globalVariables("sim_data")
 
 path <- "tests/testthat/fixtures/"
 
-set.seed(50)
-ln_fit_with_covariates <- survival_ln_mixture(survival::Surv(y, delta) ~ x, sim_data$data)
-
+ln_fit_with_covariates <- survival_ln_mixture(survival::Surv(y, delta) ~ x, sim_data$data, chains = 6, cores = 6, starting_seed = 1, iter = 6000)
 
 saveRDS(ln_fit_with_covariates, paste0(path, "ln_fit_with_covariates.rds"))
 

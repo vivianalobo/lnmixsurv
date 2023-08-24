@@ -3,6 +3,8 @@
 // [[Rcpp::plugins("cpp11")]]
 
 #include <RcppArmadillo.h>
+
+#include <cmath>
 using namespace Rcpp;
 
 // ------ RNG Framework ------
@@ -34,15 +36,7 @@ double runif_0_1() {
   return runif_0_1_internal(seed);
 }
 
-
 // PROCEDURE TO SAMPLE FROM A GAMMA DISTRIBUTION
-
-// calculate remainder of a division
-double remainder(double dividend, double divisor) {
-  int quotient = static_cast<int>(dividend / divisor);
-  return dividend - quotient * divisor;
-}
-
 double sum_exponential_1(const int& n) {
   double sum = 0;
   
@@ -60,7 +54,6 @@ double sample_X2(const double& delta) {
   double u;
   double out;
   while(flag) {
-    
     // sample y value from a specific proposal distribution
     u = runif_0_1();
     if(u < exp(1)/(exp(1) + delta)) {
@@ -90,7 +83,7 @@ double sample_X2(const double& delta) {
 
 // generate sample from a Gamma(alpha, beta)
 double rgamma_(const double& alpha, const double& beta) {
-  double delta = remainder(alpha, 1.0);
+  double delta = fmod(alpha, 1);
   int n = alpha - delta;
   double X1 = sum_exponential_1(n);
   double X2 = sample_X2(delta);
@@ -562,5 +555,6 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
     }
   }
   
+  Rcout << "Done" << "\n";
   return out;
 }
