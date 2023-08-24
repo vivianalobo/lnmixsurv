@@ -20,9 +20,7 @@ can be analysed using the Stan ecosystem tools, like `bayesplot`.
 ```{r setup}
 library(lnmixsurv)
 library(bayesplot)
-set.seed(3)
-
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 6)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, chains = 2, starting_seed = 50)
 
 color_scheme_set('viridis')
 
@@ -72,18 +70,18 @@ However, for longer runs, these few seconds to start the clusters are negligible
 start <- Sys.time()
 mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 6000, chains = 4,
+                                           iter = 8000, chains = 4,
                                            starting_seed = 50)
-# Time to run 8000 iterations in 6 chains in sequence:
+# Time to run 8000 iterations in 4 chains in sequence:
 print(Sys.time() - start)
 
 start <- Sys.time()
 mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 6000, chains = 4,
+                                           iter = 8000, chains = 4,
                                            cores = 4,
                                            starting_seed = 50)
-# Time to run 8000 iterations in 6 chains in parallel:
+# Time to run 8000 iterations in 4 chains in parallel:
 print(Sys.time() - start)
 ```
 

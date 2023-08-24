@@ -19,8 +19,7 @@ survival_ln_mixture(
   proposal_variance = 2,
   show_progress = FALSE,
   em_iter = 150,
-  starting_seed = sample(1, 2^25, 1),
-  parallel = FALSE,
+  starting_seed = sample(1, 2^30, 1),
   ...
 )
 
@@ -46,7 +45,7 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{chains}{A positive integer specifying the number of Markov chains.}
 
-\item{cores}{A positive integer specifying the maximum number of cores to run the chain, if parallel = TRUE. Otherwise, the chains will run sequentially on one core.}
+\item{cores}{A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.}
 
 \item{numero_componentes}{number of mixture componentes >= 2.}
 
@@ -57,8 +56,6 @@ The number of warmup iterations should be smaller than iter.}
 \item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
 
 \item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
-
-\item{parallel}{If set to FALSE (default), the chains will run sequentially on one core each. If set to TRUE, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and, after that, 2 chains will be run together using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
