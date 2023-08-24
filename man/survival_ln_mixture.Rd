@@ -19,6 +19,7 @@ survival_ln_mixture(
   proposal_variance = 2,
   show_progress = FALSE,
   em_iter = 150,
+  starting_seed = sample(1, 2^25, 1),
   ...
 )
 
@@ -53,6 +54,8 @@ The number of warmup iterations should be smaller than iter.}
 \item{show_progress}{Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.}
 
 \item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
+
+\item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

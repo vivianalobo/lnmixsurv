@@ -30,6 +30,8 @@
 #' 
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
 #' 
+#' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
+#' 
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -52,7 +54,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^25, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -105,12 +107,14 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 
 survival_ln_mixture_impl <- function(predictors, outcome_times, 
                                      outcome_status, iter = 1000,
-                                     warmup = floor(iter / 10), thin = 1,
+                                     warmup = floor(iter / 10), 
+                                     thin = 1,
                                      chains = 1, cores = 1, 
                                      numero_componentes = 2,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
-                                     em_iter = 150) {
+                                     em_iter = 150,
+                                     starting_seed = sample(1:2^25, 1)) {
   
   number_of_predictors <- ncol(predictors)
   
@@ -131,7 +135,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   
   posterior_dist <- sequential_lognormal_mixture_gibbs(
     iter, em_iter, numero_componentes, chains, outcome_times, outcome_status,
-    predictors, proposal_variance, show_progress)
+    predictors, proposal_variance, starting_seed, show_progress)
   
   posterior_dist <- give_colnames(posterior_dist, colnames(predictors),
                                   numero_componentes)

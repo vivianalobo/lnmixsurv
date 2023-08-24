@@ -5,16 +5,170 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
+// ------ RNG Framework ------
+long int seed; // starting seed
+
+// internal function to change the global seed value
+void set_seed_internal(long int& seed_global, const long int& seed_wanted) {
+  seed_global = seed_wanted;
+}
+
+// actually used function to change the seed
+void set_seed(const long int& seed_wanted) {
+  set_seed_internal(seed, seed_wanted);
+}
+
+// function to sample from a Uniform(0, 1) internally
+double runif_0_1_internal(const long int& starting_seed) {
+  long int a = pow(5, 5);
+  long int m = pow(2, 31) - 1;
+  long long int new_seed = (starting_seed * a) % m;
+  
+  set_seed(new_seed);
+  
+  return(static_cast<double>(new_seed) / static_cast<double>(m));
+}
+
+// actually used function to sample from a Unif(0, 1)
+double runif_0_1() {
+  return runif_0_1_internal(seed);
+}
+
+
+// PROCEDURE TO SAMPLE FROM A GAMMA DISTRIBUTION
+
+// calculate remainder of a division
+double remainder(double dividend, double divisor) {
+  int quotient = static_cast<int>(dividend / divisor);
+  return dividend - quotient * divisor;
+}
+
+double sum_exponential_1(const int& n) {
+  double sum = 0;
+  
+  for(int i = 0; i < n; i++) {
+    sum = sum - log(1.0 - runif_0_1());
+  }
+  
+  return sum;
+}
+
+// generate sample from a Gamma(delta, 1), with delta < 1
+double sample_X2(const double& delta) {
+  bool flag = true;
+  double y;
+  double u;
+  double out;
+  while(flag) {
+    
+    // sample y value from a specific proposal distribution
+    u = runif_0_1();
+    if(u < exp(1)/(exp(1) + delta)) {
+      y = pow((u * (exp(1) + delta)/exp(1)), 1.0 / delta);
+    } else {
+      y = log(delta * exp(1)) - log(exp(1) + 
+        delta - u * (exp(1) + delta));
+    }
+    
+    u = runif_0_1();
+    
+    if(y < 1) {
+      if(u < exp(-y)) {
+        out = y;
+        flag = false;
+      }
+    } else {
+      if(u < pow(y, delta - 1.0)) {
+        out = y;
+        flag = false;
+      }
+    }
+  }
+  
+  return out;
+}
+
+// generate sample from a Gamma(alpha, beta)
+double rgamma_(const double& alpha, const double& beta) {
+  double delta = remainder(alpha, 1.0);
+  int n = alpha - delta;
+  double X1 = sum_exponential_1(n);
+  double X2 = sample_X2(delta);
+  
+  return (X1 + X2) * (1.0 / beta);
+}
+
+// Sample one value (k-dimensional) from a 
+// Dirichlet(alpha_1, alpha_2, ..., alpha_k)
+arma::vec rdirichlet(const arma::vec& alpha) {
+  int K = alpha.n_elem;
+  arma::vec sample(K);
+  
+  for (int k = 0; k < K; ++k) {
+    sample(k) = rgamma_(alpha(k), 1.0);
+  }
+  
+  sample /= arma::sum(sample);
+  return sample;
+}
+
+// generate sample from a Normal(mu, sd^2)
+double rnorm_(const double& mu, const double& sd) {
+  bool flag = true;
+  double w;
+  double u;
+  double z;
+  
+  while(flag) {
+    u = runif_0_1();
+    w = -log(u);
+    u = runif_0_1();
+    if(u < ((2.0 / sqrt(atan(1) * 4.0 * 2.0)) * 
+       exp(-pow(w, 2) / 2.0))/(1.35 * exp(-w))) {
+      flag = false;
+    }
+  }
+  
+  u = runif_0_1();
+  
+  if(u > 0.5) {
+    z = w;
+  } else {
+    z = -w;
+  }
+  
+  return z*sd + mu;
+}
+
+// sample from a multivariate normal
+// [[Rcpp::export]]
+arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance) {
+  int numDims = mean.n_elem;
+  arma::vec sample(numDims);
+  
+  arma::mat L = arma::chol(covariance, "lower");
+  
+  arma::vec Z(numDims);
+  
+  for (int j = 0; j < numDims; j++) {
+    Z(j) = rnorm_(0, 1);
+  }
+  
+  sample = mean + L * Z;
+  return sample;
+}
+
+
 /* AUXILIARY FUNCTIONS */
 // Creates a sequence from start to end with 1 step
 arma::ivec seq(const int& start, const int& end) {
-    arma::vec out_vec = arma::linspace<arma::vec>(start, end, end - start + 1);
-    return arma::conv_to<arma::ivec>::from(out_vec);
+  arma::vec out_vec = arma::linspace<arma::vec>(start, end, end - start + 1);
+  return arma::conv_to<arma::ivec>::from(out_vec);
 }
 
 // Function for replicating a numeric value K times.
 arma::vec repl(const double& x, const int& times) {
-    return arma::ones<arma::vec>(times) * x;
+  return arma::ones<arma::vec>(times) * x;
 }
 
 // Sample a random object from a given vector
@@ -22,19 +176,19 @@ arma::vec repl(const double& x, const int& times) {
 // and just one object.
 int numeric_sample(const arma::ivec& groups,
                    const arma::vec& probs) {
-    double u = R::runif(0, 1);
-    double cumulativeProb = 0.0;
-    int n = probs.n_elem;
-    for (int i = 0; i < n; ++i) {
-        cumulativeProb += probs(i);
-        
-        if (u <= cumulativeProb) {
-            return groups(i);
-        }
-    }
+  double u = runif_0_1();
+  double cumulativeProb = 0.0;
+  int n = probs.n_elem;
+  for (int i = 0; i < n; ++i) {
+    cumulativeProb += probs(i);
     
-    // This point should never be reached and it's here just for compiling issues
-    return 0;
+    if (u <= cumulativeProb) {
+      return groups(i);
+    }
+  }
+  
+  // This point should never be reached and it's here just for compiling issues
+  return 0;
 }
 
 // Function used to sample the latent groups for each observation. This one is
@@ -43,29 +197,29 @@ int numeric_sample(const arma::ivec& groups,
 arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
                          const arma::vec& phi, const arma::mat& beta,
                          const arma::mat& X) {
-    arma::ivec vec_grupos(y.size());
+  arma::ivec vec_grupos(y.size());
+  
+  arma::vec probs(G);
+  
+  arma::mat mean = X * beta.t();
+  arma::vec sd = 1.0 / sqrt(phi);
+  double denom;
+  int n = y.n_elem;
+  for (int i = 0; i < n; i++) {
+    denom = 0;
     
-    arma::vec probs(G);
-    
-    arma::mat mean = X * beta.t();
-    arma::vec sd = 1.0 / sqrt(phi);
-    double denom;
-    int n = y.n_elem;
-    for (int i = 0; i < n; i++) {
-        denom = 0;
-        
-        for (int g = 0; g < G; g++) {
-            probs(g) = eta(g) * R::dnorm(y(i), mean(i, g), sd(g), false);
-            denom += probs(g); 
-        }
-        
-        probs = (denom == 0) * (repl(1.0 / G, G)) +
-            (denom != 0) * (probs / denom);
-        
-        vec_grupos(i) = numeric_sample(seq(0, G - 1), probs);
+    for (int g = 0; g < G; g++) {
+      probs(g) = eta(g) * R::dnorm(y(i), mean(i, g), sd(g), false);
+      denom += probs(g); 
     }
     
-    return vec_grupos;
+    probs = (denom == 0) * (repl(1.0 / G, G)) +
+      (denom != 0) * (probs / denom);
+    
+    vec_grupos(i) = numeric_sample(seq(0, G - 1), probs);
+  }
+  
+  return vec_grupos;
 }
 
 // Function used to simulate survival time for censored observations.
@@ -80,360 +234,344 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
 arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
                   const arma::ivec& delta, const arma::vec& phi, 
                   const arma::mat& beta, const arma::mat& X) {
-    
-    int n = X.n_rows;
-    
-    arma::vec out(n);
-    int g;
-    double out_i;
-    
-    for (int i = 0; i < n; i++) {
-        if (delta(i) == 1) {
-            out(i) = y(i);
-        }
-        
-        else {
-            g = groups(i);
-            
-            out_i = y(i);
-            while(out_i <= y(i)) {
-                out_i = R::rnorm(arma::as_scalar(X.row(i) * beta.row(g).t()),
-                                 sqrt(1.0 / phi(g)));
-            }
-            
-            out(i) = out_i;
-        }
+  
+  int n = X.n_rows;
+  
+  arma::vec out(n);
+  int g;
+  double out_i;
+  
+  for (int i = 0; i < n; i++) {
+    if (delta(i) == 1) {
+      out(i) = y(i);
     }
     
-    return out;
-}
-
-// Sample one value (k-dimensional) from a 
-// Dirichlet(alpha_1, alpha_2, ..., alpha_k)
-arma::vec rdirichlet(const arma::vec& alpha) {
-    int K = alpha.n_elem;
-    arma::vec sample(K);
-    
-    for (int k = 0; k < K; ++k) {
-        sample(k) = R::rgamma(alpha(k), 1.0);
+    else {
+      g = groups(i);
+      
+      out_i = y(i);
+      while(out_i <= y(i)) {
+        out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
+                       sqrt(1.0 / phi(g)));
+      }
+      
+      out(i) = out_i;
     }
-    
-    sample /= arma::sum(sample);
-    return sample;
-}
-
-// Sample one value (one-dimensional) from a
-// Gamma(alpha, beta). If Y ~ Gamma(alpha, beta),
-// E[Y] = alpha/beta.
-double rgamma_(const double& alpha, const double& beta) {
-    return R::rgamma(alpha, 1.0 / beta);
+  }
+  
+  return out;
 }
 
 // Create a table for each numeric element in the vector groups.
 // For now, we are just going to use to evaluate how much observations
 // we have at each group, given a vector of latent groups.
 arma::ivec groups_table(const int& G, const arma::ivec& groups) {
-    arma::ivec out(G);
-    arma::ivec index;
-    for (int g = 0; g < G; g++) {
-        index = groups(arma::find(groups == g));
-        
-        out(g) = index.n_rows;
-    }
+  arma::ivec out(G);
+  arma::ivec index;
+  for (int g = 0; g < G; g++) {
+    index = groups(arma::find(groups == g));
     
-    return(out);
+    out(g) = index.n_rows;
+  }
+  
+  return(out);
 }
 
 arma::mat makeSymmetric(const arma::mat X) {
-    arma::mat out(X.n_rows, X.n_cols);
-    int rows = X.n_rows;
-    int cols = X.n_cols;
-    for(int r = 0; r < rows; r++) {
-        for(int c = 0; c < cols; c++) {
-            out(r, c) = X(r, c);
-            out(c, r) = X(r, c);
-        }
+  arma::mat out(X.n_rows, X.n_cols);
+  int rows = X.n_rows;
+  int cols = X.n_cols;
+  for(int r = 0; r < rows; r++) {
+    for(int c = 0; c < cols; c++) {
+      out(r, c) = X(r, c);
+      out(c, r) = X(r, c);
     }
-    
-    return out;
+  }
+  
+  return out;
 }
 
+// [[Rcpp::export]]
 arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
-                                  arma::mat X, double a, bool show_output) {
+                                  arma::mat X, double a, long int seed,
+                                  bool show_output) {
+  
+  // setting global seed to start the sampler
+  set_seed(seed);
+  
+  // add verifications for robustiness. Skipping for the sake of simplicity.
+  
+  // Calculating number of columns of the output matrix:
+  // Each group has p (#cols X) covariates, 1 mixture component and
+  // 1 precision. This implies:
+  int p = X.n_cols;
+  int nColsOutput = (p + 2) * G;
+  int N = X.n_rows;
+  
+  arma::vec y = log(exp_y);
+  
+  // The output matrix should have Niter rows (1 row for each iteration) and
+  // nColsOutput columns (1 column for each element).
+  arma::mat out(Niter, nColsOutput);
+  
+  // The order of filling the output matrix matters a lot, since we can
+  // make label switching accidentally. Latter this is going to be defined
+  // so we can always fill the matrix in the correct order (by columns, always).
+  
+  // Starting empty objects for EM
+  arma::vec eta_em(G);
+  arma::mat Xt = X.t();
+  arma::vec phi_em(G);
+  arma::vec y_aug(N);
+  arma::mat beta_em(G, p);
+  arma::mat tau(N, G);
+  arma::sp_mat Wg(N, N);
+  arma::ivec n_groups(G);
+  arma::mat means(N, G);
+  arma::vec sd(G);
+  arma::vec linearComb(N);
+  
+  double sumtau;
+  
+  // starting EM algorithm to find values close to the MLE
+  for (int iter = 0; iter < em_iter; iter++) {
     
-    // add verifications for robustiness. Skipping for the sake of simplicity.
-    
-    // Calculating number of columns of the output matrix:
-    // Each group has p (#cols X) covariates, 1 mixture component and
-    // 1 precision. This implies:
-    int p = X.n_cols;
-    int nColsOutput = (p + 2) * G;
-    int N = X.n_rows;
-    
-    arma::vec y = log(exp_y);
-    
-    // The output matrix should have Niter rows (1 row for each iteration) and
-    // nColsOutput columns (1 column for each element).
-    arma::mat out(Niter, nColsOutput);
-    
-    // The order of filling the output matrix matters a lot, since we can
-    // make label switching accidentally. Latter this is going to be defined
-    // so we can always fill the matrix in the correct order (by columns, always).
-    
-    // Starting empty objects for EM
-    arma::vec eta_em(G);
-    arma::mat Xt = X.t();
-    arma::vec phi_em(G);
-    arma::vec y_aug(N);
-    arma::mat beta_em(G, p);
-    arma::mat tau(N, G);
-    arma::sp_mat Wg(N, N);
-    arma::ivec n_groups(G);
-    arma::mat means(N, G);
-    arma::vec sd(G);
-    arma::vec linearComb(N);
-    
-    double sumtau;
-    
-    // EM alg with 150 steps to find initial values close to
-    // the MLE
-    for (int iter = 0; iter < em_iter; iter++) {
-        
-        if ((iter % 50 == 0) && show_output) {
-            Rcout << "EM Iter: " << iter << "/" << em_iter << "\n";
-        }
-        
-        // Initializing values
-        if(iter == 0) {
-            eta_em = rdirichlet(repl(1, G));
-            
-            for (int g = 0; g < G; g++) {
-                phi_em(g) = rgamma_(2, 8);
-                beta_em.row(g) = arma::mvnrnd(repl(0, p),
-                            arma::diagmat(repl(7, p))).t();
-            }
-        }
-        
-        // E-step
-        means = X * beta_em.t();
-        sd = sqrt(1.0 / phi_em);
-        
-        for(int r = 0; r < N; r++) {
-            for(int g = 0; g < G; g++) {
-                tau(r, g) = eta_em(g) * R::dnorm(y(r), 
-                    means(r, g), sd(g), false);
-            }
-            
-            if(arma::sum(tau.row(r)) == 0) {  // to avoid numerical problems
-                tau.row(r) = repl(1.0/G, G).t();
-            } else {
-                tau.row(r) = tau.row(r)/sum(tau.row(r));
-            }
-        }
-        
-        // M-step
-        for(int g = 0; g < G; g++) {
-            Wg = arma::diagmat(tau.col(g));
-            sumtau = arma::sum(tau.col(g));
-            
-            eta_em(g) = sumtau/N;
-            
-            if(arma::det(X.t() * Wg * X) != 0) {
-                beta_em.row(g) = (arma::inv_sympd(Xt * Wg * X,
-                                  arma::inv_opts::allow_approx) * Xt * Wg * y).t();
-            }
-            
-            linearComb = y - X * beta_em.row(g).t();
-            
-            phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
-        }
+    if ((iter % 50 == 0) && show_output) {
+      Rcout << "EM Iter: " << iter << "/" << em_iter << "\n";
     }
     
-    // Starting other new values for MCMC algorithms
-    arma::vec eta(G);
-    arma::vec phi(G);
-    arma::mat beta(G, p);
-    arma::ivec groups(y.n_rows);
-    arma::vec e0new_vec(2);
+    // Initializing values
+    if(iter == 0) {
+      eta_em = rdirichlet(repl(1, G));
+      
+      for (int g = 0; g < G; g++) {
+        phi_em(g) = rgamma_(2, 8);
+        beta_em.row(g) = rmvnorm(repl(0, p),
+                    arma::diagmat(repl(7, p))).t();
+      }
+    }
     
-    arma::mat Xg;
-    arma::mat Xgt;
-    arma::vec yg;
+    // E-step
+    means = X * beta_em.t();
+    sd = sqrt(1.0 / phi_em);
     
-    arma::uvec indexg;
-    arma::mat Sg(p, p);
-    arma::vec mg(p);
-    arma::vec log_eta_new(G);
+    for(int r = 0; r < N; r++) {
+      for(int g = 0; g < G; g++) {
+        tau(r, g) = eta_em(g) * R::dnorm(y(r), 
+            means(r, g), sd(g), false);
+      }
+      
+      if(arma::sum(tau.row(r)) == 0) {  // to avoid numerical problems
+        tau.row(r) = repl(1.0/G, G).t();
+      } else {
+        tau.row(r) = tau.row(r)/sum(tau.row(r));
+      }
+    }
     
-    double e0;
-    double e0_prop;
-    double log_alpha;
-    double b;
-    double cte;
-    double prop_aceite;
-    int n_aceite;
-    double count = 0;
+    // M-step
+    for(int g = 0; g < G; g++) {
+      Wg = arma::diagmat(tau.col(g));
+      sumtau = arma::sum(tau.col(g));
+      
+      eta_em(g) = sumtau/N;
+      
+      if(arma::det(X.t() * Wg * X) != 0) {
+        beta_em.row(g) = (arma::inv_sympd(Xt * Wg * X,
+                          arma::inv_opts::allow_approx) * Xt * Wg * y).t();
+      }
+      
+      linearComb = y - X * beta_em.row(g).t();
+      
+      phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
+    }
+  }
+  
+  // Starting other new values for MCMC algorithms
+  arma::vec eta(G);
+  arma::vec phi(G);
+  arma::mat beta(G, p);
+  arma::ivec groups(y.n_rows);
+  arma::vec e0new_vec(2);
+  
+  arma::mat Xg;
+  arma::mat Xgt;
+  arma::vec yg;
+  
+  arma::uvec indexg;
+  arma::mat Sg(p, p);
+  arma::vec mg(p);
+  arma::vec log_eta_new(G);
+  
+  double e0;
+  double e0_prop;
+  double log_alpha;
+  double b;
+  double cte;
+  double prop_aceite;
+  int n_aceite;
+  double count = 0;
+  
+  for (int iter = 0; iter < Niter; iter++) {
     
-    for (int iter = 0; iter < Niter; iter++) {
-        
-        // Starting empty objects for Gibbs Sampler
-        if (iter == 0) { 
-            // we are going to start the values using the
-            // previous EM iteration
-            eta = eta_em;
-            phi = phi_em;
-            beta = beta_em;
-            
-            // sampling value for e0
-            e0 = rgamma_(1, 1);
-            
-            // defining values for sintonizing the variance
-            // of e0 proposal
-            cte = 1;
-            n_aceite = 0;
-            
-            // Sampling classes for the observations
-            groups = sample_groups(G, y, eta, phi, beta, X);
+    // Starting empty objects for Gibbs Sampler
+    if (iter == 0) { 
+      // we are going to start the values using the
+      // previous EM iteration
+      eta = eta_em;
+      phi = phi_em;
+      beta = beta_em;
+      
+      // sampling value for e0
+      e0 = rgamma_(1, 1);
+      
+      // defining values for sintonizing the variance
+      // of e0 proposal
+      cte = 1;
+      n_aceite = 0;
+      
+      // Sampling classes for the observations
+      groups = sample_groups(G, y, eta, phi, beta, X);
+    }
+    
+    // Data augmentation
+    y_aug = augment(G, y, groups, delta, phi, beta, X);
+    
+    // Sampling classes for the observations
+    groups = sample_groups(G, y_aug, eta, phi, beta, X);
+    
+    // Computing number of observations allocated at each class
+    n_groups = groups_table(G, groups);
+    
+    // ensuring that every class have, at least, 2 observations
+    for(int g = 0; g < G; g++) {
+      if(n_groups(g) == 0) {
+        for(int m = 0; m < 2; m++) {
+          int idx = numeric_sample(seq(0, X.n_rows),
+                                   repl(1.0 / X.n_rows, X.n_rows));
+          groups(idx) = g;
         }
         
-        // Data augmentation
-        y_aug = augment(G, y, groups, delta, phi, beta, X);
-        
-        // Sampling classes for the observations
-        groups = sample_groups(G, y_aug, eta, phi, beta, X);
-        
-        // Computing number of observations allocated at each class
+        // recalculating the number of groups
         n_groups = groups_table(G, groups);
-        
-        // ensuring that every class have, at least, 2 observations
-        for(int g = 0; g < G; g++) {
-            if(n_groups(g) == 0) {
-                arma::uvec random_indices = arma::randi<arma::uvec>
-                (2, arma::distr_param(0, X.n_rows - 1));
-                
-                for (const auto& idx : random_indices) {
-                    groups(idx) = g;
-                }
-                
-                // recalculating the number of groups
-                n_groups = groups_table(G, groups);
-                
-            }
-        }
-        
-        // Sampling new eta
-        eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0);
-        
-        // For each g, sample new phi[g] and beta[g, _]
-        for (int g = 0; g < G; g++) {
-            indexg = arma::find(groups == g);
-            if(true) {
-                Xg = X.rows(indexg);
-                Xgt = Xg.t();
-                yg = y_aug(indexg);
-                
-                linearComb = yg - Xg * beta.row(g).t();
-                
-                // sampling phi new
-                // the priori used was Gamma(0.001, 0.001)
-                phi(g) = rgamma_(n_groups(g) / 2.0 + 0.001, (1.0 / 2) *
-                    as_scalar(linearComb.t() * linearComb) + 0.001);
-                
-                // sampling beta new
-                // the priori used was MNV(vec 0, diag 1000)
-                if(arma::det(phi(g) * Xgt * Xg + 
-                   arma::diagmat(repl(1.0 / 1000, p))) != 0) {
-                    Sg = arma::inv_sympd(phi(g) * Xgt * Xg + 
-                        arma::diagmat(repl(1.0 / 1000, p)));
-                    
-                    if(Sg.is_symmetric() == false) {
-                        Sg = makeSymmetric(Sg);
-                    }
-                    
-                    mg = Sg * (phi(g) * Xgt * yg);
-                    
-                    beta.row(g) = arma::mvnrnd(mg, Sg).t();
-                }
-            }
-        }
-        
-        // atualizando o valor da constante de sintonização
-        // cte a cada 200 iterações
-        if ((iter % 200) == 0) {
-            prop_aceite = n_aceite/200.0;
-            
-            if (prop_aceite > 0.25) {
-                cte = cte/((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-            } else if (prop_aceite < 0.17) {
-                cte = cte*((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-            }
-            // ((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1) é um valor
-            // de correção que converge para 1 quando count -> Inf e,
-            // quando count = 0, o resultado é sqrt(3).
-            
-            // o valor 0.04 representa a velocidade da convergência
-            // para 1 e sqrt(3), o valor em count = 0, foi definido
-            // arbitrariamente.
-            
-            n_aceite = 0;
-            count = count + 1.0;
-        }
-        
-        b = cte*a;
-        
-        // updating the value of e0 (eta's dirichlet hyperparameter)
-        e0_prop = rgamma_(b*e0, b);
-        
-        log_eta_new = log(eta);
-        
-        log_alpha = arma::sum(log_eta_new)*(e0_prop - e0) +
-            9.0 * log(e0_prop/e0) - 10.0*G*(e0_prop - e0) +
-            b*(e0_prop - e0) + (b*e0_prop - 1.0)*log(e0) -
-            (b*e0 - 1.0)*log(e0_prop);
-        
-        e0 = (log(R::runif(0, 1)) < log_alpha) * e0_prop +
-            (log(R::runif(0, 1)) >= log_alpha) * e0;
-        
-        n_aceite += (log(R::runif(0, 1)) < log_alpha);
-        
-        // filling the ith iteration row of the output matrix
-        // the order of filling will always be the following:
-        
-        // First Mixture: proportion, betas, phi
-        // Second Mixture: proportion, betas, phi
-        // ...
-        // Last Mixture: proportion, betas, phi
-        
-        // arma::uvec sorteta = arma::sort_index(eta, "descend");
-        // beta = beta.rows(sorteta);
-        // phi = phi.rows(sorteta);
-        // eta = eta.rows(sorteta);
-        
-        arma::rowvec newRow = arma::join_rows(beta.row(0),
-                                              phi.row(0),
-                                              eta.row(0));
-        for (int g = 1; g < G; g++) {
-            newRow = arma::join_rows(newRow, beta.row(g),
-                                     phi.row(g),
-                                     eta.row(g));
-        }
-
-        out.row(iter) = newRow;
-        
-        if((iter % 500 == 0) && show_output) {
-            Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
-        }
+      }
     }
     
-    return out;
+    // Sampling new eta
+    eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0);
+    
+    // For each g, sample new phi[g] and beta[g, _]
+    for (int g = 0; g < G; g++) {
+      indexg = arma::find(groups == g);
+      if(true) {
+        Xg = X.rows(indexg);
+        Xgt = Xg.t();
+        yg = y_aug(indexg);
+        
+        linearComb = yg - Xg * beta.row(g).t();
+        
+        // sampling phi new
+        // the priori used was Gamma(0.001, 0.001)
+        phi(g) = rgamma_(n_groups(g) / 2.0 + 0.001, (1.0 / 2) *
+          as_scalar(linearComb.t() * linearComb) + 0.001);
+        
+        // sampling beta new
+        // the priori used was MNV(vec 0, diag 1000)
+        if(arma::det(phi(g) * Xgt * Xg + 
+           arma::diagmat(repl(1.0 / 1000, p))) != 0) {
+          Sg = arma::inv_sympd(phi(g) * Xgt * Xg + 
+            arma::diagmat(repl(1.0 / 1000, p)));
+          
+          if(Sg.is_symmetric() == false) {
+            Sg = makeSymmetric(Sg);
+          }
+          
+          mg = Sg * (phi(g) * Xgt * yg);
+          
+          beta.row(g) = rmvnorm(mg, Sg).t();
+        }
+      }
+    }
+    
+    // atualizando o valor da constante de sintonização
+    // cte a cada 200 iterações
+    if ((iter % 200) == 0) {
+      prop_aceite = n_aceite/200.0;
+      
+      if (prop_aceite > 0.25) {
+        cte = cte/((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
+      } else if (prop_aceite < 0.17) {
+        cte = cte*((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
+      }
+      // ((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1) é um valor
+      // de correção que converge para 1 quando count -> Inf e,
+      // quando count = 0, o resultado é sqrt(3).
+      
+      // o valor 0.04 representa a velocidade da convergência
+      // para 1 e sqrt(3), o valor em count = 0, foi definido
+      // arbitrariamente.
+      
+      n_aceite = 0;
+      count = count + 1.0;
+    }
+    
+    b = cte*a;
+    
+    // updating the value of e0 (eta's dirichlet hyperparameter)
+    e0_prop = rgamma_(b*e0, b);
+    
+    log_eta_new = log(eta);
+    
+    log_alpha = arma::sum(log_eta_new)*(e0_prop - e0) +
+      9.0 * log(e0_prop/e0) - 10.0*G*(e0_prop - e0) +
+      b*(e0_prop - e0) + (b*e0_prop - 1.0)*log(e0) -
+      (b*e0 - 1.0)*log(e0_prop);
+    
+    double u = runif_0_1();
+    e0 = (log(u) < log_alpha) * e0_prop +
+      (log(u) >= log_alpha) * e0;
+    
+    n_aceite += (log(u) < log_alpha);
+    
+    // filling the ith iteration row of the output matrix
+    // the order of filling will always be the following:
+    
+    // First Mixture: proportion, betas, phi
+    // Second Mixture: proportion, betas, phi
+    // ...
+    // Last Mixture: proportion, betas, phi
+    
+    // arma::uvec sorteta = arma::sort_index(eta, "descend");
+    // beta = beta.rows(sorteta);
+    // phi = phi.rows(sorteta);
+    // eta = eta.rows(sorteta);
+    
+    arma::rowvec newRow = arma::join_rows(beta.row(0),
+                                          phi.row(0),
+                                          eta.row(0));
+    for (int g = 1; g < G; g++) {
+      newRow = arma::join_rows(newRow, beta.row(g),
+                               phi.row(g),
+                               eta.row(g));
+    }
+    
+    out.row(iter) = newRow;
+    
+    if((iter % 500 == 0) && show_output) {
+      Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
+    }
+  }
+  
+  return out;
 }
-
 // for now, just a parser to lognormal_mixture_gibbs
 // [[Rcpp::export]]
 arma::mat sequential_lognormal_mixture_gibbs(
         int Niter, int em_iter, int G, int chains, arma::vec y, 
-        arma::ivec delta, arma::mat X, double a, bool show_output = false) {
+        arma::ivec delta, arma::mat X, double a, 
+        long int starting_seed,
+        bool show_output = false) {
 
-    return lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, show_output);
+    return lognormal_mixture_gibbs(Niter, em_iter, G, y, delta, X, a, 
+                                   starting_seed, show_output);
 }
