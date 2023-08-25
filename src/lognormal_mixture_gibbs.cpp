@@ -1,7 +1,6 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
 #include <RcppArmadillo.h>
-#include <cmath>
 
 using namespace Rcpp;
 
@@ -21,7 +20,7 @@ void set_seed(const long int& seed_wanted) {
 // function to sample from a Uniform(0, 1) internally
 double runif_0_1_internal(const long long int& starting_seed) {
   long long int a = pow(5, 5);
-  long long int m = pow(2, 30) - 1;
+  long long int m = pow(2, 29) - 1;
   long long int new_seed = (starting_seed * a) % m;
   
   set_seed(new_seed);
@@ -79,9 +78,23 @@ double sample_X2(const double& delta) {
   return out;
 }
 
+double remainder(const double& alpha) {
+  int count = 0;
+  int out = 0;
+  if(alpha != 0) {
+    while(count < alpha) {
+      count ++;
+    }
+    
+    out = alpha - count - 1;
+  }
+  
+  return out;
+}
+
 // generate sample from a Gamma(alpha, beta)
 double rgamma_(const double& alpha, const double& beta) {
-  double delta = fmod(alpha, 1);
+  double delta = remainder(alpha);
   int n = alpha - delta;
   double X1 = sum_exponential_1(n);
   double X2 = sample_X2(delta);

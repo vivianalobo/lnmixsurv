@@ -30,7 +30,7 @@
 #' 
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
 #' 
-#' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^29 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
+#' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #' 
 #' 
 #' @param ... Not currently used, but required for extensibility.
@@ -55,7 +55,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^29, 1), ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -115,7 +115,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
                                      em_iter = 150,
-                                     starting_seed = sample(1:2^29, 1)) {
+                                     starting_seed = sample(1:2^28, 1)) {
   number_of_predictors <- ncol(predictors)
   
   parallel <- cores > 1
@@ -133,9 +133,9 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("One or more events happened at time zero.")
   }
   
-  if (starting_seed < 1 | starting_seed > 2^29 |
+  if (starting_seed < 1 | starting_seed > 2^28 |
       (starting_seed %% 1) != 0) {
-    rlang::abort("The starting seed should be a natural number between 1 and 2^29")
+    rlang::abort("The starting seed should be a natural number between 1 and 2^28")
   }
   
   if (cores < 1 | (cores %% 1) != 0) {
@@ -291,7 +291,7 @@ sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_ti
   
   if(chains > 1) {
     set.seed(starting_seed)
-    seeds <- sample(1:2^29, chains)
+    seeds <- sample(1:2^28, chains)
     
     list_posteriors <- NULL
     
@@ -383,7 +383,7 @@ sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_ti
 parallel_run <- function(iter, em_iter, chains, cores, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin) {
   
   set.seed(starting_seed)
-  seeds <- sample(1:2^29, chains)
+  seeds <- sample(1:2^28, chains)
   
   list_posteriors <- NULL
   
