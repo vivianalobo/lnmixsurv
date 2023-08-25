@@ -142,22 +142,30 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("The number of cores should be a natural number, at least 1.")
   } 
 
-  if (!parallel) {
-    posterior_dist <- sequential_run(iter, em_iter, chains, 
-                                     numero_componentes, outcome_times, 
-                                     outcome_status, predictors, 
-                                     proposal_variance, 
-                                     starting_seed, show_progress, 
-                                     warmup, thin)
-  } else {
-    posterior_dist <- parallel_run(iter, em_iter, chains, cores,
-                                   numero_componentes, outcome_times,
-                                   outcome_status, predictors,
-                                   proposal_variance,
-                                   starting_seed, show_progress,
-                                   warmup, thin)
+  run_posterior_samples <- function() {
+    sequential_run(iter, em_iter, chains, 
+                   numero_componentes, outcome_times, 
+                   outcome_status, predictors, 
+                   proposal_variance, 
+                   starting_seed, show_progress, 
+                   warmup, thin)
   }
-
+  
+  if (parallel) {
+    # redefining the function if parallel computation is request by the user
+    run_posterior_samples <- function() {
+      parallel_run(iter, em_iter, chains, cores,
+                   numero_componentes, outcome_times,
+                   outcome_status, predictors,
+                   proposal_variance,
+                   starting_seed, show_progress,
+                   warmup, thin)
+    }
+  }
+  
+  posterior_dist <- run_posterior_samples()
+  
+  # returning the function output
   list(posterior = posterior_dist, 
        nobs = length(outcome_times),
        predictors_name = colnames(predictors), 

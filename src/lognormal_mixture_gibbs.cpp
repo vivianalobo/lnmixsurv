@@ -5,15 +5,16 @@
 using namespace Rcpp;
 
 // ------ RNG Framework ------
-long int seed; // starting seed
+long long int seed; // starting seed
 
 // internal function to change the global seed value
-void set_seed_internal(long int& seed_global, const long int& seed_wanted) {
+void set_seed_internal(long long int& seed_global, 
+                       const long long int& seed_wanted) {
   seed_global = seed_wanted;
 }
 
 // actually used function to change the seed
-void set_seed(const long int& seed_wanted) {
+void set_seed(const long long int& seed_wanted) {
   set_seed_internal(seed, seed_wanted);
 }
 
@@ -25,7 +26,7 @@ double runif_0_1_internal(const long long int& starting_seed) {
   
   set_seed(new_seed);
   
-  return(static_cast<double>(new_seed) / static_cast<double>(m));
+  return(static_cast<long double>(new_seed) / static_cast<long double>(m));
 }
 
 // actually used function to sample from a Unif(0, 1)
@@ -78,15 +79,20 @@ double sample_X2(const double& delta) {
   return out;
 }
 
-double remainder(const double& alpha) {
-  int count = 0;
-  int out = 0;
+double remainder_cpp(const long double& alpha) {
+  double count = 0;
+  double out = 0;
+  
   if(alpha != 0) {
     while(count < alpha) {
-      count ++;
+      if(count == alpha) {
+        return 0;
+      }
+      
+      count += 1.0;
     }
     
-    out = alpha - count - 1;
+    out = alpha - count + 1.0;
   }
   
   return out;
@@ -94,11 +100,10 @@ double remainder(const double& alpha) {
 
 // generate sample from a Gamma(alpha, beta)
 double rgamma_(const double& alpha, const double& beta) {
-  double delta = remainder(alpha);
+  double delta = remainder_cpp(alpha);
   int n = alpha - delta;
   double X1 = sum_exponential_1(n);
   double X2 = sample_X2(delta);
-  
   return (X1 + X2) * (1.0 / beta);
 }
 
@@ -122,7 +127,6 @@ double rnorm_(const double& mu, const double& sd) {
   double w;
   double u;
   double z;
-  
   while(flag) {
     u = runif_0_1();
     w = -log(u);
@@ -254,9 +258,17 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
       g = groups(i);
       
       out_i = y(i);
+      int count = 0;
       while(out_i <= y(i)) {
         out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
                        sqrt(1.0 / phi(g)));
+        
+        if(count > 100000) {
+          out_i = y(i) + 0.1;
+          break;
+        }
+        
+        count ++;
       }
       
       out(i) = out_i;
@@ -298,11 +310,12 @@ arma::mat makeSymmetric(const arma::mat X) {
 // [[Rcpp::export]]
 arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
-                                  arma::mat X, double a, long long int seed,
+                                  arma::mat X, double a, 
+                                  long long int starting_seed,
                                   bool show_output) {
   
   // setting global seed to start the sampler
-  set_seed(seed);
+  set_seed(starting_seed);
   
   // add verifications for robustiness. Skipping for the sake of simplicity.
   
@@ -417,7 +430,6 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
   double count = 0;
   
   for (int iter = 0; iter < Niter; iter++) {
-    
     // Starting empty objects for Gibbs Sampler
     if (iter == 0) { 
       // we are going to start the values using the
@@ -476,6 +488,7 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
         
         // sampling phi new
         // the priori used was Gamma(0.001, 0.001)
+        
         phi(g) = rgamma_(n_groups(g) / 2.0 + 0.001, (1.0 / 2) *
           as_scalar(linearComb.t() * linearComb) + 0.001);
         
