@@ -1,110 +1,43 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
 #include <RcppArmadillo.h>
+#include <RcppGSL.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 using namespace Rcpp;
 
 // ------ RNG Framework ------
-long long int seed; // starting seed
+gsl_rng* global_rng = nullptr;
+long long int global_seed = 0;
 
-// internal function to change the global seed value
-void set_seed_internal(long long int& seed_global, 
-                       const long long int& seed_wanted) {
-  seed_global = seed_wanted;
-}
-
-// actually used function to change the seed
-void set_seed(const long long int& seed_wanted) {
-  set_seed_internal(seed, seed_wanted);
-}
-
-// function to sample from a Uniform(0, 1) internally
-double runif_0_1_internal(const long long int& starting_seed) {
-  long long int a = pow(5, 5);
-  long long int m = pow(2, 29) - 1;
-  long long int new_seed = (starting_seed * a) % m;
+// Function to initialize the GSL random number generator
+void initializeRNG(const long long int& seed) {
+  global_seed = seed;
   
-  set_seed(new_seed);
+  if (global_rng != nullptr) {
+    gsl_rng_free(global_rng);
+  }
   
-  return(static_cast<long double>(new_seed) / static_cast<long double>(m));
+  global_rng = gsl_rng_alloc(gsl_rng_default);
+  
+  gsl_rng_set(global_rng, global_seed);
 }
 
-// actually used function to sample from a Unif(0, 1)
+void setSeed(const long long int& seed) {
+  initializeRNG(seed);
+}
+
 double runif_0_1() {
-  return runif_0_1_internal(seed);
+  return gsl_rng_uniform(global_rng);
 }
 
-// PROCEDURE TO SAMPLE FROM A GAMMA DISTRIBUTION
-double sum_exponential_1(const int& n) {
-  double sum = 0;
-  
-  for(int i = 0; i < n; i++) {
-    sum = sum - log(1.0 - runif_0_1());
-  }
-  
-  return sum;
+double rnorm_(const double& mu, const double& sd) {
+  return gsl_ran_gaussian(global_rng, sd) + mu;
 }
 
-// generate sample from a Gamma(delta, 1), with delta < 1
-double sample_X2(const double& delta) {
-  bool flag = true;
-  double y;
-  double u;
-  double out;
-  while(flag) {
-    // sample y value from a specific proposal distribution
-    u = runif_0_1();
-    if(u < exp(1)/(exp(1) + delta)) {
-      y = pow((u * (exp(1) + delta)/exp(1)), 1.0 / delta);
-    } else {
-      y = log(delta * exp(1)) - log(exp(1) + 
-        delta - u * (exp(1) + delta));
-    }
-    
-    u = runif_0_1();
-    
-    if(y < 1) {
-      if(u < exp(-y)) {
-        out = y;
-        flag = false;
-      }
-    } else {
-      if(u < pow(y, delta - 1.0)) {
-        out = y;
-        flag = false;
-      }
-    }
-  }
-  
-  return out;
-}
-
-double remainder_cpp(const long double& alpha) {
-  double count = 0;
-  double out = 0;
-  
-  if(alpha != 0) {
-    while(count < alpha) {
-      if(count == alpha) {
-        return 0;
-      }
-      
-      count += 1.0;
-    }
-    
-    out = alpha - count + 1.0;
-  }
-  
-  return out;
-}
-
-// generate sample from a Gamma(alpha, beta)
 double rgamma_(const double& alpha, const double& beta) {
-  double delta = remainder_cpp(alpha);
-  int n = alpha - delta;
-  double X1 = sum_exponential_1(n);
-  double X2 = sample_X2(delta);
-  return (X1 + X2) * (1.0 / beta);
+  return gsl_ran_gamma(global_rng, alpha, 1.0 / beta);
 }
 
 // Sample one value (k-dimensional) from a 
@@ -121,35 +54,6 @@ arma::vec rdirichlet(const arma::vec& alpha) {
   return sample;
 }
 
-// generate sample from a Normal(mu, sd^2)
-double rnorm_(const double& mu, const double& sd) {
-  bool flag = true;
-  double w;
-  double u;
-  double z;
-  while(flag) {
-    u = runif_0_1();
-    w = -log(u);
-    u = runif_0_1();
-    if(u < ((2.0 / sqrt(atan(1) * 4.0 * 2.0)) * 
-       exp(-pow(w, 2) / 2.0))/(1.35 * exp(-w))) {
-      flag = false;
-    }
-  }
-  
-  u = runif_0_1();
-  
-  if(u > 0.5) {
-    z = w;
-  } else {
-    z = -w;
-  }
-  
-  return z*sd + mu;
-}
-
-// sample from a multivariate normal
-// [[Rcpp::export]]
 arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance) {
   int numDims = mean.n_elem;
   arma::vec sample(numDims);
@@ -165,7 +69,6 @@ arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance) {
   sample = mean + L * Z;
   return sample;
 }
-
 
 /* AUXILIARY FUNCTIONS */
 // Creates a sequence from start to end with 1 step
@@ -263,11 +166,12 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
         out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
                        sqrt(1.0 / phi(g)));
         
+        // break if it's going to run forever
+        // should never happen
         if(count > 100000) {
           out_i = y(i) + 0.1;
           break;
         }
-        
         count ++;
       }
       
@@ -315,7 +219,7 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
                                   bool show_output) {
   
   // setting global seed to start the sampler
-  set_seed(starting_seed);
+  setSeed(starting_seed);
   
   // add verifications for robustiness. Skipping for the sake of simplicity.
   

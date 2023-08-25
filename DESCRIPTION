@@ -24,7 +24,7 @@ Imports:
     dplyr,
     tidyselect,
     parallel
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, RcppGSL
 Depends: 
     parsnip (>= 1.1.0),
     R (>= 3.5.0),
@@ -48,6 +48,7 @@ Suggests:
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+SystemRequirements: GNU GSL (>= version_number)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 LazyData: true

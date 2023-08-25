@@ -21,7 +21,7 @@ can be analysed using the Stan ecosystem tools, like `bayesplot`.
 library(lnmixsurv)
 library(bayesplot)
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data,
-                            starting_seed = 1)
+                            starting_seed = 1, chains = 2)
 
 color_scheme_set('viridis')
 
@@ -31,11 +31,11 @@ mcmc_trace(mod1$posterior[, 'eta_1'])
 Since the seed is fixed, we expect to obtain the same chain if e run the model again, with the same seed. We can make sure this is happening by look at a small portion of the chains.
 ```{r}
 mod2 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data, 
-                            starting_seed = 1)
+                            starting_seed = 1, chains = 2)
 
-mcmc_trace(posterior::subset_draws(mod1$posterior, iteration = 1:50,
+mcmc_trace(posterior::subset_draws(mod1$posterior, iteration = 550:600,
                                    variable = 'eta_1'))
 
-mcmc_trace(posterior::subset_draws(mod2$posterior, iteration = 1:50, 
+mcmc_trace(posterior::subset_draws(mod2$posterior, iteration = 550:600, 
                                    variable = 'eta_1'))
 ```
