@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,7 @@
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a>
+    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation</a>
     <a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
     <a class="dropdown-item" href="../articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
@@ -82,22 +83,7 @@ side of the formula.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="cn">NULL</span>, <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, intercept <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">mod1</span></span>
-<span><span class="co">#&gt; survival_ln_mixture</span></span>
-<span><span class="co">#&gt;  formula:      Surv(y, delta) ~ 1</span></span>
-<span><span class="co">#&gt;  observations: 10000</span></span>
-<span><span class="co">#&gt;  predictors:   1</span></span>
-<span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;               estimate  std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; (Intercept)_a 4.285280 0.02758331 4.245883  4.324665</span></span>
-<span><span class="co">#&gt; (Intercept)_b 3.314452 0.06832045 3.202695  3.383889</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;         estimate std.error  conf.low conf.high</span></span>
-<span><span class="co">#&gt; phi_a   3.022043 0.1445288 2.8201731 3.2104366</span></span>
-<span><span class="co">#&gt; phi_b   3.566819 0.3254065 3.2121055 4.0647799</span></span>
-<span><span class="co">#&gt; theta_a 0.768041 0.0364715 0.7266296 0.8230114</span></span></code></pre></div>
+<span><span class="va">mod1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="cn">NULL</span>, <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, intercept <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>The predictions can be made with a “empty” data.frame with one
 row.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -106,7 +92,7 @@ row.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100          0.225</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100          0.275</span></span></code></pre></div>
   </main>
 </div>
 

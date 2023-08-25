@@ -12,7 +12,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details."><!-- mathjax 
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details."><!-- mathjax 
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a>
+    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation</a>
     <a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
     <a class="dropdown-item" href="../articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
@@ -70,6 +71,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details.</p>
 <span>  proposal_variance <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  show_progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  em_iter <span class="op">=</span> <span class="fl">150</span>,</span>
+<span>  starting_seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">^</span><span class="fl">30</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -114,7 +116,7 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 
 
 <dt>cores</dt>
-<dd><p>Ignored. Parallel runs are disabled.</p></dd>
+<dd><p>A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores &gt; 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.</p></dd>
 
 
 <dt>numero_componentes</dt>
@@ -131,6 +133,10 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 
 <dt>em_iter</dt>
 <dd><p>A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.</p></dd>
+
+
+<dt>starting_seed</dt>
+<dd><p>Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.</p></dd>
 
 
 <dt>...</dt>
