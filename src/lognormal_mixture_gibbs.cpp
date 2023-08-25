@@ -1,10 +1,8 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
-// [[Rcpp::plugins("cpp11")]]
-
 #include <RcppArmadillo.h>
-
 #include <cmath>
+
 using namespace Rcpp;
 
 // ------ RNG Framework ------
@@ -21,9 +19,9 @@ void set_seed(const long int& seed_wanted) {
 }
 
 // function to sample from a Uniform(0, 1) internally
-double runif_0_1_internal(const long int& starting_seed) {
-  long int a = pow(5, 5);
-  long int m = pow(2, 31) - 1;
+double runif_0_1_internal(const long long int& starting_seed) {
+  long long int a = pow(5, 5);
+  long long int m = pow(2, 30) - 1;
   long long int new_seed = (starting_seed * a) % m;
   
   set_seed(new_seed);
@@ -287,7 +285,7 @@ arma::mat makeSymmetric(const arma::mat X) {
 // [[Rcpp::export]]
 arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
                                   arma::vec exp_y, arma::ivec delta, 
-                                  arma::mat X, double a, long int seed,
+                                  arma::mat X, double a, long long int seed,
                                   bool show_output) {
   
   // setting global seed to start the sampler
@@ -370,7 +368,7 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
       eta_em(g) = sumtau/N;
       
       if(arma::det(X.t() * Wg * X) != 0) {
-        beta_em.row(g) = (arma::inv_sympd(Xt * Wg * X,
+        beta_em.row(g) = (arma::inv(Xt * Wg * X,
                           arma::inv_opts::allow_approx) * Xt * Wg * y).t();
       }
       
@@ -472,7 +470,7 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
         // the priori used was MNV(vec 0, diag 1000)
         if(arma::det(phi(g) * Xgt * Xg + 
            arma::diagmat(repl(1.0 / 1000, p))) != 0) {
-          Sg = arma::inv_sympd(phi(g) * Xgt * Xg + 
+          Sg = arma::inv(phi(g) * Xgt * Xg + 
             arma::diagmat(repl(1.0 / 1000, p)));
           
           if(Sg.is_symmetric() == false) {
