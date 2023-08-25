@@ -22,13 +22,16 @@
 #'
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
-#' @param cores Ignored. Parallel runs are disabled.
+#' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
 #' 
 #' @param numero_componentes number of mixture componentes >= 2.
 #'
 #' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
 #' 
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
+#' 
+#' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
+#' 
 #' 
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -52,7 +55,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -105,14 +108,17 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 
 survival_ln_mixture_impl <- function(predictors, outcome_times, 
                                      outcome_status, iter = 1000,
-                                     warmup = floor(iter / 10), thin = 1,
+                                     warmup = floor(iter / 10), 
+                                     thin = 1,
                                      chains = 1, cores = 1, 
                                      numero_componentes = 2,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
-                                     em_iter = 150) {
-  
+                                     em_iter = 150,
+                                     starting_seed = sample(1:2^28, 1)) {
   number_of_predictors <- ncol(predictors)
+  
+  parallel <- cores > 1
   
   if (number_of_predictors < 1) {
     rlang::abort(
@@ -123,122 +129,394 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     )
   }
   
-  if (cores != 1) warning("Argumento cores ignorado, rodando cadeias sequencialmente.")
-  
-  posterior_dist <- sequential_lognormal_mixture_gibbs(
-    iter, em_iter, numero_componentes, chains, outcome_times, outcome_status,
-    predictors, proposal_variance, show_progress)
-  
-  grupos <- letters[seq_len(numero_componentes)]
-  pred_names <- colnames(predictors)
-  posterior_dist <- field_of_fied2array(posterior_dist, pred_names, grupos)
-  posterior_dist <- label_switch_all(posterior_dist, pred_names, grupos)
-  
-  names_theta = glue::glue("theta_{grupos}")
-  remover_menor_theta = -which(dimnames(posterior_dist)[[3]] == names_theta[numero_componentes])
-  posterior_dist <- posterior_dist[,,remover_menor_theta]
-  
-  posterior_dist <- posterior::as_draws_matrix(posterior_dist)
-  posterior_dist <- posterior::subset_draws(posterior_dist, iteration = seq(from = warmup + 1, to = iter))
-  posterior_dist <- posterior::thin_draws(posterior_dist, thin = thin)
-
-  list(posterior = posterior_dist, nobs = length(outcome_times), predictors_name = pred_names, mixture_groups = grupos)
-}
-
-
-#' Converte um field of cubes (lista de arrays) para uma array representando a posteriori de uma cadeia.
-#' 
-#' @param field field of cubes, exportado do rcpp. No R, é uma lista de arrays. A primeira array da lista possui
-#' dimensao numero_covariaveis x numero_componetes x numero_iteracoes, e é referente ao parametro beta.
-#' A segunda e terceira array da lista possuem dimensao 1 x numero_componetnes x numero_iteracoes e são referentes
-#' aos parametros phi e theta respectivamente.
-#' @param pred_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
-#' @param grupos nome dado as componetes (usualmente a, b, c)
-#' 
-#' @return Uma array de dimensão numero_iteracoes x 1 x numero_componetes * (2 + numero_covariaveis). Representa a 
-#' distribuicao a posteriori de uma cadeia, num formato aceito pelo posterior::as_draws_matrix.
-#' 
-#' @noRd
-field_of_cube2array <- function(field, pred_names, grupos){
-  posterior_dist = abind::abind(field, along = 1)
-  
-  names_beta <- glue::glue_data(expand.grid(pred_names, grupos), "{Var1}_{Var2}")
-  names_phi <- glue::glue("phi_{grupos}")
-  names_theta <- glue::glue("theta_{grupos}")
-  
-  dimnames(posterior_dist)[[1]] <- c(pred_names, "phi", "theta")
-  dimnames(posterior_dist)[[2]] <- grupos
-  
-  colnames = glue::glue_data(expand.grid(dimnames(posterior_dist)[1:2]), "{Var1}_{Var2}")
-  
-  posterior_dist = t(apply(posterior_dist, 3, c))
-  posterior_dist = array(
-    posterior_dist, 
-    dim = c(nrow(posterior_dist), ncol(posterior_dist), 1), 
-    dimnames = list(NULL, colnames, NULL)
-  )
-  posterior_dist = aperm(posterior_dist, c(1, 3, 2))[,,c(names_beta, names_phi, names_theta), drop = FALSE]
-  
-  return(posterior_dist)
-}
-
-#' Aplica fild_of_cubes2array em todas as cadeias do field_of_fields exportado pelo Rcpp.
-#' 
-#' @param field_of_field liste de lista de arrays exportada pelo Rcpp. Cada elemento da lista é uma lista contendo 
-#' 3 arrays de dimensoes numero_covariaveis x numero_componentes x numero_iteracoes, 1 x numero_componetes x numero_iteracoes
-#' e 1 x numero_componentes x numero_iteracoes representando os parametros beta, phi e theta respectivamente.
-#' @param pred_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
-#' @param grupos nome dado as componetes (usualmente a, b, c)
-#' 
-#' @return objecto da classe draws_matrix.
-#' 
-#' @noRd
-field_of_fied2array <- function(field_of_field, pred_names, grupos){
-  list_of_arrays = lapply(field_of_field, function(x) field_of_cube2array(x, pred_names, grupos))
-  arrays_joined = abind::abind(list_of_arrays, along = 2) 
-  return(arrays_joined)
-}
-
-#' corrige o problema do label switch para uma cadeia da posteriori
-#' 
-#' @param posterior_dist_chain uma matriz de dimensao numero_iteracoes x numero_componetes * (2 + numero_covariaveis)
-#' @param pred_names nome das variaveis preditoras
-#' @param grupos nome dado as componetes (usualmente a, b, c)
-#' 
-#' @return matriz de dimensão numero_iteracoes x numero_componetes * (2 + numero_covariaveis) mas com os labels
-#' reorganizados de forma que os thetas das componetes são ordenados de forma decrescente.
-#' 
-#' @noRd
-label_switch_one_chain <- function(posterior_dist_chain, pred_names, grupos){
-  names_theta = glue::glue("theta_{grupos}")
-  names_phi = glue::glue("phi_{grupos}")
-  label_old <- dimnames(posterior_dist_chain)[[2]]
-  
-  theta <- apply(posterior_dist_chain[, names_theta, drop = FALSE], c(2), stats::median)
-  ordem <- order(theta, decreasing = TRUE)
-  label_old <- dimnames(posterior_dist_chain)[[2]]
-  label_new <- c(
-    glue::glue_data(expand.grid(pred_names, grupos[ordem]), "{Var1}_{Var2}"),
-    names_phi[ordem],
-    names_theta[ordem]
-  )
-  posterior_dist_chain[,label_old] <- posterior_dist_chain[,label_new]
-  return(posterior_dist_chain)
-}
-
-#' corrige o problema do label switch para todas as cadeias da posteriori.
-#' 
-#' @param posterior_dist uma array de dimensao numero_iteracoes x numero_cadeias x numero_componetes * (2 + numero_covariaveis)
-#' @param pred_names nome das variaveis preditoras
-#' @param grupos nome dado as componetes (usualmente a, b, c)
-#' 
-#' @return uma array de dimensao numero_iteracoes x numero_cadeias x numero_componetes * (2 + numero_covariaveis) mas com os labels
-#' reorganizados de forma que os thetas das componetes são ordenados de forma decrescente. 
-#' 
-#' @noRd
-label_switch_all <- function(posterior_dist, pred_names, grupos){
-  for(i in seq_len(dim(posterior_dist)[2])){
-    posterior_dist[,i,] = label_switch_one_chain(posterior_dist[,i,], pred_names, grupos)
+  if (any(outcome_times == 0)) {
+    rlang::abort("One or more events happened at time zero.")
   }
+  
+  if (starting_seed < 1 | starting_seed > 2^28 |
+      (starting_seed %% 1) != 0) {
+    rlang::abort("The starting seed should be a natural number between 1 and 2^28")
+  }
+  
+  if (cores < 1 | (cores %% 1) != 0) {
+    rlang::abort("The number of cores should be a natural number, at least 1.")
+  } 
+
+  run_posterior_samples <- function() {
+    sequential_run(iter, em_iter, chains, 
+                   numero_componentes, outcome_times, 
+                   outcome_status, predictors, 
+                   proposal_variance, 
+                   starting_seed, show_progress, 
+                   warmup, thin)
+  }
+  
+  if (parallel) {
+    # redefining the function if parallel computation is request by the user
+    run_posterior_samples <- function() {
+      parallel_run(iter, em_iter, chains, cores,
+                   numero_componentes, outcome_times,
+                   outcome_status, predictors,
+                   proposal_variance,
+                   starting_seed, show_progress,
+                   warmup, thin)
+    }
+  }
+  
+  posterior_dist <- run_posterior_samples()
+  
+  # returning the function output
+  list(posterior = posterior_dist, 
+       nobs = length(outcome_times),
+       predictors_name = colnames(predictors), 
+       mixture_groups = seq_len(numero_componentes))
+}
+
+#' corrige o problema do label switch para uma cadeia da posteriori, ordenando grupos por proporções de mistura
+#' 
+#' @param posterior_dist uma matriz de dimensao numero_iteracoes x numero_componentes de amostras a posteriori
+
+#' @return matriz de dimensão numero_iteracoes x numero_componetes mas com os labels
+#' reorganizados de forma que os etas das componetes são ordenados de forma decrescente.
+#' 
+#' @noRd
+label_switch_one_chain <- function(posterior_dist){
+  obj <- dplyr::as_tibble(posterior_dist)
+  
+  obj_etas <- obj |>
+    dplyr::select(dplyr::starts_with('eta_'))
+  
+  etas_median <- as.numeric(apply(obj_etas, 2, stats::median))
+  
+  etas_order <- order(etas_median, decreasing = T)
+  
+  new_obj <- NULL
+  
+  for(j in 1:length(etas_order)) {
+    sub_obj <- obj |>
+      dplyr::select(dplyr::ends_with(as.character(etas_order[j])))
+    
+    for(c in 1:ncol(sub_obj)) {
+      names(sub_obj)[c] <- paste0(
+        substr(names(sub_obj)[c],
+               1, nchar(names(sub_obj)[c]) - 1), j)
+    }
+    
+    new_obj <- dplyr::bind_cols(new_obj, sub_obj)
+  }
+  
+  return(new_obj)
+}
+
+#' Nomeia as colunas da amostra a posteriori
+#' 
+#' @param posterior distribuição a posteriori amostrada
+#' 
+#' @param predictors_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
+#' @param numero_componentes número de componentes envolvidos no ajuste
+#' 
+#' @return matriz
+#' 
+#' @noRd
+give_colnames <- function(posterior, predictors_names, numero_componentes) {
+  number_params <- length(predictors_names)
+  new_names <- NULL
+  
+  for(i in 1:numero_componentes) {
+    for(j in 1:3) { # de 1 a 3 porque 3 grupos de parâmetros são ajustados no modelo: uma proporção de mistura, uma precisão e um grupo de efeitos das covariáveis
+      if(j == 1) { # primeiro grupo, eta: efeitos das covariáveis
+        for(c in 1:number_params) { 
+          new_names <- c(new_names,
+                         paste0(predictors_names[c], '_', i))
+        }
+      } else if (j == 2) { # segundo grupo, phi: precisão
+        new_names <- c(new_names,
+                       paste0('phi_', i))
+      } else { # terceiro grupo, j = 3, proporções de mistura
+        new_names <- c(new_names,
+                       paste0('eta_', i))
+      }
+    }
+  }
+  
+  posterior_dist <- posterior
+  colnames(posterior_dist) <- new_names
+  
   return(posterior_dist)
+}
+
+#' Permuta as colunas para ficar de acordo: primeiro efeitos das covariáveis dos grupos, precisões e, por fim, proporções de misturas
+#' 
+#' @param posterior distribuição a posteriori amostrada
+#' 
+#' @return matriz
+#' 
+#' @noRd
+permute_columns <- function(posterior) {
+  posterior_dist <- dplyr::as_tibble(posterior)
+  posterior_dist <- dplyr::bind_cols(posterior |> 
+                                       dplyr::select(
+                                         -tidyselect::starts_with('eta'),
+                                         -tidyselect::starts_with('phi')),
+                                     posterior |> 
+                                       dplyr::select(
+                                         tidyselect::starts_with('phi'),
+                                         tidyselect::starts_with('eta')))
+  
+  return(posterior_dist)
+}
+
+#' Roda as cadeias especificadas pelo usuário de forma sequencial, em apenas um core
+#' 
+#' @param iter número de iterações do amostrador de Gibbs
+#' 
+#' @param em_iter número de iterações do algoritmo EM
+#' 
+#' @param chains número de cadeias a serem utilizadas
+#' 
+#' @param numero_componentes número de componentes envolvidos na análise
+#' 
+#' @param outcome_times tempos observados
+#' 
+#' @param outcome_status indicador de censura, 1 se foi observado evento e 0 para censura
+#' 
+#' @param predictors matriz de preditores
+#' 
+#' @param proposal_variance valor de a usado dentro do C++
+#' 
+#' @param starting_seed semente inicial do algoritmo
+#' 
+#' @param show_progress indica se o algoritmo deve mostrar iterações realizadas
+#' 
+#' @param warmup aquecimento das cadeias
+#' 
+#' @param thin thinning das cadeias
+#' 
+#' @return matriz
+#' 
+#' @noRd
+sequential_run <- function(iter, em_iter, chains, numero_componentes, outcome_times,  outcome_status, predictors, proposal_variance, starting_seed,  show_progress, warmup, thin) {
+  
+  if(chains > 1) {
+    set.seed(starting_seed)
+    seeds <- sample(1:2^28, chains)
+    
+    list_posteriors <- NULL
+    
+    for(i in 1:chains) {
+      posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, seeds[i],  show_progress)
+      
+      posterior <- give_colnames(posterior, colnames(predictors),
+                                 numero_componentes)
+      
+      posterior <- label_switch_one_chain(posterior)
+      
+      posterior <- permute_columns(posterior)
+      
+      remover_menor_theta <- -which(
+        colnames(posterior) == colnames(
+          posterior |> 
+            dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+      posterior <- posterior[, remover_menor_theta]
+      
+      list_posteriors[[i]] <- posterior |> 
+        posterior::as_draws_matrix()
+    }
+    
+    draws_return <- list_posteriors[[1]]
+    if(length(list_posteriors) >= 2) {
+      for(i in 2:length(list_posteriors)) {
+        draws_return <- posterior::bind_draws(draws_return,
+                                              list_posteriors[[i]],
+                                              along = 'chain')
+      } 
+    }
+  } else {
+    posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress)
+    
+    posterior <- give_colnames(posterior, colnames(predictors),
+                               numero_componentes)
+    
+    posterior <- label_switch_one_chain(posterior)
+    
+    posterior <- permute_columns(posterior)
+    
+    remover_menor_theta <- -which(
+      colnames(posterior) == colnames(
+        posterior |> 
+          dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+    posterior <- posterior[, remover_menor_theta]
+    
+    draws_return <- posterior
+  }
+  
+  draws_return <- posterior::as_draws_matrix(draws_return)
+  draws_return <- posterior::subset_draws(draws_return, iteration = seq(from = warmup + 1, to = iter))
+  draws_return <- posterior::thin_draws(draws_return, thin = thin)
+  
+  return(draws_return)
+}
+
+#' Roda as cadeias especificadas pelo usuário de forma paralela, limitada ao número de cores que o usuário definiu. Cada cadeia roda em um core, apenas
+#' 
+#' @param iter número de iterações do amostrador de Gibbs
+#' 
+#' @param em_iter número de iterações do algoritmo EM
+#' 
+#' @param chains número de cadeias a serem utilizadas
+#' 
+#' @param cores número de núcleos do processador utilizados para rodar as cadeias
+#' 
+#' @param numero_componentes número de componentes envolvidos na análise
+#' 
+#' @param outcome_times tempos observados
+#' 
+#' @param outcome_status indicador de censura, 1 se foi observado evento e 0 para censura
+#' 
+#' @param predictors matriz de preditores
+#' 
+#' @param proposal_variance valor de a usado dentro do C++
+#' 
+#' @param starting_seed semente inicial do algoritmo
+#' 
+#' @param show_progress indica se o algoritmo deve mostrar iterações realizadas
+#' 
+#' @param warmup aquecimento das cadeias
+#' 
+#' @param thin thinning das cadeias
+#' 
+#' @return matriz
+#' 
+#' @noRd
+parallel_run <- function(iter, em_iter, chains, cores, numero_componentes, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin) {
+  
+  set.seed(starting_seed)
+  seeds <- sample(1:2^28, chains)
+  
+  list_posteriors <- NULL
+  
+  # aqui, podem acontecer 3 cenários:
+  # 1 - cores = chains
+  # 2 - cores < chains
+  # 3 - cores > chains
+  # temos que especificar um comportamento para cada um dos cenários
+  
+  # criando uma função para amostrar e tratar as saídas de uma cadeia só
+  fit_one_chain <- function(seed, iter, em_iter, numero_componentes,
+                            outcome_times, outcome_status, predictors,
+                            proposal_variance, show_progress) {
+    posterior <- lognormal_mixture_gibbs(iter, em_iter,
+                                         numero_componentes,
+                                         outcome_times, 
+                                         outcome_status, predictors,
+                                         proposal_variance, seed, 
+                                         show_progress)
+    
+    posterior <- give_colnames(posterior, colnames(predictors),
+                               numero_componentes)
+    
+    posterior <- label_switch_one_chain(posterior)
+    
+    posterior <- permute_columns(posterior)
+    
+    remover_menor_theta <- -which(
+      colnames(posterior) == colnames(
+        posterior |> 
+          dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+    
+    posterior <- posterior[, remover_menor_theta]
+    posterior <- posterior::as_draws_matrix(posterior)
+  }
+  
+  # cores = chains, cenário mais simples
+  if(cores == chains) {
+    cluster_total <- parallel::makePSOCKcluster(cores, outfile = "")
+    parallel::clusterExport(cluster_total,
+                            c('lognormal_mixture_gibbs',
+                              'fit_one_chain',
+                              'iter', 'em_iter', 'numero_componentes',
+                              'outcome_times', 'outcome_status',
+                              'predictors', 'proposal_variance',
+                              'show_progress'),
+                            envir = environment())
+    
+    list_posteriors <- parallel::clusterApply(cluster_total, seeds, fit_one_chain, iter = iter, em_iter = em_iter, numero_componentes = numero_componentes, outcome_times = outcome_times, outcome_status = outcome_status, predictors = predictors, proposal_variance = proposal_variance, show_progress = show_progress)
+    
+    parallel::stopCluster(cluster_total)
+  } else if (cores > chains) { # mais cores disponíveis que cadeias para rodar, segundo cenário mais fácil
+    cores_fix <- chains # fixar o número de cores no número de cadeias e rodar exatamente como o cenário anterior
+    
+    cluster_total <- parallel::makePSOCKcluster(cores_fix,
+                                                outfile = "")
+    parallel::clusterExport(cluster_total,
+                            c('lognormal_mixture_gibbs',
+                              'fit_one_chain',
+                              'iter', 'em_iter', 'numero_componentes',
+                              'outcome_times', 'outcome_status',
+                              'predictors', 'proposal_variance',
+                              'show_progress'),
+                            envir = environment())
+    
+    list_posteriors <- parallel::clusterApply(cluster_total, seeds, fit_one_chain, iter = iter, em_iter = em_iter, numero_componentes = numero_componentes, outcome_times = outcome_times, outcome_status = outcome_status, predictors = predictors, proposal_variance = proposal_variance, show_progress = show_progress)
+    
+    parallel::stopCluster(cluster_total)
+  } else { # cores < chains, cenário mais complicado pois devemos realizar partições das cadeias para rodar no número limitado de cores
+    numero_particoes <- ceiling(chains/cores) # número total de partições necessárias para rodar as cadeias solicitadas limitada pelo número de cores
+    
+    resto_ultima_particao <- chains %% cores # qual resto arredondado no ceiling
+    
+    esquema_cores <- NULL
+    
+    # para cada partição, rodar com o número limitado de cores.
+    # para isso, é necessário criar um vetor definindo com quantos cores será rodada cada partição
+    for(j in 1:numero_particoes) {
+      if(j != numero_particoes) {
+        esquema_cores <- c(esquema_cores, cores)
+      } else {
+        if(resto_ultima_particao != 0) {
+          esquema_cores <- c(esquema_cores, resto_ultima_particao)
+        } else {
+          esquema_cores <- c(esquema_cores, cores)
+        }
+      }
+    }
+    
+    seed_indexer_start = 1;
+    for(j in 1:numero_particoes) {
+      cores_fix <- esquema_cores[j]
+      seed_indexer_final <- seed_indexer_start + cores_fix - 1
+      seeds_fix <- seeds[seed_indexer_start:seed_indexer_final]
+      
+      cluster_total <- parallel::makePSOCKcluster(cores_fix,
+                                                  outfile = "")
+      parallel::clusterExport(cluster_total,
+                              c('lognormal_mixture_gibbs',
+                                'fit_one_chain',
+                                'iter', 'em_iter', 'numero_componentes',
+                                'outcome_times', 'outcome_status',
+                                'predictors', 'proposal_variance',
+                                'show_progress'),
+                              envir = environment())
+      
+      list_posteriors <- append(list_posteriors, 
+                                parallel::clusterApply(cluster_total, seeds_fix, fit_one_chain, iter = iter, em_iter = em_iter, numero_componentes = numero_componentes, outcome_times = outcome_times, outcome_status = outcome_status, predictors = predictors, proposal_variance = proposal_variance, show_progress = show_progress))
+      
+      seed_indexer_start <- seed_indexer_start + cores_fix
+    }
+  }
+  
+  draws_return <- list_posteriors[[1]]
+  if(length(list_posteriors) >= 2) {
+    for(i in 2:length(list_posteriors)) {
+      draws_return <- posterior::bind_draws(draws_return,
+                                            list_posteriors[[i]],
+                                            along = 'chain')
+    } 
+  }
+  
+  draws_return <- posterior::as_draws_matrix(draws_return)
+  draws_return <- posterior::subset_draws(draws_return, iteration = seq(from = warmup + 1, to = iter))
+  draws_return <- posterior::thin_draws(draws_return, thin = thin)
+  
+  return(draws_return)
 }

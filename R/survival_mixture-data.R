@@ -2,15 +2,16 @@
 
 make_survival_reg_survival_ln_mixture <- function() {
   parsnip::set_model_engine(
-    "survival_reg",
+    model = "survival_reg",
     mode = "censored regression",
     eng = "survival_ln_mixture"
   )
+  
   parsnip::set_dependency(
     "survival_reg",
     eng = "survival_ln_mixture", pkg = "lnmixsurv"
   )
-
+  
   parsnip::set_fit(
     model = "survival_reg",
     eng = "survival_ln_mixture",
@@ -22,7 +23,7 @@ make_survival_reg_survival_ln_mixture <- function() {
       defaults = list()
     )
   )
-
+  
   parsnip::set_encoding(
     model = "survival_reg",
     eng = "survival_ln_mixture",
