@@ -27,14 +27,15 @@ start <- Sys.time()
 mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                       data = sim_data$data, 
                                       chains = 4, starting_seed = 50)
-# Time to run 6 chains sequentially:
+# Time to run 4 chains sequentially:
 print(Sys.time() - start)
 
 start <- Sys.time()
 mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                     data = sim_data$data, 
-                                    chains = 12, cores = 12, iter = 4000)
-# Time to run 6 chains in parallel:
+                                    chains = 4, cores = 4,
+                                    starting_seed = 50)
+# Time to run 4 chains in parallel:
 print(Sys.time() - start)
 ```
 
@@ -46,7 +47,7 @@ mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x,
                                             iter = 1, em_iter = 1,
                                             chains = 4)
 
-# Time to run 1 EM iter and 1 MCMC iter on 6 chains, sequentially:
+# Time to run 1 EM iter and 1 MCMC iter on 4 chains, sequentially:
 print(Sys.time() - start)
 
 start <- Sys.time()
@@ -54,7 +55,7 @@ mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x,
                                           data = sim_data$data, 
                                           iter = 1, em_iter = 1,
                                           chains = 4, cores = 4)
-# Time to run 1 EM iter and 1 MCMC iter on 6 chains in parallel:
+# Time to run 1 EM iter and 1 MCMC iter on 4 chains in parallel:
 print(Sys.time() - start)
 ```
 
@@ -63,25 +64,25 @@ However, for longer runs, these few seconds to start the clusters are negligible
 start <- Sys.time()
 mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 8000, chains = 4,
+                                           iter = 6000, chains = 6,
                                            starting_seed = 50)
-# Time to run 8000 iterations in 4 chains in sequence:
+# Time to run 6000 iterations in 6 chains in sequence:
 print(Sys.time() - start)
 
 start <- Sys.time()
 mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 8000, chains = 4,
-                                           cores = 4,
+                                           iter = 6000, chains = 6,
+                                           cores = 6,
                                            starting_seed = 50)
-# Time to run 8000 iterations in 4 chains in parallel:
+# Time to run 6000 iterations in 6 chains in parallel:
 print(Sys.time() - start)
 ```
 
 Since the seed is fixed, we expect to obtain the same chain on both kind of operations. We can make sure this is happening by look at a small portion of the chains.
 ```{r}
-mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 1:50, chain = 4, variable = 'eta_1'))
+mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 1:50, chain = c(1, 4), variable = 'eta_1'))
 
-mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 1:50, chain = 4, variable = 'eta_1'))
+mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 1:50, chain = c(1, 4), variable = 'eta_1'))
 ```
  
