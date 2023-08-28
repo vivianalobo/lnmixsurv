@@ -5,8 +5,6 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
-#define ARMA_64BIT_WORD 1;
-
 using namespace Rcpp;
 
 // ------ RNG Framework ------
