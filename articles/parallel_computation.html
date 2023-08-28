@@ -97,17 +97,18 @@ will run on one core, by specifying the cores argument. Any value above
 <span><span class="va">mod_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, </span>
 <span>                                      data <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, </span>
 <span>                                      chains <span class="op">=</span> <span class="fl">4</span>, starting_seed <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="co"># Time to run 6 chains sequentially:</span></span>
+<span><span class="co"># Time to run 4 chains sequentially:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 24.31516 secs</span></span>
+<span><span class="co">#&gt; Time difference of 24.6938 secs</span></span>
 <span></span>
 <span><span class="va">start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, </span>
 <span>                                    data <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, </span>
-<span>                                    chains <span class="op">=</span> <span class="fl">12</span>, cores <span class="op">=</span> <span class="fl">12</span>, iter <span class="op">=</span> <span class="fl">4000</span><span class="op">)</span></span>
-<span><span class="co"># Time to run 6 chains in parallel:</span></span>
+<span>                                    chains <span class="op">=</span> <span class="fl">4</span>, cores <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>                                    starting_seed <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
+<span><span class="co"># Time to run 4 chains in parallel:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 2.629151 mins</span></span></code></pre></div>
+<span><span class="co">#&gt; Time difference of 27.25955 secs</span></span></code></pre></div>
 <p>For small runs, we can see that the parallel model is lower because
 of the time required to build the clusters. We can effectively see this
 time to build the clusters by running a really small chain.</p>
@@ -118,18 +119,18 @@ time to build the clusters by running a really small chain.</p>
 <span>                                            iter <span class="op">=</span> <span class="fl">1</span>, em_iter <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                                            chains <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Time to run 1 EM iter and 1 MCMC iter on 6 chains, sequentially:</span></span>
+<span><span class="co"># Time to run 1 EM iter and 1 MCMC iter on 4 chains, sequentially:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 0.2304351 secs</span></span>
+<span><span class="co">#&gt; Time difference of 0.1783857 secs</span></span>
 <span></span>
 <span><span class="va">start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_parallel_small</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, </span>
 <span>                                          data <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, </span>
 <span>                                          iter <span class="op">=</span> <span class="fl">1</span>, em_iter <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>                                          chains <span class="op">=</span> <span class="fl">4</span>, cores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
-<span><span class="co"># Time to run 1 EM iter and 1 MCMC iter on 6 chains in parallel:</span></span>
+<span><span class="co"># Time to run 1 EM iter and 1 MCMC iter on 4 chains in parallel:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 4.741011 secs</span></span></code></pre></div>
+<span><span class="co">#&gt; Time difference of 4.58175 secs</span></span></code></pre></div>
 <p>However, for longer runs, these few seconds to start the clusters are
 negligible and the parallel approach will outperform the sequential
 approach at some point.</p>
@@ -137,30 +138,30 @@ approach at some point.</p>
 <code class="sourceCode R"><span><span class="va">start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_sequential_longer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, </span>
 <span>                                           data <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, </span>
-<span>                                           iter <span class="op">=</span> <span class="fl">8000</span>, chains <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>                                           iter <span class="op">=</span> <span class="fl">6000</span>, chains <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>                                           starting_seed <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="co"># Time to run 8000 iterations in 4 chains in sequence:</span></span>
+<span><span class="co"># Time to run 6000 iterations in 6 chains in sequence:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 1.386914 mins</span></span>
+<span><span class="co">#&gt; Time difference of 1.649689 mins</span></span>
 <span></span>
 <span><span class="va">start</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_parallel_longer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, </span>
 <span>                                           data <span class="op">=</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span>, </span>
-<span>                                           iter <span class="op">=</span> <span class="fl">8000</span>, chains <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>                                           cores <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>                                           iter <span class="op">=</span> <span class="fl">6000</span>, chains <span class="op">=</span> <span class="fl">6</span>,</span>
+<span>                                           cores <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>                                           starting_seed <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
-<span><span class="co"># Time to run 8000 iterations in 4 chains in parallel:</span></span>
+<span><span class="co"># Time to run 6000 iterations in 6 chains in parallel:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">start</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Time difference of 1.460433 mins</span></span></code></pre></div>
+<span><span class="co">#&gt; Time difference of 1.747944 mins</span></span></code></pre></div>
 <p>Since the seed is fixed, we expect to obtain the same chain on both
 kind of operations. We can make sure this is happening by look at a
 small portion of the chains.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="fu">posterior</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/subset_draws.html" class="external-link">subset_draws</a></span><span class="op">(</span><span class="va">mod_sequential</span><span class="op">$</span><span class="va">posterior</span>, iteration <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>, chain <span class="op">=</span> <span class="fl">4</span>, variable <span class="op">=</span> <span class="st">'eta_1'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="fu">posterior</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/subset_draws.html" class="external-link">subset_draws</a></span><span class="op">(</span><span class="va">mod_sequential</span><span class="op">$</span><span class="va">posterior</span>, iteration <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>, chain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span>, variable <span class="op">=</span> <span class="st">'eta_1'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="parallel_computation_files/figure-html/unnamed-chunk-5-1.png" width="700"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
-<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="fu">posterior</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/subset_draws.html" class="external-link">subset_draws</a></span><span class="op">(</span><span class="va">mod_parallel</span><span class="op">$</span><span class="va">posterior</span>, iteration <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>, chain <span class="op">=</span> <span class="fl">4</span>, variable <span class="op">=</span> <span class="st">'eta_1'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="fu">posterior</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/subset_draws.html" class="external-link">subset_draws</a></span><span class="op">(</span><span class="va">mod_parallel</span><span class="op">$</span><span class="va">posterior</span>, iteration <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">50</span>, chain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span>, variable <span class="op">=</span> <span class="st">'eta_1'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="parallel_computation_files/figure-html/unnamed-chunk-5-2.png" width="700"></p>
   </main>
 </div>
