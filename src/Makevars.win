@@ -11,5 +11,5 @@
 CXX_STD = CXX11
 
 # Register where the header files for the package can be found
-PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -I../inst/include/
+PKG_CXXFLAGS = -DARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS) -I../inst/include/
 PKG_LIBS = -L/usr/lib -lgsl $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
