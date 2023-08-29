@@ -71,7 +71,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details.</p>
 <span>  proposal_variance <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  show_progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  em_iter <span class="op">=</span> <span class="fl">150</span>,</span>
-<span>  starting_seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">^</span><span class="fl">30</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  starting_seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">^</span><span class="fl">28</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -136,7 +136,7 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 
 
 <dt>starting_seed</dt>
-<dd><p>Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^25. This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.</p></dd>
+<dd><p>Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.</p></dd>
 
 
 <dt>...</dt>
