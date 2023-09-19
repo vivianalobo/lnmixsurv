@@ -1,7 +1,7 @@
 Package: lnmixsurv
 Type: Package
 Title: Bayesian Mixture Log-Normal survival model
-Version: 1.3.2
+Version: 1.3.3
 Date: 2023-08-23
 Authors@R: c(
     person("Viviana das Gra\u00e7cas Ribeiro Lobo", email = "viviana@dme.ufrj.br", role = c("cre", "aut")),
