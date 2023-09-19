@@ -56,7 +56,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, force_num_cores = FALSE, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), force_num_cores = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -111,12 +111,12 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      warmup = floor(iter / 10), 
                                      thin = 1,
                                      chains = 1, cores = 1,
-                                     force_num_cores = FALSE,
                                      numero_componentes = 2,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
                                      em_iter = 150,
-                                     starting_seed = sample(1:2^28, 1)) {
+                                     starting_seed = sample(1:2^28, 1),
+                                     force_num_cores = FALSE) {
   number_of_predictors <- ncol(predictors)
   
   if (number_of_predictors < 1) {
