@@ -1,12 +1,13 @@
 // -*- mode: C++; c-indent-level: 4; c-basic-offset: 4; indent-tabs-mode: nil; -*-
 
+#include <omp.h>
 #include <RcppArmadillo.h>
 #include <RcppGSL.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-#include <omp.h>
 
 // [[Rcpp::plugins(openmp)]]
+// [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
 // ------ RNG Framework ------
@@ -202,15 +203,14 @@ arma::mat makeSymmetric(const arma::mat X) {
   return out;
 }
 
-// [[Rcpp::export]]
-arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G, 
-                                  arma::vec exp_y, arma::ivec delta, 
-                                  arma::mat X, double a, 
-                                  long long int starting_seed,
-                                  bool show_output) {
+arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G, 
+                                                 arma::vec exp_y, arma::ivec delta, 
+                                                 arma::mat X, double a, 
+                                                 long long int starting_seed,
+                                                 bool show_output, int chain_num) {
   
-  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);;
-
+  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
+  
   // setting global seed to start the sampler
   setSeed(starting_seed, global_rng);
   
@@ -252,7 +252,7 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
   for (int iter = 0; iter < em_iter; iter++) {
     
     if ((iter % 50 == 0) && show_output) {
-      Rcout << "EM Iter: " << iter << "/" << em_iter << "\n";
+      Rcout << "(Chain " << chain_num << ") EM Iter: " << iter << "/" << em_iter << "\n";
     }
     
     // Initializing values
@@ -474,12 +474,42 @@ arma::mat lognormal_mixture_gibbs(int Niter, int em_iter, int G,
     out.row(iter) = newRow;
     
     if((iter % 500 == 0) && show_output) {
-      Rcout << "MCMC Iter: " << iter << "/" << Niter << "\n";
+      Rcout << "(Chain " << chain_num << ") MCMC Iter: " << iter << "/" << Niter << "\n";
     }
   }
   
   if(show_output) {
-    Rcout << "Done" << "\n";
+    Rcout << "Chain " << chain_num << " finished sampling." << "\n";
   }
+  return out;
+}
+
+// Function to call lognormal_mixture_gibbs_implementation with parallellization
+// [[Rcpp::export]]
+arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_y, arma::ivec delta, arma::mat X,
+                                   double a, arma::Col<long long int> starting_seed, bool show_output, int n_cores, int n_chains) {
+  arma::cube out(Niter, (X.n_cols + 2) * G, n_chains);
+  
+  if(n_cores == 1) {
+    for(int chain = 0; chain < n_chains; chain ++) {
+      out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, starting_seed(chain), show_output,
+                chain + 1);
+    }
+    
+    return out;
+  }
+  
+  omp_set_dynamic(0); // related to https://stackoverflow.com/questions/11095309/openmp-set-num-threads-is-not-working
+  omp_set_num_threads(n_cores);
+  
+  int chain;
+  
+  #pragma omp parallel for private(chain)
+  for(int chain = 0; chain < n_chains; chain ++) {
+    usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
+    out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, 
+              starting_seed(chain), show_output, chain + 1);
+  }
+  
   return out;
 }

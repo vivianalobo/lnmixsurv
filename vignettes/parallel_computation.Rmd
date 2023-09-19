@@ -26,7 +26,8 @@ It's possible to run multiple chains in parallel, where each chain will run on o
 start <- Sys.time()
 mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                       data = sim_data$data, 
-                                      chains = 4, starting_seed = 50)
+                                      chains = 4, starting_seed = 50,
+                                      em_iter = 10, iter = 2000)
 # Time to run 4 chains sequentially:
 print(Sys.time() - start)
 
@@ -34,38 +35,39 @@ start <- Sys.time()
 mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                     data = sim_data$data, 
                                     chains = 4, cores = 4,
-                                    starting_seed = 50)
+                                    starting_seed = 50,
+                                    em_iter = 10, iter = 2000)
 # Time to run 4 chains in parallel:
 print(Sys.time() - start)
 ```
 
-For small runs, we can see that the parallel model is lower because of the time required to build the clusters. We can effectively see this time to build the clusters by running a really small chain.
+Since the parallel approach is implemented with OpenMP, this should be faster than sequential approach for longer runs, but for really small runs they may be equivalent. Just make sure to have enough RAM available to run the chains in parallel.
 ```{r}
 start <- Sys.time()
 mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                             data = sim_data$data, 
-                                            iter = 1, em_iter = 1,
+                                            iter = 400, em_iter = 1,
                                             chains = 4)
 
-# Time to run 1 EM iter and 1 MCMC iter on 4 chains, sequentially:
+# Time to run 1 EM iter and 400 MCMC iter on 4 chains, sequentially:
 print(Sys.time() - start)
 
 start <- Sys.time()
 mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                           data = sim_data$data, 
-                                          iter = 1, em_iter = 1,
+                                          iter = 400, em_iter = 1,
                                           chains = 4, cores = 4)
-# Time to run 1 EM iter and 1 MCMC iter on 4 chains in parallel:
+# Time to run 1 EM iter and 4 MCMC iter on 4 chains in parallel:
 print(Sys.time() - start)
 ```
 
-However, for longer runs, these few seconds to start the clusters are negligible and the parallel approach will outperform the sequential approach at some point.
 ```{r}
 start <- Sys.time()
 mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
                                            iter = 6000, chains = 6,
-                                           starting_seed = 50)
+                                           starting_seed = 50,
+                                           em_iter = 50)
 # Time to run 6000 iterations in 6 chains in sequence:
 print(Sys.time() - start)
 
@@ -74,15 +76,16 @@ mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x,
                                            data = sim_data$data, 
                                            iter = 6000, chains = 6,
                                            cores = 6,
-                                           starting_seed = 50)
+                                           starting_seed = 50,
+                                           em_iter = 50)
 # Time to run 6000 iterations in 6 chains in parallel:
 print(Sys.time() - start)
 ```
 
 Since the seed is fixed, we expect to obtain the same chain on both kind of operations. We can make sure this is happening by look at a small portion of the chains.
 ```{r}
-mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 1:50, chain = c(1, 4), variable = 'eta_1'))
+mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 10:80, chain = c(1, 4), variable = 'eta_1'))
 
-mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 1:50, chain = c(1, 4), variable = 'eta_1'))
+mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 10:80, chain = c(1, 4), variable = 'eta_1'))
 ```
  
