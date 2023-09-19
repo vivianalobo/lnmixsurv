@@ -24,6 +24,8 @@
 #'
 #' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
 #' 
+#' @param force_num_cores A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.
+#' 
 #' @param numero_componentes number of mixture componentes >= 2.
 #'
 #' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
@@ -31,7 +33,6 @@
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
 #' 
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
-#' 
 #' 
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -55,7 +56,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, force_num_cores = FALSE, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -109,7 +110,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      outcome_status, iter = 1000,
                                      warmup = floor(iter / 10), 
                                      thin = 1,
-                                     chains = 1, cores = 1, 
+                                     chains = 1, cores = 1,
+                                     force_num_cores = FALSE,
                                      numero_componentes = 2,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
@@ -141,6 +143,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     
   posterior_dist <- run_posterior_samples(iter, em_iter, 
                                           chains, cores,
+                                          force_num_cores,
                                           numero_componentes,
                                           outcome_times,
                                           outcome_status, 
@@ -285,6 +288,7 @@ permute_columns <- function(posterior) {
 
 
 run_posterior_samples <- function(iter, em_iter, chains, cores,
+                                  force_num_cores,
                                   numero_componentes, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
@@ -295,14 +299,11 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
   
   list_posteriors <- NULL
   
-  posterior <- lognormal_mixture_gibbs(iter, em_iter,
-                                       numero_componentes,
-                                       outcome_times,
-                                       outcome_status, predictors,
-                                       proposal_variance,
-                                       seeds, 
-                                       show_progress, cores, 
-                                       chains)
+  posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes,
+                                       outcome_times, outcome_status,
+                                       predictors, proposal_variance, 
+                                       seeds, show_progress, cores, 
+                                       chains, force_num_cores)
   for(i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[,, i])
     

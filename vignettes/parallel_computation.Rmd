@@ -27,7 +27,7 @@ start <- Sys.time()
 mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                       data = sim_data$data, 
                                       chains = 4, starting_seed = 50,
-                                      em_iter = 10, iter = 2000)
+                                      em_iter = 10)
 # Time to run 4 chains sequentially:
 print(Sys.time() - start)
 
@@ -36,7 +36,7 @@ mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x,
                                     data = sim_data$data, 
                                     chains = 4, cores = 4,
                                     starting_seed = 50,
-                                    em_iter = 10, iter = 2000)
+                                    em_iter = 10)
 # Time to run 4 chains in parallel:
 print(Sys.time() - start)
 ```
@@ -46,7 +46,7 @@ Since the parallel approach is implemented with OpenMP, this should be faster th
 start <- Sys.time()
 mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                             data = sim_data$data, 
-                                            iter = 400, em_iter = 1,
+                                            iter = 100, em_iter = 5,
                                             chains = 4)
 
 # Time to run 1 EM iter and 400 MCMC iter on 4 chains, sequentially:
@@ -55,7 +55,7 @@ print(Sys.time() - start)
 start <- Sys.time()
 mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                           data = sim_data$data, 
-                                          iter = 400, em_iter = 1,
+                                          iter = 100, em_iter = 5,
                                           chains = 4, cores = 4)
 # Time to run 1 EM iter and 4 MCMC iter on 4 chains in parallel:
 print(Sys.time() - start)
@@ -65,7 +65,7 @@ print(Sys.time() - start)
 start <- Sys.time()
 mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 6000, chains = 6,
+                                           iter = 8000, chains = 6,
                                            starting_seed = 50,
                                            em_iter = 50)
 # Time to run 6000 iterations in 6 chains in sequence:
@@ -74,7 +74,7 @@ print(Sys.time() - start)
 start <- Sys.time()
 mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, 
                                            data = sim_data$data, 
-                                           iter = 6000, chains = 6,
+                                           iter = 8000, chains = 6,
                                            cores = 6,
                                            starting_seed = 50,
                                            em_iter = 50)

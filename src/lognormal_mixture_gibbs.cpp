@@ -5,9 +5,12 @@
 #include <RcppGSL.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 // [[Rcpp::plugins(openmp)]]
-// [[Rcpp::depends(RcppArmadillo)]]
+
 using namespace Rcpp;
 
 // ------ RNG Framework ------
@@ -487,7 +490,8 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
 // Function to call lognormal_mixture_gibbs_implementation with parallellization
 // [[Rcpp::export]]
 arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_y, arma::ivec delta, arma::mat X,
-                                   double a, arma::Col<long long int> starting_seed, bool show_output, int n_cores, int n_chains) {
+                                   double a, arma::Col<long long int> starting_seed, bool show_output, int n_cores, int n_chains,
+                                   bool force_num_cores) {
   arma::cube out(Niter, (X.n_cols + 2) * G, n_chains);
   
   if(n_cores == 1) {
@@ -499,13 +503,17 @@ arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_
     return out;
   }
   
-  omp_set_dynamic(0); // related to https://stackoverflow.com/questions/11095309/openmp-set-num-threads-is-not-working
+  if(force_num_cores) {
+    omp_set_dynamic(0); // related to https://stackoverflow.com/questions/11095309/openmp-set-num-threads-is-not-working
+  }
+  
   omp_set_num_threads(n_cores);
   
   int chain;
   
   #pragma omp parallel for private(chain)
   for(int chain = 0; chain < n_chains; chain ++) {
+    #pragma omp critical
     usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
     out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, 
               starting_seed(chain), show_output, chain + 1);
