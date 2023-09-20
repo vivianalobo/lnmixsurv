@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,16 +102,16 @@ package.</p>
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
 <span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; x0_1 4.045252 0.006776779 4.037009  4.053814</span></span>
-<span><span class="co">#&gt; x1_1 4.853218 0.007425901 4.843914  4.863624</span></span>
-<span><span class="co">#&gt; x0_2 3.423864 0.021878155 3.394904  3.453731</span></span>
-<span><span class="co">#&gt; x1_2 3.912156 0.026175148 3.879264  3.945909</span></span>
+<span><span class="co">#&gt; x0_1 4.044854 0.006912640 4.035813  4.053171</span></span>
+<span><span class="co">#&gt; x1_1 4.853775 0.006783693 4.844774  4.862856</span></span>
+<span><span class="co">#&gt; x0_2 3.421924 0.019111502 3.398562  3.449287</span></span>
+<span><span class="co">#&gt; x1_2 3.912921 0.023259431 3.880898  3.941975</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
 <span><span class="co">#&gt;         estimate  std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_1 26.3701591 1.41904361 24.6414536 28.5304086</span></span>
-<span><span class="co">#&gt; phi_2  3.1935205 0.12247127  3.0452639  3.3504404</span></span>
-<span><span class="co">#&gt; eta_1  0.5091353 0.01507442  0.4895345  0.5262683</span></span></code></pre></div>
+<span><span class="co">#&gt; phi_1 26.2671801 1.34019361 24.4948053 28.1535254</span></span>
+<span><span class="co">#&gt; phi_2  3.1976596 0.11768598  3.0582727  3.3527066</span></span>
+<span><span class="co">#&gt; eta_1  0.5095997 0.01252786  0.4919963  0.5246953</span></span></code></pre></div>
 <p>When using <code>recipes</code>, some caution must be taken due to
 the fact that recipes do not support inline functions (like
 <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code>). A possible way to use them is to set both
@@ -154,16 +154,16 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
 <span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; z0_1 4.045252 0.006776779 4.037009  4.053814</span></span>
-<span><span class="co">#&gt; z1_1 4.853218 0.007425901 4.843914  4.863624</span></span>
-<span><span class="co">#&gt; z0_2 3.423864 0.021878155 3.394904  3.453731</span></span>
-<span><span class="co">#&gt; z1_2 3.912156 0.026175148 3.879264  3.945909</span></span>
+<span><span class="co">#&gt; z0_1 4.044854 0.006912640 4.035813  4.053171</span></span>
+<span><span class="co">#&gt; z1_1 4.853775 0.006783693 4.844774  4.862856</span></span>
+<span><span class="co">#&gt; z0_2 3.421924 0.019111502 3.398562  3.449287</span></span>
+<span><span class="co">#&gt; z1_2 3.912921 0.023259431 3.880898  3.941975</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
 <span><span class="co">#&gt;         estimate  std.error   conf.low  conf.high</span></span>
-<span><span class="co">#&gt; phi_1 26.3701591 1.41904361 24.6414536 28.5304086</span></span>
-<span><span class="co">#&gt; phi_2  3.1935205 0.12247127  3.0452639  3.3504404</span></span>
-<span><span class="co">#&gt; eta_1  0.5091353 0.01507442  0.4895345  0.5262683</span></span></code></pre></div>
+<span><span class="co">#&gt; phi_1 26.2671801 1.34019361 24.4948053 28.1535254</span></span>
+<span><span class="co">#&gt; phi_2  3.1976596 0.11768598  3.0582727  3.3527066</span></span>
+<span><span class="co">#&gt; eta_1  0.5095997 0.01252786  0.4919963  0.5246953</span></span></code></pre></div>
 <p>The predictions work as usual.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_data</span> <span class="op">&lt;-</span> <span class="va">dados</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
@@ -173,7 +173,7 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">61</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">53</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.510</span></span>
 <span></span>
 <span><span class="va">mod_tidy</span> <span class="op">|&gt;</span></span>
@@ -182,7 +182,7 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">61</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100        0.009<span style="text-decoration: underline;">53</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100        0.510</span></span></code></pre></div>
   </main>
 </div>
