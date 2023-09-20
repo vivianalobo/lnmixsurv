@@ -181,13 +181,33 @@ label_switch_one_chain <- function(posterior_dist){
   new_obj <- NULL
   
   for(j in 1:length(etas_order)) {
+    char <- as.character(etas_order[j])
+    
     sub_obj <- obj |>
-      dplyr::select(dplyr::ends_with(as.character(etas_order[j])))
+      dplyr::select(dplyr::ends_with(as.character(char)))
+    
+    cols_remove <- NULL
+    
+    colnames_obj <- colnames(sub_obj)
+    
+    for(c in 1:length(colnames_obj)) {
+      char_colname <- strsplit(colnames_obj[c], '_')[[1]][
+        length(strsplit(colnames_obj[c], '_')[[1]])
+      ]
+      
+      if(char_colname != char) {
+        cols_remove <- c(cols_remove, c)
+      }
+    }
+    
+    if(length(cols_remove) > 0) {
+      sub_obj <- sub_obj[, -cols_remove]
+    }
     
     for(c in 1:ncol(sub_obj)) {
       names(sub_obj)[c] <- paste0(
         substr(names(sub_obj)[c],
-               1, nchar(names(sub_obj)[c]) - 1), j)
+               1, nchar(names(sub_obj)[c]) - nchar(char)), j)
     }
     
     new_obj <- dplyr::bind_cols(new_obj, sub_obj)
@@ -335,6 +355,14 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                             along = 'chain')
     } 
   }
+  
+  # warming up
+  draws_return <- posterior::subset_draws(
+    draws_return, 
+    iteration = (warmup + 1):(posterior::niterations(draws_return)))
+  
+  # thinning draws
+  draws_return <- posterior::thin_draws(draws_return, thin)
   
   return(draws_return)
 }
