@@ -3,7 +3,9 @@
 # on:
 #   push:
 #     paths: ['**.Rmd']
-on: push
+on: 
+  push:
+  workflow_dispatch:
 
 name: render-rmarkdown
 
