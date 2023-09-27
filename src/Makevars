@@ -1,5 +1,9 @@
 CXX_STD = CXX11
 
-PKG_CXXFLAGS = `${R_HOME}/bin/Rscript -e "RcppGSL:::CFlags()"` -DARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS) -I../inst/include/ -Xclang -fopenmp
+VER=-13.2
+CC=gcc$(VER)
+CXX= g++$(VER)
 
-PKG_LIBS = `${R_HOME}/bin/Rscript -e "RcppGSL:::LdFlags()"` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -lomp
+PKG_CXXFLAGS = `${R_HOME}/bin/Rscript -e "RcppGSL:::CFlags()"` -DARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS) -I../inst/include/ -mtune=native -g -O2 -Wall -pedantic -Wconversion
+
+PKG_LIBS = `${R_HOME}/bin/Rscript -e "RcppGSL:::LdFlags()"` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) -lgfortran
