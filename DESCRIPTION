@@ -30,7 +30,6 @@ Depends:
     survival
 Suggests: 
     knitr,
-    parallel,
     rmarkdown,
     tidyr,
     bayesplot,
