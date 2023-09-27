@@ -42,9 +42,9 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install gsl llvm
-          cat ~/.R/Makevars
           touch ~/.R/Makevars
-          echo 'CC=gcc\nCXX=g++' > ~/.R/Makevars
+          cat ~/.R/Makevars
+          echo 'CC=gcc\nCXX=g++' >> ~/.R/Makevars
           cat ~/.R/Makevars
 
       - uses: r-lib/actions/setup-r-dependencies@v2
