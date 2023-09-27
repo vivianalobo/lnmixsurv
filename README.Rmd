@@ -48,16 +48,17 @@ If the method before didn't work, it's worth trying out what is described [here]
     curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz
     sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C /
 
-Now, create or edit **~/.R/Makevars** to include the lines
+Now, create or edit **~/.R/Makevars** to include the lines]
+
 > CPPFLAGS += -Xclang -fopenmp
 > 
 > LDFLAGS += -lomp
 
 The following piece of code can be used to do everything, all at once:
 
-    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz && sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C / && mkdir -p ~/.R && echo -e "CPPFLAGS += -Xclang -fopenmp\nLDFLAGS += -lomp" > ~/.R/Makevars
+    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz && sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C / && mkdir -p ~/.R && echo -e "CPPFLAGS += -Xclang -fopenmp\nLDFLAGS += -lomp" >> ~/.R/Makevars
 
-After that, the package should install with no problems at all. 
+After that, the package should be installed correctly. 
 
 ## Installation
 You can install the development version of `lnmixsurv` from [GitHub](https://github.com/) with:
