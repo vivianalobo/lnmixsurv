@@ -42,6 +42,7 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install gsl llvm
+          mkdir ~/.R/
           touch ~/.R/Makevars
           cat ~/.R/Makevars
           echo 'CC=gcc\nCXX=g++' >> ~/.R/Makevars
