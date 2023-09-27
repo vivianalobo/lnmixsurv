@@ -27,9 +27,7 @@ LinkingTo: Rcpp, RcppArmadillo, RcppGSL
 Depends: 
     parsnip (>= 1.1.0),
     R (>= 4.1.0),
-    survival,
-    gsl,
-    inline
+    survival
 Suggests: 
     knitr,
     rmarkdown,
@@ -50,7 +48,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 SystemRequirements:
 	C++11,
-	GNU make
+	GNU,
+	GSL
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 LazyData: true
