@@ -27,7 +27,9 @@ LinkingTo: Rcpp, RcppArmadillo, RcppGSL
 Depends: 
     parsnip (>= 1.1.0),
     R (>= 4.1.0),
-    survival
+    survival,
+    gsl,
+    inline
 Suggests: 
     knitr,
     rmarkdown,
