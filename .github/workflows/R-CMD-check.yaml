@@ -42,10 +42,10 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install gsl llvm
-          export CC=/usr/local/opt/llvm/bin/clang
-          export CXX=/usr/local/opt/llvm/bin/clang++
-          export LDFLAGS="-L/usr/local/opt/llvm/lib"
-          export CPPFLAGS="-I/usr/local/opt/llvm/include"
+          cat ~/.R/Makevars
+          touch ~/.R/Makevars
+          echo 'CC=gcc\nCXX=g++' > ~/.R/Makevars
+          cat ~/.R/Makevars
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
