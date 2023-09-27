@@ -22,8 +22,7 @@ Imports:
     generics,
     tibble,
     dplyr,
-    tidyselect,
-    parallel
+    tidyselect
 LinkingTo: Rcpp, RcppArmadillo, RcppGSL
 Depends: 
     parsnip (>= 1.1.0),
@@ -31,7 +30,6 @@ Depends:
     survival
 Suggests: 
     knitr,
-    parallel,
     rmarkdown,
     tidyr,
     bayesplot,
@@ -48,6 +46,9 @@ Suggests:
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+SystemRequirements:
+	C++11,
+	GNU make
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 LazyData: true

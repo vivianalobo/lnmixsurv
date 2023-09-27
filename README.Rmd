@@ -20,6 +20,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![Codecov test coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph/badge.svg)](https://app.codecov.io/gh/vitorcapdeville/persistencia?branch=master)
+[![R-CMD-check](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of persistencia is to provide an easy interface to the bayesian lognormal mixture model described in (incluir artigo da Viviana).
@@ -50,6 +51,7 @@ library(dplyr)
 library(purrr)
 library(tidyr)
 library(lnmixsurv)
+
 yep <- cli::symbol$tick
 nope <- cli::symbol$cross
 mod_names <- get_from_env("models")
