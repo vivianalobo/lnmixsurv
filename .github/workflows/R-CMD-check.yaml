@@ -45,7 +45,7 @@ jobs:
           mkdir ~/.R/
           touch ~/.R/Makevars
           cat ~/.R/Makevars
-          echo 'CC=gcc\nCXX=g++' >> ~/.R/Makevars
+          echo -e "CC=gcc\nCXX=g++" >> ~/.R/Makevars
           cat ~/.R/Makevars
 
       - uses: r-lib/actions/setup-r-dependencies@v2
