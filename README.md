@@ -30,10 +30,11 @@ parallellization.
 ## Dependencies
 
 Before proceeding, make sure to have
-[GSL](https://www.gnu.org/software/gsl/) installed on your system.
-Specifically, on MacOS, `brew install gsl` should be enough. On
-Windows/Linux, these probably came by default or together with the R
-install. If any errors occur, please, contact us.
+[GSL](https://www.gnu.org/software/gsl/) and OpenMP, if using MacOS,
+installed on your system. Specifically, on MacOS,
+`brew install gsl libomp` should be enough. On Windows/Linux, these
+probably came by default or together with the R install. If any errors
+occur, please, contact us.
 
 ## Installation
 

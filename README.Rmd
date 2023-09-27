@@ -32,7 +32,7 @@ and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
 The underlying algorithm implementation is a Gibbs sampler which takes initial values from a small run of the EM-Algorithm. The samplers are implemented in `C++` using `RcppArmadillo` for the linear algebra operations, `RcppGSL` for the random number generation and `OpenMP` for parallellization.
 
 ## Dependencies
-Before proceeding, make sure to have [GSL](https://www.gnu.org/software/gsl/) installed on your system. Specifically, on MacOS, `brew install gsl` should be enough. On Windows/Linux, these probably came by default or together with the R install. If any errors occur, please, contact us.
+Before proceeding, make sure to have [GSL](https://www.gnu.org/software/gsl/) and OpenMP, if using MacOS, installed on your system. Specifically, on MacOS, `brew install gsl libomp` should be enough. On Windows/Linux, these probably came by default or together with the R install. If any errors occur, please, contact us.
 
 ## Installation
 You can install the development version of `lnmixsurv` from [GitHub](https://github.com/) with:
