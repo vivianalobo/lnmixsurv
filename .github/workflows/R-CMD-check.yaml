@@ -41,7 +41,7 @@ jobs:
       - name: Install mac system dependencies
         if: runner.os == 'macos'
         run: |
-          brew install gsl gcc lib
+          brew install gsl gcc
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
