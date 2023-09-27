@@ -32,7 +32,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.3.4</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,13 +74,36 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>The goal of persistencia is to provide an easy interface to the bayesian lognormal mixture model described in (incluir artigo da Viviana). An usual formula-type model is implemented in <code>survival_ln_mixture</code>, with the usual <code>suvival::Surv()</code> interface. The model tries to follow the <a href="https://tidymodels.github.io/model-implementation-principles/" class="external-link">conventions for R modeling packages</a>, and uses the <a href="https://hardhat.tidymodels.org/" class="external-link">hardhat</a> structure.</p>
-<p>The underlying algorithm implementation is a gibbs sampler (incluir detalhes sobre prioris e etc) and is implemmented in <code>C++</code>, using <code>RcppArmadillo</code> for the linear algebra operations.</p>
+<p>The goal of <code>lnmixsurv</code> is to provide an easy interface to the bayesian lognormal mixture model described at (incluir artigo da Viviana).</p>
+<p>An usual formula-type model is implemented in <code>survival_ln_mixture</code>, with the usual <code>suvival::Surv()</code> interface. The model tries to follow the <a href="https://tidymodels.github.io/model-implementation-principles/" class="external-link">conventions for R modeling packages</a>, and uses the <a href="https://hardhat.tidymodels.org/" class="external-link">hardhat</a> structure.</p>
+<p>The underlying algorithm implementation is a Gibbs sampler which takes initial values from a small run of the EM-Algorithm. The samplers are implemented in <code>C++</code> using <code>RcppArmadillo</code> for the linear algebra operations, <code>RcppGSL</code> for the random number generation and <code>OpenMP</code> for parallellization.</p>
+<div class="section level2">
+<h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
+</h2>
+<p>Before proceeding, make sure to have <a href="https://www.gnu.org/software/gsl/" class="external-link">GSL</a> and OpenMP, if using Mac OS, installed on your system. Specifically, on Mac OS, <code>brew install gsl</code> should be enough for GSL. On Windows/Linux, these probably came by default or together with the R install. If any errors occur, please, contact us.</p>
+<div class="section level3">
+<h3 id="openmp--mac-os">OpenMP – Mac OS<a class="anchor" aria-label="anchor" href="#openmp--mac-os"></a>
+</h3>
+<p>The default compiler of Mac OS (clang) is shipped without support to OpenMP. Thus, installing the package directly might result in error. One option is to compile the package using <strong>GCC</strong>. To do so, make sure GCC is installed with <code>brew install gcc</code>. Now, create or edit the file <strong>~/.R/Makevars</strong> to include the lines</p>
+<blockquote>
+<p>CC = gcc</p>
+<p>CPP = g++</p>
+</blockquote>
+<p>Then, restart R session (or open one) and try to install the package again.</p>
+<p>If the method before didn’t work, it’s worth trying out what is described <a href="https://mac.r-project.org/openmp/" class="external-link">here</a>. Before proceeding, make sure to have <strong>curl</strong> installed, <code>brew install curl</code>. Then, execute</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>curl <span class="sc">-</span>O https<span class="sc">:</span><span class="er">//</span>mac.r<span class="sc">-</span>project.org<span class="sc">/</span>openmp<span class="sc">/</span>openmp<span class="dv">-12</span>.<span class="fl">0.1</span><span class="sc">-</span>darwin20<span class="sc">-</span>Release.tar.gz</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sudo tar fvxz openmp<span class="dv">-12</span>.<span class="fl">0.1</span><span class="sc">-</span>darwin20<span class="sc">-</span>Release.tar.gz <span class="sc">-</span>C <span class="sc">/</span></span></code></pre></div>
+<p>Now, create or edit <strong>~/.R/Makevars</strong> to include the lines &gt; CPPFLAGS += -Xclang -fopenmp &gt; &gt; LDFLAGS += -lomp</p>
+<p>The following piece of code can be used to do everything, all at once:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>curl <span class="sc">-</span>O https<span class="sc">:</span><span class="er">//</span>mac.r<span class="sc">-</span>project.org<span class="sc">/</span>openmp<span class="sc">/</span>openmp<span class="dv">-12</span>.<span class="fl">0.1</span><span class="sc">-</span>darwin20<span class="sc">-</span>Release.tar.gz <span class="sc">&amp;&amp;</span> sudo tar fvxz openmp<span class="dv">-12</span>.<span class="fl">0.1</span><span class="sc">-</span>darwin20<span class="sc">-</span>Release.tar.gz <span class="sc">-</span>C <span class="sc">/</span> <span class="er">&amp;&amp;</span> mkdir <span class="sc">-</span>p <span class="sc">~</span><span class="er">/</span>.R <span class="sc">&amp;&amp;</span> echo <span class="sc">-</span>e <span class="st">"CPPFLAGS += -Xclang -fopenmp</span><span class="sc">\n</span><span class="st">LDFLAGS += -lomp"</span> <span class="sc">&gt;</span> <span class="er">~/</span>.R<span class="sc">/</span>Makevars</span></code></pre></div>
+<p>After that, the package should install with no problems at all.</p>
+</div>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of lnmixsurv from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>You can install the development version of <code>lnmixsurv</code> from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"vivianalobo/lnmixsurv"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -88,7 +111,7 @@
 <h2 id="parsnip-and-censored-extension">parsnip and censored extension<a class="anchor" aria-label="anchor" href="#parsnip-and-censored-extension"></a>
 </h2>
 <p>An extension to the models defined by <a href="https://parsnip.tidymodels.org/index.html" class="external-link">parsnip</a> and <a href="https://censored.tidymodels.org/articles/examples.html" class="external-link">censored</a> is also provided, adding the <code>survival_ln_mixture</code> engine to the <code><a href="https://parsnip.tidymodels.org/reference/survival_reg.html" class="external-link">parsnip::survival_reg()</a></code> model.</p>
-<p>The following models, engines, and prediction type are available/extended trhough <code>persistencia</code>:</p>
+<p>The following models, engines, and prediction type are available/extended through <code>persistencia</code>:</p>
 <table class="table">
 <colgroup>
 <col width="16%">
@@ -153,6 +176,7 @@
 <ul class="list-unstyled">
 <li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 <li><a href="https://app.codecov.io/gh/vitorcapdeville/persistencia?branch=master" class="external-link"><img src="https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 </ul>
 </div>
 
