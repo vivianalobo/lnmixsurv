@@ -17,3 +17,5 @@ README.html
 lnmixsurv-report.html
 lib/*
 *.DS_Store
+src/Makevars
+src/Makevars.win
