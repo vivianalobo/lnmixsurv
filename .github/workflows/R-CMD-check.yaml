@@ -42,7 +42,6 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install gsl llvm
-          export PATH=/usr/local/bin:$PATH
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
