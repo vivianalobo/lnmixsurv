@@ -72,6 +72,7 @@ Colocar mais detalhes sobre o modelo (como a equacao) em details.</p>
 <span>  show_progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  em_iter <span class="op">=</span> <span class="fl">150</span>,</span>
 <span>  starting_seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">^</span><span class="fl">28</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  force_num_cores <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -137,6 +138,10 @@ The number of warmup iterations should be smaller than iter.</p></dd>
 
 <dt>starting_seed</dt>
 <dd><p>Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.</p></dd>
+
+
+<dt>force_num_cores</dt>
+<dd><p>A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.</p></dd>
 
 
 <dt>...</dt>
