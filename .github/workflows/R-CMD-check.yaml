@@ -39,8 +39,9 @@ jobs:
           use-public-rspm: true
 
       - name: Install mac system dependencies
-          if: runner.os == 'macos'
-          run: brew install gsl
+        if: runner.os == 'macOS'
+        run: |
+          brew install gsl
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
