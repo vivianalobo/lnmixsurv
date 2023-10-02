@@ -42,7 +42,7 @@ The default compiler of Mac OS (clang) is shipped without support to
 OpenMP. Thus, installing the package directly might result in error. One
 option is to compile the package using **GCC**. To do so, make sure GCC
 is installed with `brew install gcc`. Now, create or edit the file
-**~/.R/Makevars** to include the lines
+**\~/.R/Makevars** to include the lines
 
 > CC = gcc
 >
@@ -58,14 +58,17 @@ make sure to have **curl** installed, `brew install curl`. Then, execute
     curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz
     sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C /
 
-Now, create or edit **~/.R/Makevars** to include the lines \> CPPFLAGS
-+= -Xclang -fopenmp \> \> LDFLAGS += -lomp
+Now, create or edit **\~/.R/Makevars** to include the lines\]
+
+> CPPFLAGS += -Xclang -fopenmp
+>
+> LDFLAGS += -lomp
 
 The following piece of code can be used to do everything, all at once:
 
-    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz && sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C / && mkdir -p ~/.R && echo -e "CPPFLAGS += -Xclang -fopenmp\nLDFLAGS += -lomp" > ~/.R/Makevars
+    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz && sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C / && mkdir -p ~/.R && echo -e "CPPFLAGS += -Xclang -fopenmp\nLDFLAGS += -lomp" >> ~/.R/Makevars
 
-After that, the package should install with no problems at all.
+After that, the package should be installed correctly.
 
 ## Installation
 
