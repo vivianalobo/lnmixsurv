@@ -12,10 +12,9 @@ coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph
 [![R-CMD-check](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The `lnmixsurv` package provides an easy interface to the Bayesian
-lognormal mixture model proposed by Lobo, Fonseca and Alves, 2023. 
-
-@article{lobo_fonseca_alves_2023, title={Lapse risk modeling in insurance: a Bayesian mixture approach}, DOI={10.1017/S1748499523000180}, journal={Annals of Actuarial Science}, author={Lobo, Viviana G. R. and Fonseca, Thaís C. O. and Alves, Mariane B.}, year={2023}, pages={1–26}}.
+The goal of `lnmixsurv` is to provide an easy interface to the bayesian
+lognormal mixture model proposed by [Lobo, Fonseca and Alves,
+2023](https://www.cambridge.org/core/journals/annals-of-actuarial-science/article/abs/lapse-risk-modeling-in-insurance-a-bayesian-mixture-approach/EDA511D313959D9A4040C51289A29B4A).
 
 An usual formula-type model is implemented in `survival_ln_mixture`,
 with the usual `suvival::Surv()` interface. The model tries to follow
