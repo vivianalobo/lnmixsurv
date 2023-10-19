@@ -74,7 +74,7 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>The goal of <code>lnmixsurv</code> is to provide an easy interface to the bayesian lognormal mixture model described at (incluir artigo da Viviana).</p>
+<p>The <code>lnmixsurv</code> package provides an easy interface to the Bayesian lognormal mixture model proposed by <a href="https://www.cambridge.org/core/journals/annals-of-actuarial-science/article/abs/lapse-risk-modeling-in-insurance-a-bayesian-mixture-approach/EDA511D313959D9A4040C51289A29B4A" class="external-link">Lobo, Fonseca and Alves, 2023</a>.</p>
 <p>An usual formula-type model is implemented in <code>survival_ln_mixture</code>, with the usual <code>suvival::Surv()</code> interface. The model tries to follow the <a href="https://tidymodels.github.io/model-implementation-principles/" class="external-link">conventions for R modeling packages</a>, and uses the <a href="https://hardhat.tidymodels.org/" class="external-link">hardhat</a> structure.</p>
 <p>The underlying algorithm implementation is a Gibbs sampler which takes initial values from a small run of the EM-Algorithm. The samplers are implemented in <code>C++</code> using <code>RcppArmadillo</code> for the linear algebra operations, <code>RcppGSL</code> for the random number generation and <code>OpenMP</code> for parallellization.</p>
 <div class="section level2">
