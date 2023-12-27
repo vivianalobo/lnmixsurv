@@ -146,6 +146,7 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
   arma::vec out(n);
   int g;
   double out_i;
+  int count;
   
   for (int i = 0; i < n; i++) {
     if (delta(i) == 1) {
@@ -156,7 +157,7 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
       g = groups(i);
       
       out_i = y(i);
-      int count = 0;
+      count = 0;
       while(out_i <= y(i)) {
         out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
                        sqrt(1.0 / phi(g)), rng_device);
@@ -192,6 +193,7 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
   return(out);
 }
 
+/*
 arma::mat makeSymmetric(const arma::mat X) {
   arma::mat out(X.n_rows, X.n_cols);
   int rows = X.n_rows;
@@ -205,6 +207,7 @@ arma::mat makeSymmetric(const arma::mat X) {
   
   return out;
 }
+*/
 
 arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G, 
                                                  arma::vec exp_y, arma::ivec delta, 
@@ -359,7 +362,6 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
                    global_rng).t();
         }
       }
-      
       
       // sampling value for e0
       e0 = rgamma_(1, 1, global_rng);
