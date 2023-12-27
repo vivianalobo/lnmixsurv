@@ -119,6 +119,10 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      force_num_cores = FALSE) {
   number_of_predictors <- ncol(predictors)
   
+  if(any(is.na(predictors))) {
+    "There is one or more NA values in the predictors variable."
+  }
+  
   if (number_of_predictors < 1) {
     rlang::abort(
       c(
