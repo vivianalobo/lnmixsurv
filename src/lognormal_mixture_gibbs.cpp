@@ -308,6 +308,8 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
         phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
       }
     }
+  } else {
+    Rcout << "Skipping EM Algorithm" << "\n";
   }
   
   // Starting other new values for MCMC algorithms
