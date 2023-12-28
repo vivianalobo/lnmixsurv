@@ -157,23 +157,23 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
   
   if(thin <= 0 | (thin %% 1) != 0) {
-    rlang::abort("The pararmeter thin should be a positive integer.")
+    rlang::abort("The parameter thin should be a positive integer.")
   }
   
-  if(warmup <= 0 | (warmup %% 1) != 0) {
-    rlang::abort("The pararmeter warmup should be a positive integer.")
+  if(warmup < 0 | (warmup %% 1) != 0) {
+    rlang::abort("The parameter warmup should be a positive integer.")
   }
   
-  if(em_iter <= 0 | (em_iter %% 1) != 0) {
-    rlang::abort("The pararmeter em_iter should be a positive integer.")
+  if(em_iter < 0 | (em_iter %% 1) != 0) {
+    rlang::abort("The parameter em_iter should be a non-negative integer.")
   }
   
   if(iter <= 0 | (iter %% 1) != 0) {
-    rlang::abort("The pararmeter iter should be a positive integer.")
+    rlang::abort("The parameter iter should be a positive integer.")
   }
   
   if(mixture_components <= 0 | (mixture_components %% 1) != 0) {
-    rlang::abort("The pararmeter mixture_components should be a positive integer.")
+    rlang::abort("The parameter mixture_components should be a positive integer.")
   }
   
   if (starting_seed < 1 | starting_seed > 2^28 |
