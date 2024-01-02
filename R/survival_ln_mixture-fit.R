@@ -181,7 +181,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("The starting seed should be a natural number between 1 and 2^28")
   }
   
-  if(warmup == iter) {
+  if(warmup >= iter) {
     rlang::abort("The warm-up iterations should be lower than the number of iterations.")
   }
   
