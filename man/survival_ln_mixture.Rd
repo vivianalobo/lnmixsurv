@@ -15,10 +15,10 @@ survival_ln_mixture(
   thin = 1,
   chains = 1,
   cores = 1,
-  numero_componentes = 2,
+  mixture_components = 2,
   proposal_variance = 2,
   show_progress = FALSE,
-  em_iter = 150,
+  em_iter = 0,
   starting_seed = sample(1, 2^28, 1),
   force_num_cores = FALSE,
   ...
@@ -48,7 +48,7 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{cores}{A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.}
 
-\item{numero_componentes}{number of mixture componentes >= 2.}
+\item{mixture_components}{number of mixture componentes >= 2.}
 
 \item{proposal_variance}{The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
 

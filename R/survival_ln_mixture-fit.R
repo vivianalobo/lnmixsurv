@@ -26,7 +26,7 @@
 #' 
 #' @param force_num_cores A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.
 #' 
-#' @param numero_componentes number of mixture componentes >= 2.
+#' @param mixture_components number of mixture componentes >= 2.
 #'
 #' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
 #' 
@@ -56,7 +56,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, numero_componentes = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 150, starting_seed = sample(1, 2^28, 1), force_num_cores = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1, 2^28, 1), force_num_cores = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -111,13 +111,17 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      warmup = floor(iter / 10), 
                                      thin = 1,
                                      chains = 1, cores = 1,
-                                     numero_componentes = 2,
+                                     mixture_components = 2,
                                      proposal_variance = 1,
                                      show_progress = FALSE,
-                                     em_iter = 150,
+                                     em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
                                      force_num_cores = FALSE) {
   number_of_predictors <- ncol(predictors)
+  
+  if(any(is.na(predictors))) {
+    "There is one or more NA values in the predictors variable."
+  }
   
   if (number_of_predictors < 1) {
     rlang::abort(
@@ -132,9 +136,53 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("One or more events happened at time zero.")
   }
   
+  if(proposal_variance <= 0) {
+    rlang::abort("The parameter proposal_variance should be a positive real number.")
+  }
+  
+  if(any(is.na(outcome_times))) {
+    rlang::abort("There is one or more NA values at event times.")
+  }
+  
+  if(any(is.na(outcome_status))) {
+    rlang::abort("There is one or more NA values at the status")
+  }
+  
+  if(!is.logical(show_progress)) {
+    rlang::abort("The parameter show_progress must be a logical (TRUE/FALSE).")
+  }
+  
+  if(!is.logical(force_num_cores)) {
+    rlang::abort("The parameter force_num_cores must be a logical (TRUE/FALSE).")
+  }
+  
+  if(thin <= 0 | (thin %% 1) != 0) {
+    rlang::abort("The parameter thin should be a positive integer.")
+  }
+  
+  if(warmup < 0 | (warmup %% 1) != 0) {
+    rlang::abort("The parameter warmup should be a positive integer.")
+  }
+  
+  if(em_iter < 0 | (em_iter %% 1) != 0) {
+    rlang::abort("The parameter em_iter should be a non-negative integer.")
+  }
+  
+  if(iter <= 0 | (iter %% 1) != 0) {
+    rlang::abort("The parameter iter should be a positive integer.")
+  }
+  
+  if(mixture_components <= 0 | (mixture_components %% 1) != 0) {
+    rlang::abort("The parameter mixture_components should be a positive integer.")
+  }
+  
   if (starting_seed < 1 | starting_seed > 2^28 |
       (starting_seed %% 1) != 0) {
     rlang::abort("The starting seed should be a natural number between 1 and 2^28")
+  }
+  
+  if(warmup >= iter) {
+    rlang::abort("The warm-up iterations should be lower than the number of iterations.")
   }
   
   if (cores < 1 | (cores %% 1) != 0) {
@@ -144,7 +192,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   posterior_dist <- run_posterior_samples(iter, em_iter, 
                                           chains, cores,
                                           force_num_cores,
-                                          numero_componentes,
+                                          mixture_components,
                                           outcome_times,
                                           outcome_status, 
                                           predictors,
@@ -157,12 +205,12 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   list(posterior = posterior_dist, 
        nobs = length(outcome_times),
        predictors_name = colnames(predictors), 
-       mixture_groups = seq_len(numero_componentes))
+       mixture_groups = seq_len(mixture_components))
 }
 
 #' corrige o problema do label switch para uma cadeia da posteriori, ordenando grupos por proporções de mistura
 #' 
-#' @param posterior_dist uma matriz de dimensao numero_iteracoes x numero_componentes de amostras a posteriori
+#' @param posterior_dist uma matriz de dimensao numero_iteracoes x mixture_components de amostras a posteriori
 
 #' @return matriz de dimensão numero_iteracoes x numero_componetes mas com os labels
 #' reorganizados de forma que os etas das componetes são ordenados de forma decrescente.
@@ -221,16 +269,16 @@ label_switch_one_chain <- function(posterior_dist){
 #' @param posterior distribuição a posteriori amostrada
 #' 
 #' @param predictors_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
-#' @param numero_componentes número de componentes envolvidos no ajuste
+#' @param mixture_components número de componentes envolvidos no ajuste
 #' 
 #' @return matriz
 #' 
 #' @noRd
-give_colnames <- function(posterior, predictors_names, numero_componentes) {
+give_colnames <- function(posterior, predictors_names, mixture_components) {
   number_params <- length(predictors_names)
   new_names <- NULL
   
-  for(i in 1:numero_componentes) {
+  for(i in 1:mixture_components) {
     for(j in 1:3) { # de 1 a 3 porque 3 grupos de parâmetros são ajustados no modelo: uma proporção de mistura, uma precisão e um grupo de efeitos das covariáveis
       if(j == 1) { # primeiro grupo, eta: efeitos das covariáveis
         for(c in 1:number_params) { 
@@ -284,7 +332,7 @@ permute_columns <- function(posterior) {
 #' 
 #' @param cores número de cores utilizados para amostrar as cadeias
 #' 
-#' @param numero_componentes número de componentes envolvidos na análise
+#' @param mixture_components número de componentes envolvidos na análise
 #' 
 #' @param outcome_times tempos observados
 #' 
@@ -309,7 +357,7 @@ permute_columns <- function(posterior) {
 
 run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   force_num_cores,
-                                  numero_componentes, outcome_times,
+                                  mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
                                   show_progress, warmup, thin) {
@@ -319,7 +367,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
   
   list_posteriors <- NULL
   
-  posterior <- lognormal_mixture_gibbs(iter, em_iter, numero_componentes,
+  posterior <- lognormal_mixture_gibbs(iter, em_iter, mixture_components,
                                        outcome_times, outcome_status,
                                        predictors, proposal_variance, 
                                        seeds, show_progress, cores, 
@@ -329,7 +377,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     
     posterior_chain_i <- give_colnames(posterior_chain_i, 
                                        colnames(predictors),
-                                       numero_componentes)
+                                       mixture_components)
     
     posterior_chain_i <- label_switch_one_chain(posterior_chain_i)
     
@@ -338,7 +386,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     remover_menor_theta <- -which(
       colnames(posterior_chain_i) == colnames(
         posterior_chain_i |> 
-          dplyr::select(dplyr::starts_with('eta_')))[numero_componentes])
+          dplyr::select(dplyr::starts_with('eta_')))[mixture_components])
     
     posterior_chain_i <- posterior_chain_i[, remover_menor_theta]
     

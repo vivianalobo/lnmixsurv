@@ -146,6 +146,7 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
   arma::vec out(n);
   int g;
   double out_i;
+  int count;
   
   for (int i = 0; i < n; i++) {
     if (delta(i) == 1) {
@@ -156,15 +157,15 @@ arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
       g = groups(i);
       
       out_i = y(i);
-      int count = 0;
+      count = 0;
       while(out_i <= y(i)) {
         out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
                        sqrt(1.0 / phi(g)), rng_device);
         
         // break if it's going to run forever
         // should never happen
-        if(count > 100000) {
-          out_i = y(i) + 0.1;
+        if(count > 10000) {
+          out_i = y(i) + 0.01;
           break;
         }
         count ++;
@@ -192,6 +193,7 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
   return(out);
 }
 
+/*
 arma::mat makeSymmetric(const arma::mat X) {
   arma::mat out(X.n_rows, X.n_cols);
   int rows = X.n_rows;
@@ -205,6 +207,7 @@ arma::mat makeSymmetric(const arma::mat X) {
   
   return out;
 }
+*/
 
 arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G, 
                                                  arma::vec exp_y, arma::ivec delta, 
@@ -248,61 +251,68 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
   arma::mat means(N, G);
   arma::vec sd(G);
   arma::vec linearComb(N);
+  arma::mat comb;
   
   double sumtau;
   
-  // starting EM algorithm to find values close to the MLE
-  for (int iter = 0; iter < em_iter; iter++) {
-    
-    if ((iter % 50 == 0) && show_output) {
-      Rcout << "(Chain " << chain_num << ") EM Iter: " << iter << "/" << em_iter << "\n";
-    }
-    
-    // Initializing values
-    if(iter == 0) {
-      eta_em = rdirichlet(repl(1, G), global_rng);
+  if(em_iter != 0) {
+    // starting EM algorithm to find values close to the MLE
+    for (int iter = 0; iter < em_iter; iter++) {
       
-      for (int g = 0; g < G; g++) {
-        phi_em(g) = rgamma_(2, 8, global_rng);
-        beta_em.row(g) = rmvnorm(repl(0, p),
-                    arma::diagmat(repl(7, p)),
-                    global_rng).t();
+      if ((iter % 20 == 0) && show_output) {
+        Rcout << "(Chain " << chain_num << ") EM Iter: " << iter << "/" << em_iter << "\n";
       }
-    }
-    
-    // E-step
-    means = X * beta_em.t();
-    sd = sqrt(1.0 / phi_em);
-    
-    for(int r = 0; r < N; r++) {
+      
+      // Initializing values
+      if(iter == 0) {
+        eta_em = rdirichlet(repl(1, G), global_rng);
+        
+        for (int g = 0; g < G; g++) {
+          phi_em(g) = rgamma_(2, 8, global_rng);
+          beta_em.row(g) = rmvnorm(repl(0, p),
+                      arma::diagmat(repl(7, p)),
+                      global_rng).t();
+        }
+      }
+      
+      // E-step
+      means = X * beta_em.t();
+      sd = sqrt(1.0 / phi_em);
+      
+      for(int r = 0; r < N; r++) {
+        for(int g = 0; g < G; g++) {
+          tau(r, g) = eta_em(g) * R::dnorm(y(r), 
+              means(r, g), sd(g), false);
+        }
+        
+        if(arma::sum(tau.row(r)) == 0) {  // to avoid numerical problems
+          tau.row(r) = repl(1.0/G, G).t();
+        } else {
+          tau.row(r) = tau.row(r)/sum(tau.row(r));
+        }
+      }
+      
+      // M-step
       for(int g = 0; g < G; g++) {
-        tau(r, g) = eta_em(g) * R::dnorm(y(r), 
-            means(r, g), sd(g), false);
-      }
-      
-      if(arma::sum(tau.row(r)) == 0) {  // to avoid numerical problems
-        tau.row(r) = repl(1.0/G, G).t();
-      } else {
-        tau.row(r) = tau.row(r)/sum(tau.row(r));
+        Wg = arma::diagmat(tau.col(g));
+        sumtau = arma::sum(tau.col(g));
+        
+        eta_em(g) = sumtau/N;
+        
+        comb = X.t() * Wg * X;
+        if(arma::det(comb) != 0) {
+          beta_em.row(g) = arma::solve(comb,
+                      Xt * Wg * y,
+                      arma::solve_opts::likely_sympd).t();
+        }
+        
+        linearComb = y - X * beta_em.row(g).t();
+        
+        phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
       }
     }
-    
-    // M-step
-    for(int g = 0; g < G; g++) {
-      Wg = arma::diagmat(tau.col(g));
-      sumtau = arma::sum(tau.col(g));
-      
-      eta_em(g) = sumtau/N;
-      
-      if(arma::det(X.t() * Wg * X) != 0) {
-        beta_em.row(g) = (arma::inv(Xt * Wg * X,
-                          arma::inv_opts::allow_approx) * Xt * Wg * y).t();
-      }
-      
-      linearComb = y - X * beta_em.row(g).t();
-      
-      phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
-    }
+  } else {
+    Rcout << "Skipping EM Algorithm" << "\n";
   }
   
   // Starting other new values for MCMC algorithms
@@ -329,15 +339,29 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
   double prop_aceite;
   int n_aceite;
   double count = 0;
+  double u;
+  arma::rowvec newRow;
   
   for (int iter = 0; iter < Niter; iter++) {
     // Starting empty objects for Gibbs Sampler
-    if (iter == 0) { 
-      // we are going to start the values using the
-      // previous EM iteration
-      eta = eta_em;
-      phi = phi_em;
-      beta = beta_em;
+    if (iter == 0) {
+      
+      if (em_iter != 0) {
+        // we are going to start the values using the
+        // previous EM iteration
+        eta = eta_em;
+        phi = phi_em;
+        beta = beta_em;
+      } else {
+        eta = rdirichlet(repl(1, G), global_rng);
+        
+        for (int g = 0; g < G; g++) {
+          phi(g) = rgamma_(2, 8, global_rng);
+          beta.row(g) = rmvnorm(repl(0, p),
+                   arma::diagmat(repl(7, p)),
+                   global_rng).t();
+        }
+      }
       
       // sampling value for e0
       e0 = rgamma_(1, 1, global_rng);
@@ -381,34 +405,31 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
     // For each g, sample new phi[g] and beta[g, _]
     for (int g = 0; g < G; g++) {
       indexg = arma::find(groups == g);
-      if(true) {
-        Xg = X.rows(indexg);
-        Xgt = Xg.t();
-        yg = y_aug(indexg);
+      Xg = X.rows(indexg);
+      Xgt = Xg.t();
+      yg = y_aug(indexg);
+      
+      linearComb = yg - Xg * beta.row(g).t();
+      
+      // sampling phi new
+      // the priori used was Gamma(0.001, 0.001)
+      phi(g) = rgamma_(n_groups(g) / 2.0 + 0.001, (1.0 / 2) *
+        as_scalar(linearComb.t() * linearComb) + 0.001, global_rng);
+      
+      // sampling beta new
+      // the priori used was MNV(vec 0, diag 1000)
+      comb = phi(g) * Xgt * Xg + arma::diagmat(repl(1.0 / 1000, p));
+      
+      if(arma::det(comb) != 0) {
+        Sg = arma::solve(comb,
+                         arma::eye(X.n_cols, X.n_cols),
+                         arma::solve_opts::likely_sympd);
         
-        linearComb = yg - Xg * beta.row(g).t();
+        mg = arma::solve(comb,
+                         phi(g) * Xgt * yg,
+                         arma::solve_opts::likely_sympd);
         
-        // sampling phi new
-        // the priori used was Gamma(0.001, 0.001)
-        
-        phi(g) = rgamma_(n_groups(g) / 2.0 + 0.001, (1.0 / 2) *
-          as_scalar(linearComb.t() * linearComb) + 0.001, global_rng);
-        
-        // sampling beta new
-        // the priori used was MNV(vec 0, diag 1000)
-        if(arma::det(phi(g) * Xgt * Xg + 
-           arma::diagmat(repl(1.0 / 1000, p))) != 0) {
-          Sg = arma::inv(phi(g) * Xgt * Xg + 
-            arma::diagmat(repl(1.0 / 1000, p)));
-          
-          if(Sg.is_symmetric() == false) {
-            Sg = makeSymmetric(Sg);
-          }
-          
-          mg = Sg * (phi(g) * Xgt * yg);
-          
-          beta.row(g) = rmvnorm(mg, Sg, global_rng).t();
-        }
+        beta.row(g) = rmvnorm(mg, Sg, global_rng).t();
       }
     }
     
@@ -446,7 +467,7 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
       b*(e0_prop - e0) + (b*e0_prop - 1.0)*log(e0) -
       (b*e0 - 1.0)*log(e0_prop);
     
-    double u = runif_0_1(global_rng);
+    u = runif_0_1(global_rng);
     e0 = (log(u) < log_alpha) * e0_prop +
       (log(u) >= log_alpha) * e0;
     
@@ -465,9 +486,9 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
     // phi = phi.rows(sorteta);
     // eta = eta.rows(sorteta);
     
-    arma::rowvec newRow = arma::join_rows(beta.row(0),
-                                          phi.row(0),
-                                          eta.row(0));
+    newRow = arma::join_rows(beta.row(0),
+                             phi.row(0),
+                             eta.row(0));
     for (int g = 1; g < G; g++) {
       newRow = arma::join_rows(newRow, beta.row(g),
                                phi.row(g),
@@ -511,9 +532,9 @@ arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_
   
   int chain;
   
-  #pragma omp parallel for private(chain)
+#pragma omp parallel for private(chain)
   for(int chain = 0; chain < n_chains; chain ++) {
-    #pragma omp critical
+#pragma omp critical
     usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
     out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, 
               starting_seed(chain), show_output, chain + 1);
