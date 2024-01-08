@@ -53,7 +53,7 @@ predict.survival_ln_mixture <- function(object, new_data, type, eval_time, inter
 }
 
 valid_survival_ln_mixture_predict_types <- function() {
-  c("time", "survival", "hazard")
+  c("time", "survival", "hazard", "linear_pred")
 }
 
 # ------------------------------------------------------------------------------
@@ -74,7 +74,8 @@ get_survival_ln_mixture_predict_function <- function(type) {
   switch(type,
     time = predict_survival_ln_mixture_time,
     survival = predict_survival_ln_mixture_survival,
-    hazard = predict_survival_ln_mixture_hazard
+    hazard = predict_survival_ln_mixture_hazard,
+    linear_pred = predict_survival_ln_mixutre_linear_predictors
   )
 }
 
@@ -91,6 +92,25 @@ predict_survival_ln_mixture_survival <- function(model, predictors, eval_time, i
 
 predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, interval, level) {
   extract_surv_haz(model, predictors, eval_time, interval, level, "hazard")
+}
+
+predict_survival_ln_mixutre_linear_predictors <- function(model, predictors, ...) {
+  post <- model$posterior
+  qntd_chains <- posterior::nchains(post)
+  if (qntd_chains > 1) {
+    post <- posterior::merge_chains(post)
+  }
+  beta <- lapply(model$mixture_groups, function(x) {
+    names <- paste0(model$predictors_name, '_', x)
+    return(posterior::subset_draws(post, names))
+  })
+  beta = lapply(beta, function(x) apply(x, 2, median))
+  eta <- apply(posterior::subset_draws(post, "eta", regex = TRUE), 2, median)
+  eta_full = c(eta, 1-eta)
+  m <- lapply(beta, function(x) x %*% t(predictors))
+  lin_pred_por_grupo = lapply(seq_len(length(m)), function(x) t(m[[x]]) %*% eta_full[x])
+  lin_pred = purrr::reduce(lin_pred_por_grupo, `+`)
+  return(lin_pred)
 }
 
 extract_surv_haz <- function(model, predictors, eval_time, interval = "none", level = 0.95, type = "survival") {

@@ -75,6 +75,24 @@ make_survival_reg_survival_ln_mixture <- function() {
         )
     )
   )
+  
+  parsnip::set_pred(
+    model = "survival_reg",
+    eng = "survival_ln_mixture",
+    mode = "censored regression",
+    type = "linear_pred",
+    value = list(
+      pre = NULL,
+      post = NULL,
+      func = c(fun = "predict"),
+      args =
+        list(
+          object = quote(object$fit),
+          new_data = quote(new_data),
+          type = "linear_pred"
+        )
+    )
+  )
 }
 
 # nocov end
