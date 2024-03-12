@@ -54,7 +54,9 @@ The predicitons are easy to obtain from a fit.
 
 ```{r prediction}
 library(ggplot2)
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(purrr)
 
 models <- list(formula = mod1, tidymodels = mod2)
 
