@@ -152,8 +152,13 @@ sob_lognormal_mix <- function(t, m, sigma, eta) {
 
 falha_lognormal_mix <- function(t, m, sigma, eta) {
   sob_mix <- sob_lognormal_mix(t, m, sigma, eta)
-  componentes <- vapply(seq_len(length(m) - 1), function(x) stats::dlnorm(t, m[[x]], sigma[,x]) * eta[, x], numeric(nrow(sigma)))
-  componentes <- cbind(componentes, stats::dlnorm(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(eta, 1, sum)))
+  componentes <- vapply(seq_len(length(m) - 1), 
+                        function(x) 
+                          stats::dlnorm(t, m[[x]], sigma[,x]) * eta[, x], 
+                        numeric(nrow(sigma)))
+  componentes <- cbind(componentes, 
+                       stats::dlnorm(t, m[[length(m)]], sigma[,length(m)]) *
+                         (1 - apply(eta, 1, sum)))
   dlnorm_mix <- apply(componentes, 1, sum)
   return(dlnorm_mix / sob_mix)
 }

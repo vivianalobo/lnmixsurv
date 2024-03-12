@@ -25,7 +25,8 @@ require(lnmixsurv)
 tidymodels_prefer()
 
 mod_spec <- survival_reg() |>
-  set_engine("survival_ln_mixture", intercept = FALSE) |>
+  set_engine("survival_ln_mixture", intercept = FALSE, 
+             starting_seed = 20) |>
   set_mode("censored regression")
 dados <- sim_data$data
 set.seed(1)
