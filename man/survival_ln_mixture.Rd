@@ -4,7 +4,7 @@
 \alias{survival_ln_mixture}
 \alias{survival_ln_mixture.default}
 \alias{survival_ln_mixture.formula}
-\title{Lognormal mixture model}
+\title{Lognormal mixture model - Gibbs sampler}
 \usage{
 survival_ln_mixture(
   formula,
@@ -70,8 +70,7 @@ A \code{survival_ln_mixture} object, which is a list with the following componen
 \item{blueprint}{The blueprint component of the output of \link[hardhat:mold]{hardhat::mold}}
 }
 \description{
-\code{survival_ln_mixture()} fits a lognormal mixture model, as described in (referencia artigo viviana).
-Colocar mais detalhes sobre o modelo (como a equacao) em details.
+\code{survival_ln_mixture()} fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
 }
 \note{
 Categorical predictors must be converted to factors before the fit,

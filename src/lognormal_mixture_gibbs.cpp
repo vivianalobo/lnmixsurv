@@ -283,9 +283,27 @@ arma::vec augment_em(arma::vec y, arma::vec delta, arma::mat X,
   return(out);
 }
 
+arma::vec rdirichlet_(arma::vec alpha) {
+  int length_alpha = alpha.n_rows;
+  
+  arma::vec out(length_alpha);
+  
+  for (int i = 0; i < length_alpha; i++) {
+    out(i) = R::rgamma(alpha(i), 1);
+  }
+  
+  out = out / arma::sum(out);
+  
+  return(out);
+}
+
+double rgamma__(double alpha, double beta) {
+  return(R::rgamma(alpha, 1.0 / beta));
+}
+
 // Export the em_algorithm to R
 // [[Rcpp::export]]
-arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
+  arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
                                arma::mat X) {
   
   arma::vec eta(G);
@@ -305,10 +323,10 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
   
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
-      eta = rdirichlet(repl(1.0, G));
+      eta = rdirichlet_(repl(1.0, G));
       
       for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(2.0, 0.2);
+        phi(g) = rgamma__(2.0, 0.2);
         for (int c = 0; c < k; c++) {
           beta(g, c) = R::rnorm(0, 15);
         }

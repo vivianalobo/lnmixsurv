@@ -12,6 +12,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// lognormal_mixture_em
+arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta, arma::mat X);
+RcppExport SEXP _lnmixsurv_lognormal_mixture_em(SEXP NiterSEXP, SEXP GSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP XSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type Niter(NiterSEXP);
+    Rcpp::traits::input_parameter< int >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
+    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_em(Niter, G, y, delta, X));
+    return rcpp_result_gen;
+END_RCPP
+}
 // lognormal_mixture_gibbs
 arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_y, arma::ivec delta, arma::mat X, double a, arma::Col<long long int> starting_seed, bool show_output, int n_cores, int n_chains, bool force_num_cores);
 RcppExport SEXP _lnmixsurv_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP em_iterSEXP, SEXP GSEXP, SEXP exp_ySEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP starting_seedSEXP, SEXP show_outputSEXP, SEXP n_coresSEXP, SEXP n_chainsSEXP, SEXP force_num_coresSEXP) {
@@ -36,6 +51,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_lnmixsurv_lognormal_mixture_em", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em, 5},
     {"_lnmixsurv_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_lognormal_mixture_gibbs, 12},
     {NULL, NULL, 0}
 };
