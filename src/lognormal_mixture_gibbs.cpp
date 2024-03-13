@@ -194,20 +194,195 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
 }
 
 /*
-arma::mat makeSymmetric(const arma::mat X) {
-  arma::mat out(X.n_rows, X.n_cols);
-  int rows = X.n_rows;
-  int cols = X.n_cols;
-  for(int r = 0; r < rows; r++) {
-    for(int c = 0; c < cols; c++) {
-      out(r, c) = X(r, c);
-      out(c, r) = X(r, c);
+ arma::mat makeSymmetric(const arma::mat X) {
+ arma::mat out(X.n_rows, X.n_cols);
+ int rows = X.n_rows;
+ int cols = X.n_cols;
+ for(int r = 0; r < rows; r++) {
+ for(int c = 0; c < cols; c++) {
+ out(r, c) = X(r, c);
+ out(c, r) = X(r, c);
+ }
+ }
+ 
+ return out;
+ }
+ */
+
+// ** Auxiliary functions for EM algorithm **
+// These are NOT optimizated at all and we can make a lot of improvements here.
+// Besides that, it converges usually with fewer than 200 iterations and runs
+// significantly fast.
+
+// Compute weights matrix
+arma::mat compute_W(arma::vec y, arma::vec delta, arma::mat X,
+                    arma::vec eta, arma::mat beta, arma::vec phi, int G) {
+  
+  arma::vec sigma = 1.0 / sqrt(phi);
+  int n = X.n_rows;
+  arma::mat out(n, G);
+  double denom;
+  
+  for (int i = 0; i < n; i++) {
+    denom = 0;
+    
+    // Compute the denominator
+    for (int g = 0; g < G; g++) {
+      denom = denom + eta(g) * R::dnorm(y(i),
+                          arma::as_scalar(X.row(i) * beta.row(g).t()),
+                          sigma(g), false);
+    }
+    
+    for (int g = 0; g < G; g++) {
+      if(denom == 0) {
+        out(i, g) = 1.0 / G;
+      } else {
+        out(i, g) = eta(g) * R::dnorm(y(i),
+            arma::as_scalar(X.row(i) * beta.row(g).t()),
+            sigma(g), false) / denom;
+      }
     }
   }
   
-  return out;
+  return(out);
 }
-*/
+
+// Create the latent variable z for censored observations
+arma::vec augment_em(arma::vec y, arma::vec delta, arma::mat X, 
+                     arma::mat beta, arma::vec phi, arma::mat W, int G) {
+  int n = X.n_rows;
+  arma::vec out = y;
+  arma::vec sigma = 1.0 / sqrt(phi);
+  
+  double quant;
+  double alpha;
+  double expected;
+  
+  for (int i = 0; i < n; i++) {
+    if(delta(i) == 0) {
+      quant = 0;
+      
+      for (int g = 0; g < G; g++) {
+        alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/sigma(g);
+        
+        if (R::pnorm(alpha, 0, 1, true, false) < 1) {
+          expected = arma::as_scalar(X.row(i) * beta.row(g).t()) + sigma(g) *
+            (R::dnorm(alpha, 0, 1, false)/(1 - R::pnorm(alpha, 0, 1, true, false)));
+        } else {
+          expected = arma::as_scalar(X.row(i) * beta.row(g).t()) + sigma(g) *
+            (R::dnorm(alpha, 0, 1, false)/(1 - 0.999));
+        }
+        
+        quant = quant + W(i, g) * expected;
+      }
+      
+      out(i) = quant;
+    }
+  }
+  
+  return(out);
+}
+
+// Export the em_algorithm to R
+// [[Rcpp::export]]
+arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
+                               arma::mat X) {
+  
+  arma::vec eta(G);
+  int n = X.n_rows;
+  int k = X.n_cols;
+  
+  arma::mat out(Niter, G * k + (G * 2));
+  arma::mat beta(G, k);
+  arma::vec phi(G);
+  arma::mat W(n, G);
+  arma::vec z(n);
+  
+  double quant1;
+  double quant2;
+  double denom;
+  double alpha;
+  
+  for(int iter = 0; iter < Niter; iter++) {
+    if(iter == 0) { // sample starting values
+      eta = rdirichlet(repl(1.0, G));
+      
+      for (int g = 0; g < G; g++) {
+        phi(g) = rgamma_(2.0, 0.2);
+        for (int c = 0; c < k; c++) {
+          beta(g, c) = R::rnorm(0, 15);
+        }
+      }
+      
+      W = compute_W(y, delta, X, eta, beta, phi, G);
+    } else {
+      z = augment_em(y, delta, X, beta, phi, W, G);
+      W = compute_W(z, delta, X, eta, beta, phi, G);
+      // Rcout << "z tem NaN?" << z.has_nan() << "\n";
+      // Rcout << "W tem NaN?" << W.has_nan() << "\n";
+      
+      for (int g = 0; g < G; g++) {
+        arma::sp_mat Wg(n, n);
+        
+        for (int i = 0; i < n; i++) {
+          Wg(i, i) = W(i, g);
+        }
+        
+        eta(g) = arma::sum(W.col(g)) / n;
+        beta.row(g) = (arma::inv(X.t() * Wg * X) * X.t() * Wg * z).t();
+        
+        quant1 = 0;
+        quant2 = 0;
+        denom = arma::sum(W.col(g));
+        
+        for (int i = 0; i < n; i++) {
+          quant1 = quant1 + W(i, g) * 
+            (z(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) *
+            (z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
+          
+          if (delta(i) == 0) {
+            alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/
+              (1.0 / sqrt(phi(g)));
+            
+            if(R::pnorm(alpha, 0, 1, true, false) < 1) {
+              quant2 = quant2 +
+                W(i, g) * (1.0 / phi(g)) * (1.0 - 
+                (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0, 1, true, false))) *
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0, 1, true, false))));
+            } else {
+              quant2 = quant2 +
+                W(i, g) * (1.0 / phi(g)) * (1.0 - 
+                (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - 0.999)) *
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - 0.999)));
+            }
+          }
+        }
+        
+        phi(g) = denom / (quant1 + quant2);
+      }
+    }
+    
+    // Fill the out matrix
+    arma::rowvec newRow = 
+      arma::join_rows(eta.row(0), 
+                      beta.row(0),
+                      phi.row(0));
+    
+    for (int g = 1; g < G; g++) {
+      newRow = 
+        arma::join_rows(newRow, 
+                        eta.row(g), 
+                        beta.row(g),
+                        phi.row(g));
+    }
+    
+    out.row(iter) = newRow;
+  }
+  
+  return(out);
+}
 
 arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G, 
                                                  arma::vec exp_y, arma::ivec delta, 
