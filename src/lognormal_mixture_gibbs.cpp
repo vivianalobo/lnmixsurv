@@ -346,7 +346,9 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G, arma::vec
         }
         
         eta(g) = arma::sum(W.col(g)) / n;
-        beta.row(g) = (arma::inv(X.t() * Wg * X) * X.t() * Wg * z).t();
+        beta.row(g) = arma::solve(X.t() * Wg * X,
+                 X.t() * Wg * z,
+                 arma::solve_opts::likely_sympd).t();
         
         quant1 = 0;
         quant2 = 0;
@@ -435,7 +437,9 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
         }
         
         eta(g) = arma::sum(W.col(g)) / n;
-        beta.row(g) = (arma::inv(X.t() * Wg * X) * X.t() * Wg * z).t();
+        beta.row(g) = arma::solve(X.t() * Wg * X,
+                 X.t() * Wg * z,
+                 arma::solve_opts::likely_sympd).t();
         
         quant1 = 0;
         quant2 = 0;
