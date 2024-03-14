@@ -1,4 +1,4 @@
-pandoc: 2.19.2
+pandoc: 3.1.11
 pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
@@ -8,7 +8,7 @@ articles:
   parallel_computation: parallel_computation.html
   parsnip_spec: parsnip_spec.html
   posterior_analysis: posterior_analysis.html
-last_built: 2024-01-03T13:48Z
+last_built: 2024-03-14T13:50Z
 urls:
   reference: https://vivianalobo.github.io/lnmixsurv/reference
   article: https://vivianalobo.github.io/lnmixsurv/articles
