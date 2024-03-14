@@ -27,7 +27,7 @@ survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 
   
   n_regressors <- ncol(X)
   new_names <- NULL
-  
+
   for(g in 1:mixture_components) {
     for(j in 1:3) {
       if(j == 1) {
@@ -44,8 +44,15 @@ survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 
       }
     }
   }
-  
+
   colnames(matrix_em_iter) <- new_names
+  
+  matrix_em_iter <- matrix_em_iter |> 
+    as_tibble() |> 
+    mutate(iter = 1:Niter)
+  
+  matrix_em_iter <- matrix_em_iter |> 
+    pivot_longer(1:(ncol(matrix_em_iter) - 1))
   
   return(matrix_em_iter)
 }

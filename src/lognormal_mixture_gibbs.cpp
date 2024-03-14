@@ -301,9 +301,97 @@ double rgamma__(double alpha, double beta) {
   return(R::rgamma(alpha, 1.0 / beta));
 }
 
-// Export the em_algorithm to R
-// [[Rcpp::export]]
-  arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
+// Internal implementation of the em_algorithm
+arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G, arma::vec y, 
+                                                     arma::vec delta, arma::mat X) {
+  
+  arma::vec eta(G);
+  int n = X.n_rows;
+  int k = X.n_cols;
+  arma::mat beta(G, k);
+  arma::vec phi(G);
+  arma::mat W(n, G);
+  arma::vec z(n);
+  
+  arma::field<arma::mat> out(3);
+  
+  double quant1;
+  double quant2;
+  double denom;
+  double alpha;
+  
+  for(int iter = 0; iter < Niter; iter++) {
+    if(iter == 0) { // sample starting values
+      eta = rdirichlet_(repl(1.0, G));
+      
+      for (int g = 0; g < G; g++) {
+        phi(g) = rgamma__(2.0, 0.2);
+        for (int c = 0; c < k; c++) {
+          beta(g, c) = R::rnorm(0, 15);
+        }
+      }
+      
+      W = compute_W(y, delta, X, eta, beta, phi, G);
+    } else {
+      z = augment_em(y, delta, X, beta, phi, W, G);
+      W = compute_W(z, delta, X, eta, beta, phi, G);
+      // Rcout << "z tem NaN?" << z.has_nan() << "\n";
+      // Rcout << "W tem NaN?" << W.has_nan() << "\n";
+      
+      for (int g = 0; g < G; g++) {
+        arma::sp_mat Wg(n, n);
+        
+        for (int i = 0; i < n; i++) {
+          Wg(i, i) = W(i, g);
+        }
+        
+        eta(g) = arma::sum(W.col(g)) / n;
+        beta.row(g) = (arma::inv(X.t() * Wg * X) * X.t() * Wg * z).t();
+        
+        quant1 = 0;
+        quant2 = 0;
+        denom = arma::sum(W.col(g));
+        
+        for (int i = 0; i < n; i++) {
+          quant1 = quant1 + W(i, g) * 
+            (z(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) *
+            (z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
+          
+          if (delta(i) == 0) {
+            alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/
+              (1.0 / sqrt(phi(g)));
+            
+            if(R::pnorm(alpha, 0, 1, true, false) < 1) {
+              quant2 = quant2 +
+                W(i, g) * (1.0 / phi(g)) * (1.0 - 
+                (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0, 1, true, false))) *
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0, 1, true, false))));
+            } else {
+              quant2 = quant2 +
+                W(i, g) * (1.0 / phi(g)) * (1.0 - 
+                (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - 0.999)) *
+                (R::dnorm(alpha, 0, 1, false)/(1.0 - 0.999)));
+            }
+          }
+        }
+        
+        phi(g) = denom / (quant1 + quant2);
+      }
+    }
+  }
+  
+  // Filling the field
+  out(0) = eta;
+  out(1) = beta;
+  out(2) = phi;
+  
+  return(out);
+}
+
+//[[Rcpp::export]]
+arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
                                arma::mat X) {
   
   arma::vec eta(G);
@@ -432,78 +520,18 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
   // make label switching accidentally. Latter this is going to be defined
   // so we can always fill the matrix in the correct order (by columns, always).
   
-  // Starting empty objects for EM
-  arma::vec eta_em(G);
   arma::mat Xt = X.t();
-  arma::vec phi_em(G);
   arma::vec y_aug(N);
-  arma::mat beta_em(G, p);
-  arma::mat tau(N, G);
-  arma::sp_mat Wg(N, N);
   arma::ivec n_groups(G);
   arma::mat means(N, G);
   arma::vec sd(G);
   arma::vec linearComb(N);
   arma::mat comb;
-  
-  double sumtau;
+  arma::field<arma::mat> em_params(3);
   
   if(em_iter != 0) {
     // starting EM algorithm to find values close to the MLE
-    for (int iter = 0; iter < em_iter; iter++) {
-      
-      if ((iter % 20 == 0) && show_output) {
-        Rcout << "(Chain " << chain_num << ") EM Iter: " << iter << "/" << em_iter << "\n";
-      }
-      
-      // Initializing values
-      if(iter == 0) {
-        eta_em = rdirichlet(repl(1, G), global_rng);
-        
-        for (int g = 0; g < G; g++) {
-          phi_em(g) = rgamma_(2, 8, global_rng);
-          beta_em.row(g) = rmvnorm(repl(0, p),
-                      arma::diagmat(repl(7, p)),
-                      global_rng).t();
-        }
-      }
-      
-      // E-step
-      means = X * beta_em.t();
-      sd = sqrt(1.0 / phi_em);
-      
-      for(int r = 0; r < N; r++) {
-        for(int g = 0; g < G; g++) {
-          tau(r, g) = eta_em(g) * R::dnorm(y(r), 
-              means(r, g), sd(g), false);
-        }
-        
-        if(arma::sum(tau.row(r)) == 0) {  // to avoid numerical problems
-          tau.row(r) = repl(1.0/G, G).t();
-        } else {
-          tau.row(r) = tau.row(r)/sum(tau.row(r));
-        }
-      }
-      
-      // M-step
-      for(int g = 0; g < G; g++) {
-        Wg = arma::diagmat(tau.col(g));
-        sumtau = arma::sum(tau.col(g));
-        
-        eta_em(g) = sumtau/N;
-        
-        comb = X.t() * Wg * X;
-        if(arma::det(comb) != 0) {
-          beta_em.row(g) = arma::solve(comb,
-                      Xt * Wg * y,
-                      arma::solve_opts::likely_sympd).t();
-        }
-        
-        linearComb = y - X * beta_em.row(g).t();
-        
-        phi_em(g) = sumtau/arma::as_scalar(linearComb.t() * Wg * linearComb);
-      }
-    }
+    em_params = lognormal_mixture_em_internal(em_iter, G, y, arma::conv_to<arma::vec>::from(delta), X);
   } else if(show_output) {
     Rcout << "Skipping EM Algorithm" << "\n";
   }
@@ -540,11 +568,10 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
     if (iter == 0) {
       
       if (em_iter != 0) {
-        // we are going to start the values using the
-        // previous EM iteration
-        eta = eta_em;
-        phi = phi_em;
-        beta = beta_em;
+        // we are going to start the values using the last EM iteration
+        arma::vec eta = em_params(0);
+        arma::mat beta = em_params(1);
+        arma::vec phi = em_params(2);
       } else {
         eta = rdirichlet(repl(1, G), global_rng);
         
