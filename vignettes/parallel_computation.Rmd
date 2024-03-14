@@ -23,18 +23,20 @@ color_scheme_set('viridis')
 
 It's possible to run multiple chains in parallel, where each chain will run on one core, by specifying the cores argument. Any value above 1 will automatically turn on the parallel mode.
 
+**This section is under construction**
+
 <!-- ```{r} -->
 <!-- start <- Sys.time() -->
-<!-- mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                       data = sim_data$data,  -->
+<!-- mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                       data = sim_data$data, -->
 <!--                                       chains = 4, starting_seed = 50, -->
 <!--                                       em_iter = 10) -->
 <!-- # Time to run 4 chains sequentially: -->
 <!-- print(Sys.time() - start) -->
 
 <!-- start <- Sys.time() -->
-<!-- mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                     data = sim_data$data,  -->
+<!-- mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                     data = sim_data$data, -->
 <!--                                     chains = 4, cores = 4, -->
 <!--                                     starting_seed = 50, -->
 <!--                                     em_iter = 10) -->
@@ -45,8 +47,8 @@ It's possible to run multiple chains in parallel, where each chain will run on o
 <!-- Since the parallel approach is implemented with OpenMP, this should be faster than sequential approach for longer runs, but for really small runs they may be equivalent. Just make sure to have enough RAM available to run the chains in parallel. -->
 <!-- ```{r} -->
 <!-- start <- Sys.time() -->
-<!-- mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                             data = sim_data$data,  -->
+<!-- mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                             data = sim_data$data, -->
 <!--                                             iter = 100, em_iter = 5, -->
 <!--                                             chains = 4) -->
 
@@ -54,8 +56,8 @@ It's possible to run multiple chains in parallel, where each chain will run on o
 <!-- print(Sys.time() - start) -->
 
 <!-- start <- Sys.time() -->
-<!-- mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                           data = sim_data$data,  -->
+<!-- mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                           data = sim_data$data, -->
 <!--                                           iter = 100, em_iter = 5, -->
 <!--                                           chains = 4, cores = 4) -->
 <!-- # Time to run 1 EM iter and 4 MCMC iter on 4 chains in parallel: -->
@@ -64,8 +66,8 @@ It's possible to run multiple chains in parallel, where each chain will run on o
 
 <!-- ```{r} -->
 <!-- start <- Sys.time() -->
-<!-- mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                            data = sim_data$data,  -->
+<!-- mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                            data = sim_data$data, -->
 <!--                                            iter = 8000, chains = 6, -->
 <!--                                            starting_seed = 50, -->
 <!--                                            em_iter = 50) -->
@@ -73,8 +75,8 @@ It's possible to run multiple chains in parallel, where each chain will run on o
 <!-- print(Sys.time() - start) -->
 
 <!-- start <- Sys.time() -->
-<!-- mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x,  -->
-<!--                                            data = sim_data$data,  -->
+<!-- mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, -->
+<!--                                            data = sim_data$data, -->
 <!--                                            iter = 8000, chains = 6, -->
 <!--                                            cores = 6, -->
 <!--                                            starting_seed = 50, -->

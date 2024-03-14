@@ -25,7 +25,8 @@ Formula interface:
 library(lnmixsurv)
 
 set.seed(1)
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE,
+                            starting_seed = 20)
 mod1
 ```
 
@@ -34,7 +35,7 @@ Tidymodels approach:
 ```{r}
 library(censored)
 mod_spec <- survival_reg() |>
-  set_engine("survival_ln_mixture", intercept = TRUE) |>
+  set_engine("survival_ln_mixture", intercept = TRUE, starting_seed = 20) |>
   set_mode("censored regression")
 set.seed(1)
 mod2 <- mod_spec |>
@@ -53,20 +54,21 @@ The predicitons are easy to obtain from a fit.
 
 ```{r prediction}
 library(ggplot2)
-library(purrr)
 library(dplyr)
 library(tidyr)
+library(purrr)
 
 models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", eval_time = seq(120)))
+pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", 
+                                  eval_time = seq(120)))
 
-bind_rows(pred_sob, .id = "modelo") %>%
-  group_by(modelo) %>%
-  dplyr::mutate(id = new_data$x) %>%
-  ungroup() %>%
-  tidyr::unnest(cols = .pred) %>%
+bind_rows(pred_sob, .id = "modelo") |>
+  group_by(modelo) |>
+  mutate(id = new_data$x) |>
+  ungroup() |>
+  unnest(cols = .pred) |>
   ggplot(aes(x = .eval_time, y = .pred_survival, col = id)) +
   geom_line() +
   theme_bw() +
