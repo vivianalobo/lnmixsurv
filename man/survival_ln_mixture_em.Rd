@@ -16,8 +16,6 @@ survival_ln_mixture_em(y, delta, X, iter = 50, mixture_components = 2)
 \item{iter}{A positive integer specifying the number of iterations for the EM algorithm.}
 
 \item{mixture_components}{number of mixture componentes, >= 2.}
-
-\item{...}{Not currently used, but required for extensibility.}
 }
 \description{
 \code{survival_ln_mixture_em()} fits a lognormal mixture model using the EM algorithm for censored data, as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.

@@ -9,15 +9,9 @@
 #' @param k number of covariates generated (the total of covariates will be intercept + (k - 1) covariates).
 #' 
 #' @param percentage_censored Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation.
-#'
-#' @param ... Not currently used, but required for extensibility.
 #' 
 #' @export
 simulate_data <- function(n, mixture_components, k, percentage_censored) {
-  library(dplyr)
-  library(tidyr)
-  library(tibble)
-  
   if(!is.numeric(percentage_censored)) {
     stop('The parameter percentage_censored should be numeric.')
     if(percentage_censored < 0 | percentage_censored > 1) {
@@ -30,9 +24,11 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   
   for(c in 1:ncol(betas)) {
     if(c == 1) {
-      betas[, c] <- round(rnorm(mixture_components, 1, 1.3 * mixture_components), 3)
+      betas[, c] <- round(stats::rnorm(mixture_components, 1, 
+                                       1.3 * mixture_components), 3)
     } else {
-      betas[, c] <- round(rnorm(mixture_components, 2, 0.4 * mixture_components), 3)
+      betas[, c] <- round(stats::rnorm(mixture_components, 2,
+                                       0.4 * mixture_components), 3)
     }
   }
   
@@ -48,9 +44,9 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   }
   colnames(betas) <- colnames_beta
   
-  phis <- rgamma(mixture_components, 2, 0.8)
+  phis <- stats::rgamma(mixture_components, 2, 0.8)
   
-  etas <- rgamma(mixture_components, 1, 1)
+  etas <- stats::rgamma(mixture_components, 1, 1)
   etas <- etas/sum(etas)
   
   # Sorting the output
@@ -61,12 +57,12 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   # Design matrix X
   X_design <- data.frame(cat = factor(sample(1:k, n, TRUE)))
   
-  X <- model.matrix(~cat, X_design) |> as.data.frame()
+  X <- stats::model.matrix(~cat, X_design) |> as.data.frame()
   
   # Iniciando base de dados
-  data <- tibble(id = 1:n,
-                 grupo = sample(1:mixture_components, n, T, etas), # randomly allocating each observating to a group
-                 delta = rbinom(n, 1, percentage_censored))
+  data <- tibble::tibble(id = 1:n,
+                         grupo = sample(1:mixture_components, n, T, etas), # randomly allocating each observating to a group
+                         delta = stats::rbinom(n, 1, percentage_censored))
   
   # Creating y variable
   data$y <- NA
@@ -75,15 +71,15 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
     g <- data$grupo[i]
     
     data$y[i] <- as.matrix(X[i, ]) %*% matrix(betas[g, ]) + 
-      rnorm(1, 0, sqrt(1/phis[g]))
+      stats::rnorm(1, 0, sqrt(1/phis[g]))
   }
   
   # Creating time till event ocurrence
   data$t <- exp(data$y)
   
   data <- data |> 
-    select(-y) |> 
-    bind_cols(as_tibble(X_design))
+    dplyr::select(-y) |> 
+    dplyr::bind_cols(tibble::as_tibble(X_design))
   
   # Exporting real parameters values
   new_params_theta <- NULL
@@ -117,7 +113,7 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   new_params_theta <- matrix(c(new_row_theta), nrow = 1, 
                              ncol = length(new_row_theta), 
                              dimnames = list('r1', new_params_theta)) |>
-    as_tibble()
+    tibble::as_tibble()
   
   return(list(data = data,
               real_values = new_params_theta))
