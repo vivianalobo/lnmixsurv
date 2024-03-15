@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(lnmixsurv)
 library(bayesplot)
 

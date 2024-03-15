@@ -348,7 +348,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G, arma::vec
         eta(g) = arma::sum(W.col(g)) / n;
         beta.row(g) = arma::solve(X.t() * Wg * X,
                  X.t() * Wg * z,
-                 arma::solve_opts::likely_sympd).t();
+                 arma::solve_opts::allow_ugly).t();
         
         quant1 = 0;
         quant2 = 0;
@@ -439,7 +439,7 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
         eta(g) = arma::sum(W.col(g)) / n;
         beta.row(g) = arma::solve(X.t() * Wg * X,
                  X.t() * Wg * z,
-                 arma::solve_opts::likely_sympd).t();
+                 arma::solve_opts::allow_ugly).t();
         
         quant1 = 0;
         quant2 = 0;
@@ -647,11 +647,11 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
       if(arma::det(comb) != 0) {
         Sg = arma::solve(comb,
                          arma::eye(X.n_cols, X.n_cols),
-                         arma::solve_opts::likely_sympd);
+                         arma::solve_opts::allow_ugly);
         
         mg = arma::solve(comb,
                          phi(g) * Xgt * yg,
-                         arma::solve_opts::likely_sympd);
+                         arma::solve_opts::allow_ugly);
         
         beta.row(g) = rmvnorm(mg, Sg, global_rng).t();
       }

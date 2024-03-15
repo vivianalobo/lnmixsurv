@@ -70,7 +70,7 @@ survival_ln_mixture.default <- function(formula, ...) {
 
 #' @export
 #' @rdname survival_ln_mixture
-survival_ln_mixture.formula <- function(formula, data, intercept = TRUE,...) {
+survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {
   blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
   processed <- hardhat::mold(formula, data, blueprint = blueprint)
   survival_ln_mixture_bridge(processed, ...)

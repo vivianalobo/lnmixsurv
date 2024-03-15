@@ -12,10 +12,6 @@
 #'
 #' @param mixture_components number of mixture componentes, >= 2.
 #'
-# #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
-#' 
-# #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
-#' 
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
