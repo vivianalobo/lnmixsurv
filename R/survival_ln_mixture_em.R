@@ -10,14 +10,18 @@
 #'
 #' @param iter A positive integer specifying the number of iterations for the EM algorithm.
 #'
-#' @param mixture_components number of mixture componentes, >= 2.
+#' @param mixture_components Number of mixture componentes, >= 2.
+#' 
+#' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
 #' otherwise the predictions will fail.
 #'
 #' @export
-survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 2) {
-  matrix_em_iter <- lognormal_mixture_em(iter, mixture_components, y, delta, X)
+survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 2,
+                                   starting_seed = sample(1:2^28, 1)) {
+  matrix_em_iter <- lognormal_mixture_em(iter, mixture_components, y, delta, X,
+                                         starting_seed)
   
   n_regressors <- ncol(X)
   new_names <- NULL
@@ -40,12 +44,12 @@ survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 
   }
 
   colnames(matrix_em_iter) <- new_names
-  
-  matrix_em_iter <- matrix_em_iter |> 
-    tibble::as_tibble() |> 
-    dplyr::mutate(iter = 1:Niter)
-  
-  matrix_em_iter <- matrix_em_iter |> 
+
+  matrix_em_iter <- matrix_em_iter |>
+    tibble::as_tibble() |>
+    dplyr::mutate(iter = 1:iter)
+
+  matrix_em_iter <- matrix_em_iter |>
     tidyr::pivot_longer(1:(ncol(matrix_em_iter) - 1))
   
   return(matrix_em_iter)

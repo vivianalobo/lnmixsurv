@@ -4,7 +4,14 @@
 \alias{survival_ln_mixture_em}
 \title{Lognormal mixture model - EM algorithm for censored data}
 \usage{
-survival_ln_mixture_em(y, delta, X, iter = 50, mixture_components = 2)
+survival_ln_mixture_em(
+  y,
+  delta,
+  X,
+  iter = 50,
+  mixture_components = 2,
+  starting_seed = sample(1, 2^28, 1)
+)
 }
 \arguments{
 \item{y}{Log of the events ocurrence times.}
@@ -15,7 +22,9 @@ survival_ln_mixture_em(y, delta, X, iter = 50, mixture_components = 2)
 
 \item{iter}{A positive integer specifying the number of iterations for the EM algorithm.}
 
-\item{mixture_components}{number of mixture componentes, >= 2.}
+\item{mixture_components}{Number of mixture componentes, >= 2.}
+
+\item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
 }
 \description{
 \code{survival_ln_mixture_em()} fits a lognormal mixture model using the EM algorithm for censored data, as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
