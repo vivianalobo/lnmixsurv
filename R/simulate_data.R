@@ -77,8 +77,7 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   # Creating time till event ocurrence
   data$t <- exp(data$y)
   
-  data <- data |> 
-    dplyr::select(-y) |> 
+  data <- data[, c('id', 'grupo', 'delta', 't')] |> 
     dplyr::bind_cols(tibble::as_tibble(X_design))
   
   # Exporting real parameters values

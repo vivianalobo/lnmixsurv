@@ -10,7 +10,7 @@ survival_ln_mixture_em(
   X,
   iter = 50,
   mixture_components = 2,
-  starting_seed = sample(1, 2^28, 1)
+  starting_seed = sample(1:2^28, 1)
 )
 }
 \arguments{

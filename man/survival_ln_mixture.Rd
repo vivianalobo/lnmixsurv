@@ -19,7 +19,7 @@ survival_ln_mixture(
   proposal_variance = 2,
   show_progress = FALSE,
   em_iter = 0,
-  starting_seed = sample(1, 2^28, 1),
+  starting_seed = sample(1:2^28, 1),
   force_num_cores = FALSE,
   ...
 )
