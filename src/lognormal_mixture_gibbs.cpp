@@ -106,28 +106,31 @@ int numeric_sample(const arma::ivec& groups,
 // the one that causes the code to run SO slow. We can further investigate what
 // can be done in here
 arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& phi, const arma::mat& beta,
+                         const arma::vec& sd, const arma::mat& beta,
                          const arma::mat& X, gsl_rng* rng_device) {
-  arma::ivec vec_grupos(y.size());
-  
-  arma::vec probs(G);
-  
-  arma::mat mean = X * beta.t();
-  arma::vec sd = 1.0 / sqrt(phi);
-  double denom;
   int n = y.n_elem;
-  for (int i = 0; i < n; i++) {
-    denom = 0;
+  arma::ivec vec_grupos(n);
+  arma::mat probs(n, G);
+  double denom;
+  
+  for(int g = 0; g < G; g++) {
+    probs.col(g) = eta(g) * arma::normpdf(y, 
+              X * beta.row(g).t(),
+              repl(sd(g), n));
+  }
+  
+  for(int i = 0; i < n; i++) {
+    denom = arma::sum(probs.row(i));
     
-    for (int g = 0; g < G; g++) {
-      probs(g) = eta(g) * R::dnorm(y(i), mean(i, g), sd(g), false);
-      denom += probs(g); 
+    if(denom > 0) {
+      probs.row(i) = probs.row(i) / denom;
+    } else {
+      probs.row(i) = repl(1.0 / G, G).t();
     }
     
-    probs = (denom == 0) * (repl(1.0 / G, G)) +
-      (denom != 0) * (probs / denom);
-    
-    vec_grupos(i) = numeric_sample(seq(0, G - 1), probs, rng_device);
+    vec_grupos(i) = numeric_sample(seq(0, G - 1),
+               probs.row(i).t(),
+               rng_device);
   }
   
   return vec_grupos;
@@ -142,35 +145,30 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
 // improve performance. Take a look at
 // https://cran.r-project.org/web/packages/RcppTN/RcppTN.pdf
 // for sampling multiples numbers at the same time.
-arma::vec augment(int G, const arma::vec& y, const arma::ivec& groups,
-                  const arma::ivec& delta, arma::vec phi, 
+arma::vec augment(const int& G, const arma::vec& y, const arma::ivec& groups,
+                  const arma::ivec& delta, const arma::vec& sd, 
                   const arma::mat& beta, const arma::mat& X, gsl_rng* rng_device) {
   
   int n = X.n_rows;
-  
   arma::vec out(n);
   int g;
   double out_i;
   int count;
-  arma::vec sd = 1.0 / sqrt(phi);
+  arma::mat mean = X * beta.t();
   
   for (int i = 0; i < n; i++) {
     if (delta(i) == 1) {
       out(i) = y(i);
-    }
-    
-    else {
+    } else {
       g = groups(i);
-      
       out_i = y(i);
-      
       count = 0;
       
       while(out_i <= y(i)) {
-        out_i = rnorm_(arma::as_scalar(X.row(i) * beta.row(g).t()),
+        out_i = rnorm_(arma::as_scalar(mean(i, g)),
                        sd(g), rng_device);
         
-        // break if it's going to run forever
+        // break if it seems like it's going to run forever
         // should never happen
         if(count > 10000) {
           out_i = y(i) + 0.01;
@@ -194,11 +192,10 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
   arma::ivec index;
   for (int g = 0; g < G; g++) {
     index = groups(arma::find(groups == g));
-    
     out(g) = index.n_rows;
   }
   
-  return(out);
+  return out;
 }
 
 /*
@@ -229,6 +226,7 @@ arma::mat compute_W(const arma::vec& y, const arma::vec& delta,
                     const int& G) {
   
   int n = X.n_rows;
+  double denom;
   arma::mat out(n, G);
   arma::mat mat_denom(n, G);
   
@@ -239,8 +237,9 @@ arma::mat compute_W(const arma::vec& y, const arma::vec& delta,
   }
   
   for(int i = 0; i < n; i++) {
-    if(arma::sum(mat_denom.row(i)) > 0) {
-      out.row(i) = mat_denom.row(i) / arma::sum(mat_denom.row(i));
+    denom = arma::sum(mat_denom.row(i));
+    if(denom > 0) {
+      out.row(i) = mat_denom.row(i) / denom;
     } else {
       out.row(i) = repl(1.0 / G, G).t();
     }
@@ -261,19 +260,25 @@ arma::vec augment_em(const arma::vec& y, const arma::vec& delta,
   double quant;
   double alpha;
   double expected;
+  arma::mat mean = X * beta.t();
+  arma::mat alpha_mat(n, G);
+  
+  for(int g = 0; g < G; g++) {
+    alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
+  }
   
   for (int i = 0; i < n; i++) {
     if(delta(i) == 0) {
       quant = 0;
       
       for (int g = 0; g < G; g++) {
-        alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/sigma(g);
+        alpha = alpha_mat(i, g);
         
         if (R::pnorm(alpha, 0, 1, true, false) < 1) {
-          expected = arma::as_scalar(X.row(i) * beta.row(g).t()) + sigma(g) *
+          expected = arma::as_scalar(mean(i, g)) + sigma(g) *
             (R::dnorm(alpha, 0, 1, false)/(1 - R::pnorm(alpha, 0, 1, true, false)));
         } else {
-          expected = arma::as_scalar(X.row(i) * beta.row(g).t()) + sigma(g) *
+          expected = arma::as_scalar(mean(i, g)) + sigma(g) *
             (R::dnorm(alpha, 0, 1, false)/(1 - 0.999));
         }
         
@@ -484,8 +489,9 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
                    global_rng).t();
         }
         
+        sd = 1.0 / sqrt(phi);
         // Sampling classes for the observations
-        groups = sample_groups(G, y, eta, phi, beta, X, global_rng);
+        groups = sample_groups(G, y, eta, sd, beta, X, global_rng);
       }
       
       // sampling value for e0
@@ -497,11 +503,13 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
       n_aceite = 0;
     }
     
+    sd = 1.0 / sqrt(phi);
+    
     // Data augmentation
-    y_aug = augment(G, y, groups, delta, phi, beta, X, global_rng); 
+    y_aug = augment(G, y, groups, delta, sd, beta, X, global_rng); 
     
     if (iter > 0) {
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng);
+      groups = sample_groups(G, y_aug, eta, sd, beta, X, global_rng);
     }
     
     // Computing number of observations allocated at each class
