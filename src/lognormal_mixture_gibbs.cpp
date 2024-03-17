@@ -355,7 +355,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int
                  X.t() * Wg * z,
                  arma::solve_opts::allow_ugly).t();
         
-        quant;
+        quant = 0;
         denom = arma::sum(colg);
         
         for (int i = 0; i < n; i++) {
