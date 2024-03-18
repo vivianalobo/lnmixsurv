@@ -20,12 +20,19 @@
 #' @export
 survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 2,
                                    starting_seed = sample(1:2^28, 1)) {
+  
+  # These next two lines seems to be unecessary but they are essencial to ensure
+  # the reproducibility of the EM iterations on the Gibbs sampler. For an user,
+  # interested only in using the EM, this is irrelevant.
+  set.seed(starting_seed)
+  seeds <- sample(1:2^28, 1)
+  
   matrix_em_iter <- lognormal_mixture_em(iter, mixture_components, y, delta, X,
-                                         starting_seed)
+                                         seeds)
   
   n_regressors <- ncol(X)
   new_names <- NULL
-
+  
   for(g in 1:mixture_components) {
     for(j in 1:3) {
       if(j == 1) {
@@ -42,13 +49,13 @@ survival_ln_mixture_em <- function(y, delta, X, iter = 50, mixture_components = 
       }
     }
   }
-
+  
   colnames(matrix_em_iter) <- new_names
-
+  
   matrix_em_iter <- matrix_em_iter |>
     tibble::as_tibble() |>
     dplyr::mutate(iter = 1:iter)
-
+  
   matrix_em_iter <- matrix_em_iter |>
     tidyr::pivot_longer(1:(ncol(matrix_em_iter) - 1))
   
