@@ -106,34 +106,100 @@ int numeric_sample(const arma::ivec& groups,
 // the one that causes the code to run SO slow. We can further investigate what
 // can be done in here
 arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& sd, const arma::mat& beta,
-                         const arma::mat& X, gsl_rng* rng_device) {
-  int n = y.n_elem;
-  arma::ivec vec_grupos(n);
-  arma::mat probs(n, G);
+                         const arma::vec& phi, const arma::mat& beta,
+                         const arma::mat& X, gsl_rng* rng_device,
+                         const arma::ivec& grupos_old) {
+  int n = X.n_rows;
+  int p = X.n_cols;
+  arma::ivec vec_grupos = grupos_old;
+  arma::ivec sequence = seq(0, G - 1);
+  arma::uvec indexg;
+  arma::mat Vg0 = arma::diagmat(repl(30.0, p));
+  arma::mat Vg0_inv = arma::inv(Vg0);
+  arma::vec xi;
+  arma::rowvec xit;
+  arma::mat Xg;
+  arma::mat Xgt;
+  arma::mat Xgt_Xg;
+  arma::vec yg;
+  arma::mat S_inv(p, p);
+  arma::mat S(p, p);
+  arma::vec Xgt_yg;
+  arma::vec Mg;
+  arma::mat denom_mat(n, G);
+  arma::vec probsEqual(G);
+  probsEqual.fill(1.0 / G);
+  
+  double m;
+  double yi;
+  double a;
+  double sigma2;
   double denom;
   
-  for(int g = 0; g < G; g++) {
-    probs.col(g) = eta(g) * arma::normpdf(y, 
-              X * beta.row(g).t(),
-              repl(sd(g), n));
-  }
-  
-  for(int i = 0; i < n; i++) {
-    denom = arma::sum(probs.row(i));
+  for (int g = 0; g < G; g++) {
+    indexg = arma::find(vec_grupos == g);
     
-    if(denom > 0) {
-      probs.row(i) = probs.row(i) / denom;
-    } else {
-      probs.row(i) = repl(1.0 / G, G).t();
+    if(indexg.empty()) {
+      continue;
     }
     
-    vec_grupos(i) = numeric_sample(seq(0, G - 1),
-               probs.row(i).t(),
-               rng_device);
+    Xg = X.rows(indexg);
+    Xgt = Xg.t();
+    yg = y(indexg);
+    Xgt_yg = Xgt * yg;
+    S = phi(g) * Xg.t() * Xg + Vg0_inv;
+    if(arma::det(S) == 0) {
+      S_inv = Vg0;
+    } else {
+      S_inv = arma::inv(phi(g) * Xg.t() * Xg + Vg0_inv,
+                        arma::inv_opts::allow_approx);
+    }
+    
+    Mg = X * S_inv * Xgt_yg;
+    
+    for (int i = 0; i < n; i++) {
+      xit = X.row(i);
+      yi = y(i);
+      m = 1.0 / arma::as_scalar(xit * S_inv * xit.t());
+      a = (m - phi(g)) * (vec_grupos(i) == g) +
+        m * (vec_grupos(i) != g);
+      
+      sigma2 = (a + phi(g))/(a * phi(g));
+      denom_mat(i, g) = 
+        eta(g) * (R::dnorm(yi,
+                  square(phi(g)) * sigma2 * (Mg(i) - yi / (a + phi(g))),
+                  sqrt(sigma2), 
+                  false) * (vec_grupos(i) == g) +
+                    R::dnorm(yi,
+                             square(phi(g)) * sigma2 * ((a + phi(g)) * Mg(i)/(a + phi(g) + 1.0)),
+                             sqrt(sigma2),
+                             false) * (vec_grupos(i) != g));
+    }
   }
   
-  return vec_grupos;
+  for (int i = 0; i < n; i++) {
+    denom = arma::sum(denom_mat.row(i));
+    if(denom > 0) {
+      vec_grupos(i) = numeric_sample(sequence, denom_mat.row(i).t() / denom, 
+                 rng_device);
+    } else {
+      vec_grupos(i) = numeric_sample(sequence, probsEqual, rng_device);
+    }
+  }
+  
+  return(vec_grupos);
+}
+
+arma::ivec sample_groups_start(const int& G, const arma::vec& y, 
+                               const arma::vec& eta, gsl_rng* rng_device) {
+  int n = y.n_rows;
+  arma::ivec vec_grupos(n);
+  
+  for (int i = 0; i < n; i++) {
+    vec_grupos(i) = numeric_sample(seq(0, G - 1), eta, rng_device);
+  }
+  
+  return(vec_grupos);
 }
 
 // Function used to simulate survival time for censored observations.
@@ -229,7 +295,7 @@ arma::mat compute_W(const arma::vec& y, const arma::vec& delta,
   double denom;
   arma::mat out(n, G);
   arma::mat mat_denom(n, G);
-  
+  arma::rowvec repl_vec = repl(1.0 / G, G).t();
   for(int g = 0; g < G; g++) {
     mat_denom.col(g) = eta(g) * arma::normpdf(y,
                   X * beta.row(g).t(),
@@ -241,13 +307,12 @@ arma::mat compute_W(const arma::vec& y, const arma::vec& delta,
     if(denom > 0) {
       out.row(i) = mat_denom.row(i) / denom;
     } else {
-      out.row(i) = repl(1.0 / G, G).t();
+      out.row(i) = repl_vec;
     }
   }
   
   return(out);
 }
-
 
 // Create the latent variable z for censored observations
 arma::vec augment_em(const arma::vec& y, const arma::vec& delta,
@@ -438,7 +503,8 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
   arma::vec eta(G);
   arma::vec phi(G);
   arma::mat beta(G, p);
-  arma::ivec groups(y.n_rows);
+  arma::ivec groups(N);
+  arma::ivec groups_start(N);
   arma::vec e0new_vec(2);
   
   arma::mat Xg;
@@ -472,7 +538,7 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
         beta = em_params(1);
         phi = em_params(2);
         
-        groups = sample_groups_from_W(em_params(3));
+        groups_start = sample_groups_from_W(em_params(3));
       } else {
         eta = rdirichlet(repl(1, G), global_rng);
         
@@ -485,7 +551,7 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
         
         sd = 1.0 / sqrt(phi);
         // Sampling classes for the observations
-        groups = sample_groups(G, y, eta, sd, beta, X, global_rng);
+        groups_start = sample_groups_start(G, y, eta, global_rng);
       }
       
       // sampling value for e0
@@ -495,6 +561,8 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
       // of e0 proposal
       cte = 1;
       n_aceite = 0;
+      
+      groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups_start);
     }
     
     sd = 1.0 / sqrt(phi);
@@ -503,7 +571,7 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
     y_aug = augment(G, y, groups, delta, sd, beta, X, global_rng); 
     
     if (iter > 0) {
-      groups = sample_groups(G, y_aug, eta, sd, beta, X, global_rng);
+      groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups);
     }
     
     // Computing number of observations allocated at each class
