@@ -174,16 +174,16 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
                              square(phi(g)) * sigma2 * ((a + phi(g)) * Mg(i)/(a + phi(g) + 1.0)),
                              sqrt(sigma2),
                              false) * (vec_grupos(i) != g));
-    }
-  }
-  
-  for (int i = 0; i < n; i++) {
-    denom = arma::sum(denom_mat.row(i));
-    if(denom > 0) {
-      vec_grupos(i) = numeric_sample(sequence, denom_mat.row(i).t() / denom, 
-                 rng_device);
-    } else {
-      vec_grupos(i) = numeric_sample(sequence, probsEqual, rng_device);
+      
+      if(g == (G - 1)) {
+        denom = arma::sum(denom_mat.row(i));
+        if(denom > 0) {
+          vec_grupos(i) = numeric_sample(sequence, denom_mat.row(i).t() / denom, 
+                     rng_device);
+        } else {
+          vec_grupos(i) = numeric_sample(sequence, probsEqual, rng_device);
+        }
+      }
     }
   }
   
