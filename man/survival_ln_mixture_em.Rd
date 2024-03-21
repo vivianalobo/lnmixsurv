@@ -9,10 +9,10 @@
 survival_ln_mixture_em(
   formula,
   data,
+  intercept = TRUE,
   iter = 50,
   mixture_components = 2,
   starting_seed = sample(1:2^28, 1),
-  intercept = TRUE,
   ...
 )
 
@@ -27,13 +27,13 @@ object.}
 
 \item{data}{A \strong{data frame} containing both the predictors and the outcome.}
 
+\item{intercept}{A logical. Should an intercept be included in the processed data?}
+
 \item{iter}{A positive integer specifying the number of iterations for the EM algorithm.}
 
 \item{mixture_components}{number of mixture componentes >= 2.}
 
 \item{starting_seed}{Starting seed for the algorithm. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
-
-\item{intercept}{A logical. Should an intercept be included in the processed data?}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

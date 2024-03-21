@@ -19,7 +19,7 @@
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), intercept = TRUE, ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }

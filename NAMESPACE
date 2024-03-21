@@ -3,6 +3,7 @@
 S3method(augment,survival_ln_mixture)
 S3method(nobs,survival_ln_mixture)
 S3method(predict,survival_ln_mixture)
+S3method(predict,survival_ln_mixture_em)
 S3method(print,survival_ln_mixture)
 S3method(survival_ln_mixture,default)
 S3method(survival_ln_mixture,formula)
