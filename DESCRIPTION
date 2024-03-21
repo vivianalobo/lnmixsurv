@@ -22,7 +22,8 @@ Imports:
     generics,
     tibble,
     dplyr,
-    tidyselect
+    tidyselect,
+    plotly
 LinkingTo: Rcpp, RcppArmadillo, RcppGSL
 Depends: 
     parsnip (>= 1.1.0),

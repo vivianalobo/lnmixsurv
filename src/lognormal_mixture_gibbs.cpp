@@ -416,9 +416,11 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G,
         
         eta(g) = arma::sum(colg) / n;
         
-        beta.row(g) = arma::solve(X.t() * Wg * X,
-                 X.t() * Wg * z,
-                 arma::solve_opts::allow_ugly).t();
+        if(arma::det(X.t() * Wg * X) != 0) {
+          beta.row(g) = arma::solve(X.t() * Wg * X,
+                   X.t() * Wg * z,
+                   arma::solve_opts::allow_ugly).t();
+        }
         
         quant = 0.0;
         denom = arma::sum(colg);
@@ -756,7 +758,7 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec t, arma::vec delta,
   int n = X.n_rows;
   int k = X.n_cols;
   arma::vec y = log(t);
-    
+  
   arma::mat out(Niter, G * k + (G * 2));
   arma::mat beta(G, k);
   arma::vec phi(G);
@@ -796,9 +798,12 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec t, arma::vec delta,
         Wg = arma::diagmat(colg);
         
         eta(g) = arma::sum(colg) / n;
-        beta.row(g) = arma::solve(X.t() * Wg * X,
-                 X.t() * Wg * z,
-                 arma::solve_opts::allow_ugly).t();
+        
+        if(arma::det(X.t() * Wg * X) != 0) {
+          beta.row(g) = arma::solve(X.t() * Wg * X,
+                   X.t() * Wg * z,
+                   arma::solve_opts::allow_ugly).t();
+        }
         
         quant = 0.0;
         denom = arma::sum(colg);
