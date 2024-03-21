@@ -67,7 +67,6 @@ survival_ln_mixture.default <- function(formula, ...) {
 }
 
 # Formula method
-
 #' @export
 #' @rdname survival_ln_mixture
 survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {

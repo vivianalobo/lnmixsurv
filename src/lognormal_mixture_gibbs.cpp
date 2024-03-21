@@ -744,7 +744,7 @@ arma::cube lognormal_mixture_gibbs(int Niter, int em_iter, int G, arma::vec exp_
 }
 
 //[[Rcpp::export]]
-arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
+arma::mat lognormal_mixture_em(int Niter, int G, arma::vec t, arma::vec delta,
                                arma::mat X, long long int starting_seed) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
@@ -755,7 +755,8 @@ arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta,
   arma::vec eta(G);
   int n = X.n_rows;
   int k = X.n_cols;
-  
+  arma::vec y = log(t);
+    
   arma::mat out(Niter, G * k + (G * 2));
   arma::mat beta(G, k);
   arma::vec phi(G);

@@ -35,18 +35,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // lognormal_mixture_em
-arma::mat lognormal_mixture_em(int Niter, int G, arma::vec y, arma::vec delta, arma::mat X, long long int starting_seed);
-RcppExport SEXP _lnmixsurv_lognormal_mixture_em(SEXP NiterSEXP, SEXP GSEXP, SEXP ySEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP starting_seedSEXP) {
+arma::mat lognormal_mixture_em(int Niter, int G, arma::vec t, arma::vec delta, arma::mat X, long long int starting_seed);
+RcppExport SEXP _lnmixsurv_lognormal_mixture_em(SEXP NiterSEXP, SEXP GSEXP, SEXP tSEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP starting_seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type Niter(NiterSEXP);
     Rcpp::traits::input_parameter< int >::type G(GSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type t(tSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type delta(deltaSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type X(XSEXP);
     Rcpp::traits::input_parameter< long long int >::type starting_seed(starting_seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_em(Niter, G, y, delta, X, starting_seed));
+    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_em(Niter, G, t, delta, X, starting_seed));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -5,8 +5,8 @@ lognormal_mixture_gibbs <- function(Niter, em_iter, G, exp_y, delta, X, a, start
     .Call(`_lnmixsurv_lognormal_mixture_gibbs`, Niter, em_iter, G, exp_y, delta, X, a, starting_seed, show_output, n_cores, n_chains, force_num_cores)
 }
 
-lognormal_mixture_em <- function(Niter, G, y, delta, X, starting_seed) {
-    .Call(`_lnmixsurv_lognormal_mixture_em`, Niter, G, y, delta, X, starting_seed)
+lognormal_mixture_em <- function(Niter, G, t, delta, X, starting_seed) {
+    .Call(`_lnmixsurv_lognormal_mixture_em`, Niter, G, t, delta, X, starting_seed)
 }
 
 lognormal_mixture_sem <- function(Niter, G, y, delta, X, starting_seed) {
