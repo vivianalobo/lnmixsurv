@@ -1,7 +1,6 @@
-#' Lognormal mixture model
+#' Lognormal mixture model - Gibbs sampler
 #'
-#' `survival_ln_mixture()` fits a lognormal mixture model, as described in (referencia artigo viviana).
-#' Colocar mais detalhes sobre o modelo (como a equacao) em details.
+#' `survival_ln_mixture()` fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
 #'
 #' @param formula A formula specifying the outcome terms on the left-hand side,
 #' and the predictor terms on the right-hand side. The outcome must be a [survival::Surv]
@@ -56,7 +55,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1, 2^28, 1), force_num_cores = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -68,10 +67,9 @@ survival_ln_mixture.default <- function(formula, ...) {
 }
 
 # Formula method
-
 #' @export
 #' @rdname survival_ln_mixture
-survival_ln_mixture.formula <- function(formula, data, intercept = TRUE,...) {
+survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {
   blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
   processed <- hardhat::mold(formula, data, blueprint = blueprint)
   survival_ln_mixture_bridge(processed, ...)

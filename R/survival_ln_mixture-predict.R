@@ -61,20 +61,20 @@ valid_survival_ln_mixture_predict_types <- function() {
 
 predict_survival_ln_mixture_bridge <- function(type, model, predictors, eval_time, interval, level, ...) {
   predictors <- as.matrix(predictors)
-
+  
   predict_function <- get_survival_ln_mixture_predict_function(type)
   predictions <- predict_function(model, predictors, eval_time, interval, level, ...)
-
+  
   hardhat::validate_prediction_size(predictions, predictors)
-
+  
   predictions
 }
 
 get_survival_ln_mixture_predict_function <- function(type) {
   switch(type,
-    time = predict_survival_ln_mixture_time,
-    survival = predict_survival_ln_mixture_survival,
-    hazard = predict_survival_ln_mixture_hazard
+         time = predict_survival_ln_mixture_time,
+         survival = predict_survival_ln_mixture_survival,
+         hazard = predict_survival_ln_mixture_hazard
   )
 }
 
@@ -96,14 +96,14 @@ predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, int
 extract_surv_haz <- function(model, predictors, eval_time, interval = "none", level = 0.95, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
   rlang::arg_match(interval, c("none", "credible"))
-
+  
   fun <- switch(type,
-    survival = sob_lognormal_mix,
-    hazard = falha_lognormal_mix
+                survival = sob_lognormal_mix,
+                hazard = falha_lognormal_mix
   )
-
+  
   post <- model$posterior
-
+  
   qntd_chains <- posterior::nchains(post)
   if (qntd_chains > 1) {
     post <- posterior::merge_chains(post)
@@ -119,7 +119,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   eta <- posterior::subset_draws(post, "eta", regex = TRUE)
   m <- lapply(beta, function(x) x %*% t(predictors))
   sigma <- sqrt(1 / phi)
-
+  
   surv_haz <- list()
   for (i in seq_len(nrow(predictors))) {
     surv_haz[[i]] <- vapply(
@@ -129,7 +129,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
   pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
   pred <- purrr::map(predictions, ~ tibble::tibble(.eval_time = eval_time, !!pred_name := .x))
-
+  
   if (interval == "credible") {
     lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))
     upper <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, level))
@@ -139,7 +139,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
       return(x)
     })
   }
-
+  
   tibble::tibble(.pred = pred)
 }
 

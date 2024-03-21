@@ -26,7 +26,8 @@ mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data,
 
 color_scheme_set('viridis')
 
-mcmc_trace(mod1$posterior[, 'eta_1'])
+mcmc_trace(mod1$posterior[, 'eta_1']) +
+  ggplot2::theme_bw()
 ```
 
 Since the seed is fixed, we expect to obtain the same chain if we run the model again, with the same seed, even if we consider the parallel option (by setting cores > 1). We can make sure this is happening by look at a small portion of the chains. 
@@ -38,14 +39,16 @@ mod2 <- survival_ln_mixture(Surv(y, delta) ~ x, data = sim_data$data,
 Here are the posterior draws for some subset of the iterations running 2 chains sequentially (mod1):
 ```{r}
 mcmc_trace(posterior::subset_draws(mod1$posterior, iteration = 450:600,
-                                   variable = 'eta_1'))
+                                   variable = 'eta_1')) +
+  ggplot2::theme_bw()
 
 ```
 
 Now, the posterior draws for some subset of the iterations running 2 chains in parallel (mod2), using the same seed as mod1:
 ```{r}
 mcmc_trace(posterior::subset_draws(mod2$posterior, iteration = 450:600, 
-                                   variable = 'eta_1'))
+                                   variable = 'eta_1')) +
+  ggplot2::theme_bw()
 ```
 
 As we expect, the iterations are exactly the same.
