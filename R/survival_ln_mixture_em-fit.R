@@ -16,10 +16,12 @@
 #' 
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #' 
+#' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
+#' 
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }
@@ -73,7 +75,8 @@ survival_ln_mixture_em_bridge <- function(processed, ...) {
 survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
                                         predictors, iter = 50,
                                         mixture_components = 2,
-                                        starting_seed = sample(1:2^28, 1)) {
+                                        starting_seed = sample(1:2^28, 1),
+                                        sparse = FALSE) {
   
   # Verifications
   if(any(is.na(predictors))) {
@@ -119,10 +122,11 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
   # the reproducibility of the EM iterations on the Gibbs sampler. For an user,
   # interested only in using the EM, this is irrelevant.
   set.seed(starting_seed)
+  
   seed <- sample(1:2^28, 1)
   
-  matrix_em_iter <- lognormal_mixture_em(iter, mixture_components, outcome_times,
-                                         outcome_status, predictors, seed)
+  matrix_em_iter <- lognormal_mixture_em_implementation(iter, mixture_components, outcome_times,
+                                         outcome_status, predictors, seed, sparse)
   
   new_names <- NULL
   

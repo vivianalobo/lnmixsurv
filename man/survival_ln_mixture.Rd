@@ -21,6 +21,7 @@ survival_ln_mixture(
   em_iter = 0,
   starting_seed = sample(1:2^28, 1),
   force_num_cores = FALSE,
+  sparse = FALSE,
   ...
 )
 
@@ -59,6 +60,8 @@ The number of warmup iterations should be smaller than iter.}
 \item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
 
 \item{force_num_cores}{A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.}
+
+\item{sparse}{Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

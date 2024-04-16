@@ -33,6 +33,8 @@
 #' 
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #' 
+#' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
+#' 
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -55,7 +57,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -114,7 +116,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      show_progress = FALSE,
                                      em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
-                                     force_num_cores = FALSE) {
+                                     force_num_cores = FALSE,
+                                     sparse = FALSE) {
   number_of_predictors <- ncol(predictors)
   
   if(any(is.na(predictors))) {
@@ -197,7 +200,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                           proposal_variance,
                                           starting_seed,
                                           show_progress,
-                                          warmup, thin)
+                                          warmup, thin, sparse)
   
   # returning the function output
   list(posterior = posterior_dist, 
@@ -358,7 +361,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
-                                  show_progress, warmup, thin) {
+                                  show_progress, warmup, thin, sparse) {
   
   set.seed(starting_seed)
   seeds <- sample(1:2^28, chains)
@@ -369,7 +372,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                        outcome_times, outcome_status,
                                        predictors, proposal_variance, 
                                        seeds, show_progress, cores, 
-                                       chains, force_num_cores)
+                                       chains, force_num_cores, sparse)
   for(i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[,, i])
     
