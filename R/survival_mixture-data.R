@@ -6,12 +6,12 @@ make_survival_reg_survival_ln_mixture <- function() {
     mode = "censored regression",
     eng = "survival_ln_mixture"
   )
-  
+
   parsnip::set_dependency(
     "survival_reg",
     eng = "survival_ln_mixture", pkg = "lnmixsurv"
   )
-  
+
   parsnip::set_fit(
     model = "survival_reg",
     eng = "survival_ln_mixture",
@@ -23,7 +23,7 @@ make_survival_reg_survival_ln_mixture <- function() {
       defaults = list()
     )
   )
-  
+
   parsnip::set_encoding(
     model = "survival_reg",
     eng = "survival_ln_mixture",
@@ -54,7 +54,7 @@ make_survival_reg_survival_ln_mixture <- function() {
         )
     )
   )
-  
+
   parsnip::set_pred(
     model = "survival_reg",
     eng = "survival_ln_mixture",
@@ -83,12 +83,12 @@ make_survival_reg_survival_ln_mixture_em <- function() {
     mode = "censored regression",
     eng = "survival_ln_mixture_em"
   )
-  
+
   parsnip::set_dependency(
     "survival_reg",
     eng = "survival_ln_mixture_em", pkg = "lnmixsurv"
   )
-  
+
   parsnip::set_fit(
     model = "survival_reg",
     eng = "survival_ln_mixture_em",
@@ -100,7 +100,7 @@ make_survival_reg_survival_ln_mixture_em <- function() {
       defaults = list()
     )
   )
-  
+
   parsnip::set_encoding(
     model = "survival_reg",
     eng = "survival_ln_mixture_em",
@@ -112,7 +112,7 @@ make_survival_reg_survival_ln_mixture_em <- function() {
       allow_sparse_x = FALSE
     )
   )
-  
+
   parsnip::set_pred(
     model = "survival_reg",
     eng = "survival_ln_mixture_em",
@@ -131,7 +131,7 @@ make_survival_reg_survival_ln_mixture_em <- function() {
         )
     )
   )
-  
+
   parsnip::set_pred(
     model = "survival_reg",
     eng = "survival_ln_mixture_em",

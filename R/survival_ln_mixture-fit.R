@@ -11,7 +11,7 @@
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
 #' @param iter A positive integer specifying the number of iterations for each chain (including warmup).
-#' 
+#'
 #' @param em_iter A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.
 #'
 #' @param warmup A positive integer specifying the number of warmup (aka burnin) iterations per chain.
@@ -22,19 +22,19 @@
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
 #' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
-#' 
+#'
 #' @param force_num_cores A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.
-#' 
+#'
 #' @param mixture_components number of mixture componentes >= 2.
 #'
 #' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
-#' 
+#'
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
-#' 
+#'
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
-#' 
+#'
 #' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
-#' 
+#'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -83,17 +83,17 @@ survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {
 survival_ln_mixture_bridge <- function(processed, ...) {
   predictors <- as.matrix(processed$predictors)
   outcome <- processed$outcome[[1]]
-  
+
   if (!survival::is.Surv(outcome)) {
     rlang::abort("Response must be a survival object (created with survival::Surv)")
   }
   if (attr(outcome, "type") != "right") rlang::abort("Only right-censored data allowed")
-  
+
   outcome_times <- outcome[, 1]
   outcome_status <- outcome[, 2]
-  
+
   fit <- survival_ln_mixture_impl(predictors, outcome_times, outcome_status, ...)
-  
+
   new_survival_ln_mixture(
     posterior = fit$posterior,
     nobs = fit$nobs,
@@ -106,9 +106,9 @@ survival_ln_mixture_bridge <- function(processed, ...) {
 
 # ------------------------------------------------------------------------------
 # Implementation
-survival_ln_mixture_impl <- function(predictors, outcome_times, 
+survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      outcome_status, iter = 1000,
-                                     warmup = floor(iter / 10), 
+                                     warmup = floor(iter / 10),
                                      thin = 1,
                                      chains = 1, cores = 1,
                                      mixture_components = 2,
@@ -119,11 +119,11 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      force_num_cores = FALSE,
                                      sparse = FALSE) {
   number_of_predictors <- ncol(predictors)
-  
-  if(any(is.na(predictors))) {
+
+  if (any(is.na(predictors))) {
     "There is one or more NA values in the predictors variable."
   }
-  
+
   if (number_of_predictors < 1) {
     rlang::abort(
       c(
@@ -132,227 +132,244 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
       )
     )
   }
-  
+
   if (any(outcome_times == 0)) {
     rlang::abort("One or more events happened at time zero.")
   }
-  
-  if(proposal_variance <= 0) {
+
+  if (proposal_variance <= 0) {
     rlang::abort("The parameter proposal_variance should be a positive real number.")
   }
-  
-  if(any(is.na(outcome_times))) {
+
+  if (any(is.na(outcome_times))) {
     rlang::abort("There is one or more NA values at event times.")
   }
-  
-  if(any(is.na(outcome_status))) {
+
+  if (any(is.na(outcome_status))) {
     rlang::abort("There is one or more NA values at the status")
   }
-  
-  if(!is.logical(show_progress)) {
+
+  if (!is.logical(show_progress)) {
     rlang::abort("The parameter show_progress must be a logical (TRUE/FALSE).")
   }
-  
-  if(!is.logical(force_num_cores)) {
+
+  if (!is.logical(force_num_cores)) {
     rlang::abort("The parameter force_num_cores must be a logical (TRUE/FALSE).")
   }
-  
-  if(thin <= 0 | (thin %% 1) != 0) {
+
+  if (thin <= 0 | (thin %% 1) != 0) {
     rlang::abort("The parameter thin should be a positive integer.")
   }
-  
-  if(warmup < 0 | (warmup %% 1) != 0) {
+
+  if (warmup < 0 | (warmup %% 1) != 0) {
     rlang::abort("The parameter warmup should be a positive integer.")
   }
-  
-  if(em_iter < 0 | (em_iter %% 1) != 0) {
+
+  if (em_iter < 0 | (em_iter %% 1) != 0) {
     rlang::abort("The parameter em_iter should be a non-negative integer.")
   }
-  
-  if(iter <= 0 | (iter %% 1) != 0) {
+
+  if (iter <= 0 | (iter %% 1) != 0) {
     rlang::abort("The parameter iter should be a positive integer.")
   }
-  
-  if(mixture_components <= 0 | (mixture_components %% 1) != 0) {
+
+  if (mixture_components <= 0 | (mixture_components %% 1) != 0) {
     rlang::abort("The parameter mixture_components should be a positive integer.")
   }
-  
+
   if (starting_seed < 1 | starting_seed > 2^28 |
-      (starting_seed %% 1) != 0) {
+    (starting_seed %% 1) != 0) {
     rlang::abort("The starting seed should be a natural number between 1 and 2^28")
   }
-  
-  if(warmup >= iter) {
+
+  if (warmup >= iter) {
     rlang::abort("The warm-up iterations should be lower than the number of iterations.")
   }
-  
+
   if (cores < 1 | (cores %% 1) != 0) {
     rlang::abort("The number of cores should be a natural number, at least 1.")
-  } 
-    
-  posterior_dist <- run_posterior_samples(iter, em_iter, 
-                                          chains, cores,
-                                          force_num_cores,
-                                          mixture_components,
-                                          outcome_times,
-                                          outcome_status, 
-                                          predictors,
-                                          proposal_variance,
-                                          starting_seed,
-                                          show_progress,
-                                          warmup, thin, sparse)
-  
+  }
+
+  posterior_dist <- run_posterior_samples(
+    iter, em_iter,
+    chains, cores,
+    force_num_cores,
+    mixture_components,
+    outcome_times,
+    outcome_status,
+    predictors,
+    proposal_variance,
+    starting_seed,
+    show_progress,
+    warmup, thin, sparse
+  )
+
   # returning the function output
-  list(posterior = posterior_dist, 
-       nobs = length(outcome_times),
-       predictors_name = colnames(predictors), 
-       mixture_groups = seq_len(mixture_components))
+  list(
+    posterior = posterior_dist,
+    nobs = length(outcome_times),
+    predictors_name = colnames(predictors),
+    mixture_groups = seq_len(mixture_components)
+  )
 }
 
 #' corrige o problema do label switch para uma cadeia da posteriori, ordenando grupos por proporções de mistura
-#' 
+#'
 #' @param posterior_dist uma matriz de dimensao numero_iteracoes x mixture_components de amostras a posteriori
 
 #' @return matriz de dimensão numero_iteracoes x numero_componetes mas com os labels
 #' reorganizados de forma que os etas das componetes são ordenados de forma decrescente.
-#' 
+#'
 #' @noRd
-label_switch_one_chain <- function(posterior_dist){
+label_switch_one_chain <- function(posterior_dist) {
   obj <- dplyr::as_tibble(posterior_dist)
-  
+
   obj_etas <- obj |>
-    dplyr::select(dplyr::starts_with('eta_'))
-  
+    dplyr::select(dplyr::starts_with("eta_"))
+
   etas_median <- as.numeric(apply(obj_etas, 2, stats::median))
-  
+
   etas_order <- order(etas_median, decreasing = T)
-  
+
   new_obj <- NULL
-  
-  for(j in 1:length(etas_order)) {
+
+  for (j in 1:length(etas_order)) {
     char <- as.character(etas_order[j])
-    
+
     sub_obj <- obj |>
       dplyr::select(dplyr::ends_with(as.character(char)))
-    
+
     cols_remove <- NULL
-    
+
     colnames_obj <- colnames(sub_obj)
-    
-    for(c in 1:length(colnames_obj)) {
-      char_colname <- strsplit(colnames_obj[c], '_')[[1]][
-        length(strsplit(colnames_obj[c], '_')[[1]])
+
+    for (c in 1:length(colnames_obj)) {
+      char_colname <- strsplit(colnames_obj[c], "_")[[1]][
+        length(strsplit(colnames_obj[c], "_")[[1]])
       ]
-      
-      if(char_colname != char) {
+
+      if (char_colname != char) {
         cols_remove <- c(cols_remove, c)
       }
     }
-    
-    if(length(cols_remove) > 0) {
+
+    if (length(cols_remove) > 0) {
       sub_obj <- sub_obj[, -cols_remove]
     }
-    
-    for(c in 1:ncol(sub_obj)) {
+
+    for (c in 1:ncol(sub_obj)) {
       names(sub_obj)[c] <- paste0(
-        substr(names(sub_obj)[c],
-               1, nchar(names(sub_obj)[c]) - nchar(char)), j)
+        substr(
+          names(sub_obj)[c],
+          1, nchar(names(sub_obj)[c]) - nchar(char)
+        ), j
+      )
     }
-    
+
     new_obj <- dplyr::bind_cols(new_obj, sub_obj)
   }
-  
+
   return(new_obj)
 }
 
 #' Nomeia as colunas da amostra a posteriori
-#' 
+#'
 #' @param posterior distribuição a posteriori amostrada
-#' 
+#'
 #' @param predictors_names nome das variáveis preditoras. Deve ser um vetor com tamanho numero_covariaveis.
 #' @param mixture_components número de componentes envolvidos no ajuste
-#' 
+#'
 #' @return matriz
-#' 
+#'
 #' @noRd
 give_colnames <- function(posterior, predictors_names, mixture_components) {
   number_params <- length(predictors_names)
   new_names <- NULL
-  
-  for(i in 1:mixture_components) {
-    for(j in 1:3) { # de 1 a 3 porque 3 grupos de parâmetros são ajustados no modelo: uma proporção de mistura, uma precisão e um grupo de efeitos das covariáveis
-      if(j == 1) { # primeiro grupo, eta: efeitos das covariáveis
-        for(c in 1:number_params) { 
-          new_names <- c(new_names,
-                         paste0(predictors_names[c], '_', i))
+
+  for (i in 1:mixture_components) {
+    for (j in 1:3) { # de 1 a 3 porque 3 grupos de parâmetros são ajustados no modelo: uma proporção de mistura, uma precisão e um grupo de efeitos das covariáveis
+      if (j == 1) { # primeiro grupo, eta: efeitos das covariáveis
+        for (c in 1:number_params) {
+          new_names <- c(
+            new_names,
+            paste0(predictors_names[c], "_", i)
+          )
         }
       } else if (j == 2) { # segundo grupo, phi: precisão
-        new_names <- c(new_names,
-                       paste0('phi_', i))
+        new_names <- c(
+          new_names,
+          paste0("phi_", i)
+        )
       } else { # terceiro grupo, j = 3, proporções de mistura
-        new_names <- c(new_names,
-                       paste0('eta_', i))
+        new_names <- c(
+          new_names,
+          paste0("eta_", i)
+        )
       }
     }
   }
-  
+
   posterior_dist <- posterior
   colnames(posterior_dist) <- new_names
-  
+
   return(posterior_dist)
 }
 
 #' Permuta as colunas para ficar de acordo: primeiro efeitos das covariáveis dos grupos, precisões e, por fim, proporções de misturas
-#' 
+#'
 #' @param posterior distribuição a posteriori amostrada
-#' 
+#'
 #' @return matriz
-#' 
+#'
 #' @noRd
 permute_columns <- function(posterior) {
   posterior_dist <- dplyr::as_tibble(posterior)
-  posterior_dist <- dplyr::bind_cols(posterior |> 
-                                       dplyr::select(
-                                         -tidyselect::starts_with('eta'),
-                                         -tidyselect::starts_with('phi')),
-                                     posterior |> 
-                                       dplyr::select(
-                                         tidyselect::starts_with('phi'),
-                                         tidyselect::starts_with('eta')))
-  
+  posterior_dist <- dplyr::bind_cols(
+    posterior |>
+      dplyr::select(
+        -tidyselect::starts_with("eta"),
+        -tidyselect::starts_with("phi")
+      ),
+    posterior |>
+      dplyr::select(
+        tidyselect::starts_with("phi"),
+        tidyselect::starts_with("eta")
+      )
+  )
+
   return(posterior_dist)
 }
 
 #' Roda as cadeias especificadas pelo usuário de forma sequencial, em apenas um core
-#' 
+#'
 #' @param iter número de iterações do amostrador de Gibbs
-#' 
+#'
 #' @param em_iter número de iterações do algoritmo EM
-#' 
+#'
 #' @param chains número de cadeias a serem utilizadas
-#' 
+#'
 #' @param cores número de cores utilizados para amostrar as cadeias
-#' 
+#'
 #' @param mixture_components número de componentes envolvidos na análise
-#' 
+#'
 #' @param outcome_times tempos observados
-#' 
+#'
 #' @param outcome_status indicador de censura, 1 se foi observado evento e 0 para censura
-#' 
+#'
 #' @param predictors matriz de preditores
-#' 
+#'
 #' @param proposal_variance valor de a usado dentro do C++
-#' 
+#'
 #' @param starting_seed semente inicial do algoritmo
-#' 
+#'
 #' @param show_progress indica se o algoritmo deve mostrar iterações realizadas
-#' 
+#'
 #' @param warmup aquecimento das cadeias
-#' 
+#'
 #' @param thin thinning das cadeias
-#' 
+#'
 #' @return matriz
-#' 
+#'
 #' @noRd
 
 
@@ -362,56 +379,63 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
                                   show_progress, warmup, thin, sparse) {
-  
   set.seed(starting_seed)
   seeds <- sample(1:2^28, chains)
-  
+
   list_posteriors <- NULL
-  
-  posterior <- lognormal_mixture_gibbs(iter, em_iter, mixture_components,
-                                       outcome_times, outcome_status,
-                                       predictors, proposal_variance, 
-                                       seeds, show_progress, cores, 
-                                       chains, force_num_cores, sparse)
-  for(i in 1:chains) {
-    posterior_chain_i <- as.data.frame(posterior[,, i])
-    
-    posterior_chain_i <- give_colnames(posterior_chain_i, 
-                                       colnames(predictors),
-                                       mixture_components)
-    
+
+  posterior <- lognormal_mixture_gibbs(
+    iter, em_iter, mixture_components,
+    outcome_times, outcome_status,
+    predictors, proposal_variance,
+    seeds, show_progress, cores,
+    chains, force_num_cores, sparse
+  )
+  for (i in 1:chains) {
+    posterior_chain_i <- as.data.frame(posterior[, , i])
+
+    posterior_chain_i <- give_colnames(
+      posterior_chain_i,
+      colnames(predictors),
+      mixture_components
+    )
+
     posterior_chain_i <- label_switch_one_chain(posterior_chain_i)
-    
+
     posterior_chain_i <- permute_columns(posterior_chain_i)
-    
+
     remover_menor_theta <- -which(
       colnames(posterior_chain_i) == colnames(
-        posterior_chain_i |> 
-          dplyr::select(dplyr::starts_with('eta_')))[mixture_components])
-    
+        posterior_chain_i |>
+          dplyr::select(dplyr::starts_with("eta_"))
+      )[mixture_components]
+    )
+
     posterior_chain_i <- posterior_chain_i[, remover_menor_theta]
-    
-    list_posteriors[[i]] <- posterior_chain_i |> 
+
+    list_posteriors[[i]] <- posterior_chain_i |>
       posterior::as_draws_matrix()
   }
-  
+
   draws_return <- list_posteriors[[1]]
-  
-  if(length(list_posteriors) >= 2) {
-    for(i in 2:length(list_posteriors)) {
+
+  if (length(list_posteriors) >= 2) {
+    for (i in 2:length(list_posteriors)) {
       draws_return <- posterior::bind_draws(draws_return,
-                                            list_posteriors[[i]],
-                                            along = 'chain')
-    } 
+        list_posteriors[[i]],
+        along = "chain"
+      )
+    }
   }
-  
+
   # warming up
   draws_return <- posterior::subset_draws(
-    draws_return, 
-    iteration = (warmup + 1):(posterior::niterations(draws_return)))
-  
+    draws_return,
+    iteration = (warmup + 1):(posterior::niterations(draws_return))
+  )
+
   # thinning draws
   draws_return <- posterior::thin_draws(draws_return, thin)
-  
+
   return(draws_return)
 }

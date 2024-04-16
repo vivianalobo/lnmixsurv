@@ -19,7 +19,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(lnmixsurv)
 library(bayesplot)
 
-color_scheme_set('viridis')
+color_scheme_set("viridis")
 ```
 
 It's possible to run multiple chains in parallel, where each chain will run on one core, by specifying the cores argument. Any value above 1 will automatically turn on the parallel mode.

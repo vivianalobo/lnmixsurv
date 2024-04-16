@@ -26,9 +26,11 @@ predict.survival_ln_mixture_em <- function(object, new_data, type,
                                            eval_time, ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_em_predict_types())
-  
-  predict_survival_ln_mixture_em_bridge(type, object, forged$predictors,
-                                        eval_time, ...)
+
+  predict_survival_ln_mixture_em_bridge(
+    type, object, forged$predictors,
+    eval_time, ...
+  )
 }
 
 valid_survival_ln_mixture_em_predict_types <- function() {
@@ -47,8 +49,8 @@ predict_survival_ln_mixture_em_bridge <- function(type, model, predictors,
 
 get_survival_ln_mixture_em_predict_function <- function(type) {
   switch(type,
-         survival = predict_survival_ln_mixture_em_survival,
-         hazard = predict_survival_ln_mixture_em_hazard
+    survival = predict_survival_ln_mixture_em_survival,
+    hazard = predict_survival_ln_mixture_em_hazard
   )
 }
 
@@ -68,37 +70,44 @@ predict_survival_ln_mixture_em_hazard <- function(model, predictors, eval_time) 
 
 extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
-  
+
   last_row <- model$em_iterations[nrow(model$em_iterations), ]
-  
-  beta <- matrix(as.numeric(last_row[startsWith(names(last_row), 'beta')]),
-                 ncol = model$mixture_groups)
-  
-  phi <- as.numeric(last_row[startsWith(names(last_row), 'phi')])
-  eta <- as.numeric(last_row[startsWith(names(last_row), 'eta')])
+
+  beta <- matrix(as.numeric(last_row[startsWith(names(last_row), "beta")]),
+    ncol = model$mixture_groups
+  )
+
+  phi <- as.numeric(last_row[startsWith(names(last_row), "phi")])
+  eta <- as.numeric(last_row[startsWith(names(last_row), "eta")])
   sigma <- 1 / sqrt(phi)
-  
-  m <- apply(beta, MARGIN = 2,
-             FUN = function(x) predictors %*% x)
-  
-  if(type == 'survival') {
-    out <- tibble::tibble(.eval_time = eval_time,
-                          .pred_survival = NA)
-    
-    for(i in 1:length(eval_time)) {
+
+  m <- apply(beta,
+    MARGIN = 2,
+    FUN = function(x) predictors %*% x
+  )
+
+  if (type == "survival") {
+    out <- tibble::tibble(
+      .eval_time = eval_time,
+      .pred_survival = NA
+    )
+
+    for (i in 1:length(eval_time)) {
       t <- eval_time[i]
       out$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
     }
-  } else if (type == 'hazard') {
-    out <- tibble::tibble(.eval_time = eval_time,
-                          .pred_hazard = NA)
-    
-    for(i in 1:length(eval_time)) {
+  } else if (type == "hazard") {
+    out <- tibble::tibble(
+      .eval_time = eval_time,
+      .pred_hazard = NA
+    )
+
+    for (i in 1:length(eval_time)) {
       t <- eval_time[i]
       out$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
     }
   }
-  
+
   return(out)
 }
 
@@ -108,7 +117,7 @@ sob_lognormal_em <- function(t, m, sigma) {
 
 sob_lognormal_em_mix <- function(t, m, sigma, eta) {
   out <- 0
-  for(g in 1:length(m)) {
+  for (g in 1:length(m)) {
     out <- out + eta[g] * sob_lognormal_em(t, m[g], sigma[g])
   }
   return(out)
@@ -117,7 +126,7 @@ sob_lognormal_em_mix <- function(t, m, sigma, eta) {
 falha_lognormal_em_mix <- function(t, m, sigma, eta) {
   sob_mix <- sob_lognormal_em_mix(t, m, sigma, eta)
   dlnorm_mix <- 0
-  for(g in 1:length(m)) {
+  for (g in 1:length(m)) {
     dlnorm_mix <- dlnorm_mix + eta[g] * stats::dlnorm(t, m[g], sigma[g])
   }
   return(dlnorm_mix / sob_mix)

@@ -25,8 +25,10 @@ Formula interface:
 library(lnmixsurv)
 
 set.seed(1)
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data, intercept = TRUE,
-                            starting_seed = 20)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x, sim_data$data,
+  intercept = TRUE,
+  starting_seed = 20
+)
 mod1
 ```
 
@@ -61,8 +63,10 @@ library(purrr)
 models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival", 
-                                  eval_time = seq(120)))
+pred_sob <- map(models, ~ predict(.x, new_data,
+  type = "survival",
+  eval_time = seq(120)
+))
 
 bind_rows(pred_sob, .id = "modelo") |>
   group_by(modelo) |>

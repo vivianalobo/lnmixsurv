@@ -4,15 +4,17 @@ test_that("survival prediction works", {
   pred <- predict(mod, new_data, type = "survival", eval_time = c(20, 100), interval = "credible")
 
   expected <- structure(
-    list(.pred = list(structure(list(.eval_time = c(
-      20,
-      100
-    ), .pred_survival = c(0.891151125, 0.009867837), 
-    .pred_lower = c(0.885160087, 0.008194163), 
-    .pred_upper = c(
-      0.89670372,
-      0.01204335
-    )), row.names = c(NA, -2L), class = c(
+    list(.pred = list(structure(list(
+      .eval_time = c(
+        20,
+        100
+      ), .pred_survival = c(0.891151125, 0.009867837),
+      .pred_lower = c(0.885160087, 0.008194163),
+      .pred_upper = c(
+        0.89670372,
+        0.01204335
+      )
+    ), row.names = c(NA, -2L), class = c(
       "tbl_df",
       "tbl", "data.frame"
     )), structure(list(
@@ -37,15 +39,17 @@ test_that("hazard prediction works", {
   new_data <- data.frame(x = c("0", "1"))
   pred <- predict(mod, new_data = new_data, type = "hazard", eval_time = c(20, 100), interval = "credible")
 
-  expected <- structure(list(.pred = list(structure(list(.eval_time = c(
-    20,
-    100
-  ), .pred_hazard = c(0.01466505, 0.05542897), 
-  .pred_lower = c(0.01404703, 0.04918021), 
-  .pred_upper = c(
-    0.01525981,
-    0.06235824
-  )), row.names = c(NA, -2L), class = c(
+  expected <- structure(list(.pred = list(structure(list(
+    .eval_time = c(
+      20,
+      100
+    ), .pred_hazard = c(0.01466505, 0.05542897),
+    .pred_lower = c(0.01404703, 0.04918021),
+    .pred_upper = c(
+      0.01525981,
+      0.06235824
+    )
+  ), row.names = c(NA, -2L), class = c(
     "tbl_df",
     "tbl", "data.frame"
   )), structure(list(
