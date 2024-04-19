@@ -87,28 +87,66 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
   )
 
   if (type == "survival") {
-    out <- tibble::tibble(
-      .eval_time = eval_time,
-      .pred_survival = NA
-    )
+    out <- list()
+    if (nrow(predictors) > 1) {
+      for (r in 1:nrow(predictors)) {
+        out_r <- tibble::tibble(
+          .eval_time = eval_time,
+          .pred_survival = NA
+        )
 
-    for (i in 1:length(eval_time)) {
-      t <- eval_time[i]
-      out$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
+        for (i in 1:length(eval_time)) {
+          t <- eval_time[i]
+          out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m[r, ], sigma, eta)
+        }
+
+        out[[r]] <- out_r
+      }
+    } else {
+      out_r <- tibble::tibble(
+        .eval_time = eval_time,
+        .pred_survival = NA
+      )
+
+      for (i in 1:length(eval_time)) {
+        t <- eval_time[i]
+        out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
+      }
+
+      out[[1]] <- out_r
     }
   } else if (type == "hazard") {
-    out <- tibble::tibble(
-      .eval_time = eval_time,
-      .pred_hazard = NA
-    )
+    out <- list()
+    if (nrow(predictors) > 1) {
+      for (r in 1:nrow(predictors)) {
+        out_r <- tibble::tibble(
+          .eval_time = eval_time,
+          .pred_hazard = NA
+        )
 
-    for (i in 1:length(eval_time)) {
-      t <- eval_time[i]
-      out$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
+        for (i in 1:length(eval_time)) {
+          t <- eval_time[i]
+          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
+        }
+
+        out[[r]] <- out_r
+      }
+    } else {
+      out_r <- tibble::tibble(
+        .eval_time = eval_time,
+        .pred_hazard = NA
+      )
+
+      for (i in 1:length(eval_time)) {
+        t <- eval_time[i]
+        out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
+      }
+
+      out[[1]] <- out_r
     }
   }
 
-  return(out)
+  return(tibble::tibble(.pred = out))
 }
 
 sob_lognormal_em <- function(t, m, sigma) {
