@@ -126,7 +126,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
 
         for (i in 1:length(eval_time)) {
           t <- eval_time[i]
-          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
+          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m[r, ], sigma, eta)
         }
 
         out[[r]] <- out_r

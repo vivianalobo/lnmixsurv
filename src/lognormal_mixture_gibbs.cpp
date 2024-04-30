@@ -445,11 +445,12 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G,
   return out;
 }
 
-arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G, 
-                                                 arma::vec exp_y, arma::ivec delta, 
-                                                 arma::mat X, double a, 
+arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter, const int& G, 
+                                                 const arma::vec& exp_y, const arma::ivec& delta, 
+                                                 const arma::mat& X, const double& a, 
                                                  long long int starting_seed,
-                                                 bool show_output, int chain_num) {
+                                                 const bool& show_output, const int& chain_num,
+                                                 const bool& use_W) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -554,7 +555,11 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
       cte = 1;
       n_aceite = 0;
       
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups_start);
+      if(use_W == false) {
+        groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups_start);
+      } else {
+        groups = groups_start;
+      }
     }
     
     sd = 1.0 / sqrt(phi);
@@ -563,7 +568,11 @@ arma::mat lognormal_mixture_gibbs_implementation(int Niter, int em_iter, int G,
     y_aug = augment(G, y, groups, delta, sd, beta, X, global_rng); 
     
     if (iter > 0) {
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups);
+      if(use_W) {
+        groups = sample_groups_from_W(em_params(3));
+      } else {
+        groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups);
+      }
     }
     
     // Computing number of observations allocated at each class
@@ -992,7 +1001,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
   return out;
 }
 
-arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter,
+arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const int& em_iter,
                                                  const int& G, const arma::vec& exp_y,
                                                  const arma::ivec& delta, 
                                                  const arma::sp_mat& X, const double& a, 
@@ -1256,7 +1265,7 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
                                    const arma::mat& X, const double& a, 
                                    arma::Col<long long int> starting_seed, const bool& show_output, 
                                    const int& n_cores, const int& n_chains,
-                                   const bool& force_num_cores, const bool& sparse) {
+                                   const bool& force_num_cores, const bool& sparse, const bool& use_W) {
   arma::cube out(Niter, (X.n_cols + 2) * G, n_chains);
 
   if(sparse) {
@@ -1264,8 +1273,7 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
     
     if(n_cores == 1) {
       for(int chain = 0; chain < n_chains; chain ++) {
-        out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, Y, a, starting_seed(chain), show_output,
-                  chain + 1);
+        out.slice(chain) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, Y, a, starting_seed(chain), show_output, chain + 1);
       }
       
       return out;
@@ -1283,14 +1291,14 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
     for(int chain = 0; chain < n_chains; chain ++) {
 #pragma omp critical
       usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
-      out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, Y, a, 
+      out.slice(chain) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, Y, a, 
                 starting_seed(chain), show_output, chain + 1);
     }
   } else {
     if(n_cores == 1) {
     for(int chain = 0; chain < n_chains; chain ++) {
       out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, starting_seed(chain), show_output,
-                chain + 1);
+                chain + 1, use_W);
     }
     
     return out;
@@ -1309,7 +1317,7 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
 #pragma omp critical
       usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
       out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, 
-                starting_seed(chain), show_output, chain + 1);
+                starting_seed(chain), show_output, chain + 1, use_W);
     }
   }
   
