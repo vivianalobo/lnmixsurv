@@ -416,8 +416,6 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G,
         denom = arma::sum(colg);
         
         for (int i = 0; i < n; i++) {
-          quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
-          
           if (delta(i) == 0.0) {
             alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
             
@@ -431,9 +429,21 @@ arma::field<arma::mat> lognormal_mixture_em_internal(int Niter, int G,
                 square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
             }
           }
+          quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
+        }
+        
+        // to avoid numerical problems
+        if (quant == 0) {
+          quant = denom; 
         }
         
         phi(g) = denom / quant;
+        
+        // to avoid numerical problems
+        if(phi(g) > 1e5) {
+          phi(g) = rgamma_(2.0, 8.0, rng_device); // resample phi
+        }
+        
       }
     }
   }
@@ -989,7 +999,17 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
           }
         }
         
+        // to avoid numerical problems
+        if (quant == 0) {
+          quant = denom; 
+        }
+        
         phi(g) = denom / quant;
+        
+        // to avoid numerical problems
+        if(phi(g) > 1e5) {
+          phi(g) = rgamma_(2.0, 8.0, rng_device); // resample phi
+        }
       }
     }
   }
@@ -1404,7 +1424,17 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
           }
         }
         
+        // to avoid numerical problems
+        if (quant == 0) {
+          quant = denom; 
+        }
+        
         phi(g) = denom / quant;
+        
+        // to avoid numerical problems
+        if(phi(g) > 1e5) {
+          phi(g) = rgamma_(2.0, 8.0, global_rng); // resample phi
+        }
       }
     }
     
@@ -1508,7 +1538,17 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
           }
         }
         
+        // to avoid numerical problems
+        if (quant == 0) {
+          quant = denom; 
+        }
+        
         phi(g) = denom / quant;
+        
+        // to avoid numerical problems
+        if(phi(g) > 1e5) {
+          phi(g) = rgamma_(2.0, 8.0, global_rng); // resample phi
+        }
       }
     }
     

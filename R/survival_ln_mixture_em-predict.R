@@ -100,14 +100,6 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m[r, ], sigma, eta)
         }
 
-        tib_predictors <- tibble::as_tibble(matrix(rep(predictors[r, ], times = length(eval_time)), ncol = 2, byrow = TRUE), .name_repair = "minimal")
-
-        names(tib_predictors) <- colnames(predictors)
-        out_r <- dplyr::bind_cols(
-          out_r,
-          tib_predictors
-        )
-
         out[[r]] <- out_r
       }
     } else {
@@ -120,14 +112,6 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         t <- eval_time[i]
         out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
       }
-
-      tib_predictors <- tibble::as_tibble(matrix(rep(predictors[1, ], times = length(eval_time)), ncol = 2, byrow = TRUE), .name_repair = "minimal")
-
-      names(tib_predictors) <- colnames(predictors)
-      out_r <- dplyr::bind_cols(
-        out_r,
-        tib_predictors
-      )
 
       out[[1]] <- out_r
     }
@@ -145,14 +129,6 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m[r, ], sigma, eta)
         }
 
-        tib_predictors <- tibble::as_tibble(matrix(rep(predictors[r, ], times = length(eval_time)), ncol = 2, byrow = TRUE), .name_repair = "minimal")
-
-        names(tib_predictors) <- colnames(predictors)
-        out_r <- dplyr::bind_cols(
-          out_r,
-          tib_predictors
-        )
-
         out[[r]] <- out_r
       }
     } else {
@@ -165,14 +141,6 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         t <- eval_time[i]
         out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
       }
-
-      tib_predictors <- tibble::as_tibble(matrix(rep(predictors[1, ], times = length(eval_time)), ncol = 2, byrow = TRUE), .name_repair = "minimal")
-
-      names(tib_predictors) <- colnames(predictors)
-      out_r <- dplyr::bind_cols(
-        out_r,
-        tib_predictors
-      )
 
       out[[1]] <- out_r
     }
