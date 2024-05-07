@@ -2,13 +2,13 @@
 #'
 #' `simulate_data()` simulates data from a mixture model.
 #'
-#' @param n Number of observations required.
+#' @param n Number of observations desired.
 #'
 #' @param mixture_components Number of mixtures to include in the generation of the data.
 #'
 #' @param k number of covariates generated (the total of covariates will be intercept + (k - 1) covariates).
 #'
-#' @param percentage_censored Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation.
+#' @param percentage_censored Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation..
 #'
 #' @export
 simulate_data <- function(n, mixture_components, k, percentage_censored) {
@@ -19,22 +19,15 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
     }
   }
 
-  betas <- matrix(
-    nrow = mixture_components,
-    ncol = k
-  )
+  betas <- matrix(nrow = mixture_components, ncol = k)
 
-  for (c in 1:ncol(betas)) {
+  for (c in 1:k) {
     if (c == 1) {
-      betas[, c] <- round(stats::rnorm(
-        mixture_components, 1,
-        1.3 * mixture_components
-      ), 3)
+      betas[, c] <- round(stats::runif(mixture_components, 2, 5), 3)
     } else {
-      betas[, c] <- round(stats::rnorm(
-        mixture_components, 2,
-        0.4 * mixture_components
-      ), 3)
+      for (r in 1:mixture_components) {
+        betas[r, c] <- round(5 - betas[r, 1] + stats::rnorm(1, sd = 0.4), 3)
+      }
     }
   }
 
@@ -50,8 +43,7 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   }
   colnames(betas) <- colnames_beta
 
-  phis <- stats::rgamma(mixture_components, 2, 0.8)
-
+  phis <- stats::rgamma(mixture_components, 3, 0.8)
   etas <- stats::rgamma(mixture_components, 1, 1)
   etas <- etas / sum(etas)
 
