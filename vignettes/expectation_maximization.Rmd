@@ -20,7 +20,10 @@ Using it is similar to using the Bayesian method, `survival_ln_mixture`, sharing
   
 ```{r}
 library(lnmixsurv)
-library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
 data <- sim_data$data
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
                                    data = data,
