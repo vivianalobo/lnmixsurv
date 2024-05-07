@@ -6,29 +6,27 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   message = FALSE,
-  comment = "#>"
-)
+  comment = "#>")
 ```
-
+  
 The Expectation-Maximization (EM) algorithm is available through the function `survival_ln_mixture_em` and it's a frequentist method in alternative to the Bayesian approach. It handles better big data situations when the Bayesian approach will run out of memory or take a lot of time to finish.
-
+  
 Using it is similar to using the Bayesian method, `survival_ln_mixture`, sharing a lot of similar parameters and specifications.
-
+  
 ```{r}
 library(lnmixsurv)
-library(ggplot2)
+library(tidyverse)
 data <- sim_data$data
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-  data = data,
-  iter = 250,
-  starting_seed = 20,
-  mixture_components = 2
-)
+                                   data = data,
+                                   iter = 250,
+                                   starting_seed = 20,
+                                   mixture_components = 2)
 ```
 
 Unlike the Bayesian approach, which samples from the posteriori via Gibbs sampler, the EM algorithm is a maximum likelihood method, moving, in each iteration, closer to the maximum of each parameter. The function `plot` can be used to visualize the iterations path towards the maximum.
@@ -40,13 +38,18 @@ plot(model_em)
 The predict of survival and hazard curves proceeds just like with the Bayesian approach, noting that using the EM method we don't have credible or confidence intervals.
 
 ```{r}
-new_data <- dplyr::distinct(data, x)
-predictions <- predict(model_em,
-  new_data,
-  type = "survival",
-  eval_time = 1:300
-) |>
-  tidyr::unnest(.pred)
+predictions <- NULL
+
+for (cat in levels(data$x)) {
+  pred_cat <- predict(model_em,
+          data.frame(x = cat),
+          type = "survival",
+          eval_time = 1:300) |> 
+    unnest(.pred) |> 
+    mutate(x = cat)
+  
+  predictions <- bind_rows(predictions, pred_cat)
+}
 ```
 
 One can use `ggplot` functions to visualize the predicted values.
@@ -57,10 +60,9 @@ km_surv <- ggsurvfit::survfit2(Surv(y, delta) ~ x, data) |>
 
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
-    data = km_surv,
-    alpha = 0.6
-  ) +
-  geom_line(aes(x = .eval_time, y = .pred_survival, color = factor(x1)), data = predictions) +
+            data = km_surv,
+            alpha = 0.6) +
+  geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```
 
@@ -68,28 +70,32 @@ Increasing the number of mixture components may produce better estimates.
 
 ```{r fig.width=7}
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-  data = data,
-  iter = 300,
-  starting_seed = 20,
-  mixture_components = 4
-)
+                                   data = data,
+                                   iter = 400,
+                                   starting_seed = 20,
+                                   mixture_components = 4)
 
 plot(model_em)
 ```
 
 ```{r fig.width=7}
-predictions <- predict(model_em,
-  new_data,
-  type = "survival",
-  eval_time = 1:300
-) |>
-  tidyr::unnest(.pred)
+predictions <- NULL
+
+for (cat in levels(data$x)) {
+  pred_cat <- predict(model_em,
+          data.frame(x = cat),
+          type = "survival",
+          eval_time = 1:300) |> 
+    unnest(.pred) |> 
+    mutate(x = cat)
+  
+  predictions <- bind_rows(predictions, pred_cat)
+}
 
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
-    data = km_surv,
-    alpha = 0.6
-  ) +
-  geom_line(aes(x = .eval_time, y = .pred_survival, color = factor(x1)), data = predictions) +
+            data = km_surv,
+            alpha = 0.6) +
+  geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```

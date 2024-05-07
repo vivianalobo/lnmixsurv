@@ -7,13 +7,13 @@
 simulate_data(n, mixture_components, k, percentage_censored)
 }
 \arguments{
-\item{n}{Number of observations required.}
+\item{n}{Number of observations desired.}
 
 \item{mixture_components}{Number of mixtures to include in the generation of the data.}
 
 \item{k}{number of covariates generated (the total of covariates will be intercept + (k - 1) covariates).}
 
-\item{percentage_censored}{Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation.}
+\item{percentage_censored}{Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation..}
 }
 \description{
 \code{simulate_data()} simulates data from a mixture model.
