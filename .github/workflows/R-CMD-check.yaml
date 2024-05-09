@@ -36,7 +36,6 @@ jobs:
         if: runner.os == 'macos'
         run: |
           brew install gsl libomp
-          sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C /
           mkdir ~/.R/
           touch ~/.R/Makevars
           echo -e "LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp\nCPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> ~/.R/Makevars
