@@ -64,8 +64,13 @@ ln_mixture <- survival_reg() %>%
     starting_seed = 20
   )
 
+ln_mixture_em <- survival_reg() %>%
+  set_engine("survival_ln_mixture_em",
+    iter = 2000, starting_seed = 20
+  )
+
 specs <- list(
-  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree
+  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em=ln_mixture_em
 )
 ```
 

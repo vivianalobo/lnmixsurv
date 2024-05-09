@@ -41,18 +41,11 @@ plot(model_em)
 The predict of survival and hazard curves proceeds just like with the Bayesian approach, noting that using the EM method we don't have credible or confidence intervals.
 
 ```{r}
-predictions <- NULL
-
-for (cat in levels(data$x)) {
-  pred_cat <- predict(model_em,
-          data.frame(x = cat),
-          type = "survival",
-          eval_time = 1:300) |> 
-    unnest(.pred) |> 
-    mutate(x = cat)
-  
-  predictions <- bind_rows(predictions, pred_cat)
-}
+new_data = data %>% distinct(x)
+predictions = model_em %>%
+  predict(new_data, type = "survival", eval_time = 1:300) %>%
+  mutate(x = new_data$x) %>%
+  unnest(cols = c(.pred))
 ```
 
 One can use `ggplot` functions to visualize the predicted values.
@@ -82,18 +75,11 @@ plot(model_em)
 ```
 
 ```{r fig.width=7}
-predictions <- NULL
-
-for (cat in levels(data$x)) {
-  pred_cat <- predict(model_em,
-          data.frame(x = cat),
-          type = "survival",
-          eval_time = 1:300) |> 
-    unnest(.pred) |> 
-    mutate(x = cat)
-  
-  predictions <- bind_rows(predictions, pred_cat)
-}
+new_data = data %>% distinct(x)
+predictions = model_em %>%
+  predict(new_data, type = "survival", eval_time = 1:300) %>%
+  mutate(x = new_data$x) %>%
+  unnest(cols = c(.pred))
 
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
