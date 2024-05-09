@@ -4,7 +4,7 @@
 \alias{survival_ln_mixture}
 \alias{survival_ln_mixture.default}
 \alias{survival_ln_mixture.formula}
-\title{Lognormal mixture model}
+\title{Lognormal mixture model - Gibbs sampler}
 \usage{
 survival_ln_mixture(
   formula,
@@ -19,8 +19,10 @@ survival_ln_mixture(
   proposal_variance = 2,
   show_progress = FALSE,
   em_iter = 0,
-  starting_seed = sample(1, 2^28, 1),
+  starting_seed = sample(1:2^28, 1),
   force_num_cores = FALSE,
+  sparse = FALSE,
+  use_W = FALSE,
   ...
 )
 
@@ -60,6 +62,10 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{force_num_cores}{A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.}
 
+\item{sparse}{Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.}
+
+\item{use_W}{Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.}
+
 \item{...}{Not currently used, but required for extensibility.}
 }
 \value{
@@ -70,8 +76,7 @@ A \code{survival_ln_mixture} object, which is a list with the following componen
 \item{blueprint}{The blueprint component of the output of \link[hardhat:mold]{hardhat::mold}}
 }
 \description{
-\code{survival_ln_mixture()} fits a lognormal mixture model, as described in (referencia artigo viviana).
-Colocar mais detalhes sobre o modelo (como a equacao) em details.
+\code{survival_ln_mixture()} fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
 }
 \note{
 Categorical predictors must be converted to factors before the fit,

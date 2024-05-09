@@ -14,7 +14,8 @@ test_that("events at time zero are ano supported", {
   data_new <- sim_data$data
   data_new$y[1] <- 0
   expect_error(
-    survival_ln_mixture(survival::Surv(y, delta, type = "left") ~ x, sim_data$data))
+    survival_ln_mixture(survival::Surv(y, delta, type = "left") ~ x, sim_data$data)
+  )
 })
 
 test_that("when using ~NULL, intercept must be TRUE", {
@@ -31,8 +32,9 @@ test_that("survival_ln_mixture doesnt work with xy specification", {
 
 test_that("survival_ln_mixture works with intercept only fit", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_intercept_only.rds"))
-  expect_equal(tidy(mod)$estimate, c(3.883091, 4.879093), 
-               tolerance = 10^-1)
+  expect_equal(tidy(mod)$estimate, c(3.883091, 4.879093),
+    tolerance = 10^-1
+  )
 })
 
 test_that("fit works as expected with simulated data", {

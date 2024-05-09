@@ -31,45 +31,44 @@ parallellization.
 ## Dependencies
 
 Before proceeding, make sure to have
-[GSL](https://www.gnu.org/software/gsl/) and OpenMP, if using Mac OS,
-installed on your system. Specifically, on Mac OS, `brew install gsl`
-should be enough for GSL. On Windows/Linux, these probably came by
-default or together with the R install. If any errors occur, please,
-contact us.
+[GSL](https://www.gnu.org/software/gsl/) installed on your system.
+Below, there are specific tutorial on how to install these for each
+operational system other than Windows (Windows users are probably fine
+and ready to go).
 
-### OpenMP – Mac OS
+The package also depends on OpenMP, which should be fine for both Linux
+and Windows users. For MacOS users, there is a little guide bellow.
 
-The default compiler of Mac OS (clang) is shipped without support to
-OpenMP. Thus, installing the package directly might result in error. One
-option is to compile the package using **GCC**. To do so, make sure GCC
-is installed with `brew install gcc`. Now, create or edit the file
-**\~/.R/Makevars** to include the lines
+### Mac OS
 
-> CC = gcc
+Specifically, on Mac OS, running `brew install gsl libomp` on the
+console/terminal should be enough for GSL and OpenMP. The OpenMP is
+[known](https://github.com/Rdatatable/data.table) to have issues with
+Mac’s default compiler (clang). Thus, there are some additional steps
+that envolves modifying your **~/.R/Makevars**, appending
+
+> CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp
 >
-> CPP = g++
+> LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp
 
-Then, restart R session (or open one) and try to install the package
-again.
+to it.
 
-If the method before didn’t work, it’s worth trying out what is
-described [here](https://mac.r-project.org/openmp/). Before proceeding,
-make sure to have **curl** installed, `brew install curl`. Then, execute
+If you don’t know how to do it or are having troubles accessing the
+file, try opening the console/terminal and running `cat ~/.R/Makevars`.
+If it’s empty or doesn’t exist, simply run
 
-    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz
-    sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C /
+    mkdir ~/.R/ && touch ~/.R/Makevars && echo -e "LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp\nCPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> ~/.R/Makevars
 
-Now, create or edit **\~/.R/Makevars** to include the lines\]
+This will create the folder **~/.R**, create the file **Makevars**
+inside this folder and append the flags cited above to it. Your Makevars
+is something you don’t want to be messing around, so if after running
+`cat ~/.R/Makevars` you see something, just run
 
-> CPPFLAGS += -Xclang -fopenmp
->
-> LDFLAGS += -lomp
+    echo -e "LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp\nCPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> ~/.R/Makevars
 
-The following piece of code can be used to do everything, all at once:
+on your terminal to append the necessary flags to your **Makevars**.
 
-    curl -O https://mac.r-project.org/openmp/openmp-12.0.1-darwin20-Release.tar.gz && sudo tar fvxz openmp-12.0.1-darwin20-Release.tar.gz -C / && mkdir -p ~/.R && echo -e "CPPFLAGS += -Xclang -fopenmp\nLDFLAGS += -lomp" >> ~/.R/Makevars
-
-After that, the package should be installed correctly.
+After that, you’re ready to install the package.
 
 ## Installation
 
@@ -92,6 +91,7 @@ also provided, adding the `survival_ln_mixture` engine to the
 The following models, engines, and prediction type are
 available/extended through `persistencia`:
 
-| model        | engine              | time | survival | linear_pred | raw | quantile | hazard |
-|:-------------|:--------------------|:-----|:---------|:------------|:----|:---------|:-------|
-| survival_reg | survival_ln_mixture | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
+| model        | engine                 | time | survival | linear_pred | raw | quantile | hazard |
+|:-------------|:-----------------------|:-----|:---------|:------------|:----|:---------|:-------|
+| survival_reg | survival_ln_mixture    | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
+| survival_reg | survival_ln_mixture_em | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |

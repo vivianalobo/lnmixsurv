@@ -48,7 +48,7 @@
 predict.survival_ln_mixture <- function(object, new_data, type, eval_time, interval = "none", level = 0.95, ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_predict_types())
-  
+
   predict_survival_ln_mixture_bridge(type, object, forged$predictors, eval_time, interval, level, ...)
 }
 
@@ -109,12 +109,12 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
     post <- posterior::merge_chains(post)
   }
   qntd_iteracoes <- posterior::niterations(post)
-  
+
   beta <- lapply(model$mixture_groups, function(x) {
-    names <- paste0(model$predictors_name, '_', x)
+    names <- paste0(model$predictors_name, "_", x)
     return(posterior::subset_draws(post, names))
   })
-  
+
   phi <- posterior::subset_draws(post, "phi", regex = TRUE)
   eta <- posterior::subset_draws(post, "eta", regex = TRUE)
   m <- lapply(beta, function(x) x %*% t(predictors))
@@ -123,7 +123,7 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
   surv_haz <- list()
   for (i in seq_len(nrow(predictors))) {
     surv_haz[[i]] <- vapply(
-      eval_time, function(t) fun(t, lapply(m, function(x) x[,i]), sigma, eta), numeric(qntd_iteracoes)
+      eval_time, function(t) fun(t, lapply(m, function(x) x[, i]), sigma, eta), numeric(qntd_iteracoes)
     )
   }
   predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
@@ -144,21 +144,26 @@ extract_surv_haz <- function(model, predictors, eval_time, interval = "none", le
 }
 
 sob_lognormal_mix <- function(t, m, sigma, eta) {
-  componentes <- vapply(seq_len(length(m) - 1), function(x) sob_lognormal(t, m[[x]], sigma[,x]) * eta[, x], numeric(nrow(sigma)))
-  componentes <- cbind(componentes, sob_lognormal(t, m[[length(m)]], sigma[,length(m)]) * (1 - apply(eta, 1, sum)))
+  componentes <- vapply(seq_len(length(m) - 1), function(x) sob_lognormal(t, m[[x]], sigma[, x]) * eta[, x], numeric(nrow(sigma)))
+  componentes <- cbind(componentes, sob_lognormal(t, m[[length(m)]], sigma[, length(m)]) * (1 - apply(eta, 1, sum)))
   s <- apply(componentes, 1, sum)
   return(s)
 }
 
 falha_lognormal_mix <- function(t, m, sigma, eta) {
   sob_mix <- sob_lognormal_mix(t, m, sigma, eta)
-  componentes <- vapply(seq_len(length(m) - 1), 
-                        function(x) 
-                          stats::dlnorm(t, m[[x]], sigma[,x]) * eta[, x], 
-                        numeric(nrow(sigma)))
-  componentes <- cbind(componentes, 
-                       stats::dlnorm(t, m[[length(m)]], sigma[,length(m)]) *
-                         (1 - apply(eta, 1, sum)))
+  componentes <- vapply(
+    seq_len(length(m) - 1),
+    function(x) {
+      stats::dlnorm(t, m[[x]], sigma[, x]) * eta[, x]
+    },
+    numeric(nrow(sigma))
+  )
+  componentes <- cbind(
+    componentes,
+    stats::dlnorm(t, m[[length(m)]], sigma[, length(m)]) *
+      (1 - apply(eta, 1, sum))
+  )
   dlnorm_mix <- apply(componentes, 1, sum)
   return(dlnorm_mix / sob_mix)
 }

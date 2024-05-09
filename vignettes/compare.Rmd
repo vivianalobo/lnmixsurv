@@ -59,11 +59,18 @@ decision_tree <- decision_tree(cost_complexity = 0) %>%
   set_mode("censored regression")
 
 ln_mixture <- survival_reg() %>%
-  set_engine("survival_ln_mixture", iter = 2000, chains = 1, cores = 1,
-             starting_seed = 20)
+  set_engine("survival_ln_mixture",
+    iter = 2000, chains = 1, cores = 1,
+    starting_seed = 20
+  )
+
+ln_mixture_em <- survival_reg() %>%
+  set_engine("survival_ln_mixture_em",
+    iter = 2000, starting_seed = 20
+  )
 
 specs <- list(
-  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree
+  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em=ln_mixture_em
 )
 ```
 
@@ -72,8 +79,10 @@ Finally, thanks to the great parsnip API, we can fit and predict all models at o
 ```{r}
 set.seed(8975)
 models <- map(specs, ~ fit(.x, formula, dados))
-pred_sob <- map(models, ~ predict(.x, new_data, type = "survival",
-                                  eval_time = seq(120)))
+pred_sob <- map(models, ~ predict(.x, new_data,
+  type = "survival",
+  eval_time = seq(120)
+))
 ```
 
 The following plot compares each model with the Kaplan-Meier estimates of the survival function.

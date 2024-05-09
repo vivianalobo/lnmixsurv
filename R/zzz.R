@@ -11,7 +11,8 @@ stats::nobs
 # nocov start
 
 .onLoad <- function(libname, pkgname) {
-    make_survival_reg_survival_ln_mixture()
+  make_survival_reg_survival_ln_mixture()
+  make_survival_reg_survival_ln_mixture_em()
 }
 
 # nocov end

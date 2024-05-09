@@ -22,17 +22,19 @@ Intercept only fits should be done setting `intercept = TRUE` and using `NULL` f
 library(lnmixsurv)
 set.seed(2)
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL,
-                            sim_data$data,
-                            intercept = TRUE,
-                            starting_seed = 20)
+  sim_data$data,
+  intercept = TRUE,
+  starting_seed = 20
+)
 ```
 
 The predictions can be made with a "empty" data.frame with one row.
 
 ```{r}
-predict(mod1, 
-        new_data = data.frame(val = NA), 
-        type = "survival",
-        eval_time = 100) |>
+predict(mod1,
+  new_data = data.frame(val = NA),
+  type = "survival",
+  eval_time = 100
+) |>
   tidyr::unnest(cols = .pred)
 ```

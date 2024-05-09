@@ -48,28 +48,32 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
                                      ...) {
   rlang::arg_match(effects, c("fixed", "auxiliary"))
   rlang::check_dots_empty(...)
-  all_vars = colnames(x$posterior)
+  all_vars <- colnames(x$posterior)
   vars <- c()
-  
+
   if ("fixed" %in% effects) {
-    for(i in x$mixture_groups) {
-      vars <- c(vars, colnames(posterior::subset_draws(x$posterior,
-                               paste0(x$predictors_name, '_', i))))
+    for (i in x$mixture_groups) {
+      vars <- c(vars, colnames(posterior::subset_draws(
+        x$posterior,
+        paste0(x$predictors_name, "_", i)
+      )))
     }
   }
-  
+
   if ("auxiliary" %in% effects) {
     auxiliary_vars <- all_vars[startsWith(all_vars, "phi")]
-    auxiliary_vars <- c(auxiliary_vars,
-                        all_vars[startsWith(all_vars, "eta")])
+    auxiliary_vars <- c(
+      auxiliary_vars,
+      all_vars[startsWith(all_vars, "eta")]
+    )
     vars <- c(vars, auxiliary_vars)
   }
-  
+
   measures <- c("estimate" = stats::median, "std.error" = stats::mad)
   if (conf.int) {
     measures <- c(measures, c("interval" = function(x) credibility_interval(x, conf.level)))
   }
-  
+
   post <- posterior::subset_draws(x$posterior, variable = vars)
   post <- posterior::merge_chains(post)
   ret <- posterior::summarise_draws(post, measures)
