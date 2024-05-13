@@ -131,7 +131,9 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     iter, mixture_components, outcome_times,
     outcome_status, predictors, seed, sparse
   )
-
+  
+  predictors_names <- colnames(predictors)
+  
   new_names <- NULL
 
   for (g in 1:mixture_components) {
@@ -142,10 +144,10 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
           paste0("eta_", g)
         )
       } else if (j == 2) {
-        for (k in 0:(number_predictors - 1)) {
+        for (k in 1:number_predictors) {
           new_names <- c(
             new_names,
-            paste0("beta", k, "_", g)
+            paste0(predictors_names[k], "_", g)
           )
         }
       } else {
