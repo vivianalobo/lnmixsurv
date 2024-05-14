@@ -17,11 +17,13 @@
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
 #' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
+#' 
+#' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, better_initial_values = TRUE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }
@@ -79,7 +81,8 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
                                         predictors, iter = 50,
                                         mixture_components = 2,
                                         starting_seed = sample(1:2^28, 1),
-                                        sparse = FALSE) {
+                                        sparse = FALSE,
+                                        better_initial_values = TRUE) {
   # Verifications
   if (any(is.na(predictors))) {
     "There is one or more NA values in the predictors variable."
@@ -129,7 +132,7 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
 
   matrix_em_iter <- lognormal_mixture_em_implementation(
     iter, mixture_components, outcome_times,
-    outcome_status, predictors, seed, sparse
+    outcome_status, predictors, seed, sparse, better_initial_values
   )
   
   predictors_names <- colnames(predictors)

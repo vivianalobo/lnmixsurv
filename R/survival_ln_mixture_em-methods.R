@@ -12,10 +12,10 @@ plot.survival_ln_mixture_em <- function(x, ...) {
     tidyr::pivot_longer(x$em_iterations, 1:(ncol(x$em_iterations) - 1),
       names_to = "var"
     ) |>
-      dplyr::mutate(cat = ifelse(startsWith(var, "beta"),
-        "beta",
-        ifelse(startsWith(var, "phi"),
-          "phi", "eta"
+      dplyr::mutate(cat = ifelse(startsWith(var, "phi"),
+        "phi",
+        ifelse(startsWith(var, "eta"),
+          "eta", "beta"
         )
       )) |>
       ggplot2::ggplot() +
@@ -31,11 +31,11 @@ plot.survival_ln_mixture_em <- function(x, ...) {
     (tidyr::pivot_longer(x$em_iterations, 1:(ncol(x$em_iterations) - 1),
       names_to = "var"
     ) |>
-      dplyr::mutate(cat = ifelse(startsWith(var, "beta"),
-        "beta",
-        ifelse(startsWith(var, "phi"),
-          "phi", "eta"
-        )
+      dplyr::mutate(cat = ifelse(startsWith(var, "phi"),
+                                 "phi",
+                                 ifelse(startsWith(var, "eta"),
+                                        "eta", "beta"
+                                 )
       )) |>
       ggplot2::ggplot() +
       ggplot2::geom_path(ggplot2::aes(x = iter, y = value, color = var)) +
