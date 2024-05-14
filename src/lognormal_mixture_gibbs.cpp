@@ -62,7 +62,7 @@ arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance, gsl_rng* r
   arma::vec Z(numDims);
   
   for (int j = 0; j < numDims; j++) {
-    Z(j) = rnorm_(0, 1, rng_device);
+    Z(j) = rnorm_(0.0, 1.0, rng_device);
   }
   
   sample = mean + L * Z;
@@ -365,7 +365,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int
   int n = X.n_rows;
   int k = X.n_cols;
   
-  arma::field<arma::mat> out(4);
+  arma::field<arma::mat> out(5);
   arma::mat beta(G, k);
   arma::vec phi(G);
   arma::vec sd(G);
@@ -384,10 +384,10 @@ arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int
       eta = rdirichlet(repl(1.0, G), rng_device);
       
       for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(0.1, 0.1, rng_device);
+        phi(g) = rgamma_(0.5, 0.5, rng_device);
         
         for (int c = 0; c < k; c++) {
-          beta(g, c) = rnorm_(0.0, 20.0, rng_device);
+          beta(g, c) = rnorm_(0.0, 10.0, rng_device);
         }
       }
       
@@ -442,7 +442,6 @@ arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int
         if(phi(g) > 1e5) {
           phi(g) = rgamma_(2.0, 8.0, rng_device); // resample phi
         }
-        
       }
     }
   }
@@ -451,12 +450,33 @@ arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int
   out(1) = beta;
   out(2) = phi;
   out(3) = W;
+  out(4) = augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
+  
   return out;
 }
 
 double loglik_em(const arma::field<arma::mat> em, const int& G,
-              const arma::mat& X, const arma::vec& y, const arma::ivec& delta) {
-  return 2.0;
+                 const arma::mat& X, const arma::mat& W) {
+  
+  arma::vec z = em(4);
+  arma::vec eta = em(0);
+  arma::mat beta = em(1);
+  arma::vec phi = em(2);
+  arma::vec sd = 1.0 / sqrt(phi);
+  int N = X.n_rows;
+  
+  arma::mat mean = X * beta.t();
+  
+  double loglik = 0;
+  
+  for(int i = 0; i < N; i++) {
+    for(int g = 0; g < G; g++) {
+      loglik += W(i, g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)),
+                  sd(g), true);
+    }
+  }
+  
+  return loglik;
 }
 
 arma::field<arma::mat> fast_em(const int& Niter, const int& G, const arma::vec& y,
@@ -469,11 +489,11 @@ arma::field<arma::mat> fast_em(const int& Niter, const int& G, const arma::vec& 
   out(1) = em(1);
   out(2) = em(2);
   out(3) = em(3);
-  out(4) = loglik_em(em, G, X, y, delta);
-
+  out(4) = loglik_em(em, G, X, em(3));
+  
   return out;
 }
-  
+
 arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter, const int& G, 
                                                  const arma::vec& exp_y, const arma::ivec& delta, 
                                                  const arma::mat& X, const double& a, 
@@ -742,9 +762,9 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
 
 // Function used to sample the latent groups for each observation.
 arma::ivec sample_groups_sparse(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& phi, const arma::mat& beta,
-                         const arma::sp_mat& X, gsl_rng* rng_device,
-                         const arma::ivec& grupos_old) {
+                                const arma::vec& phi, const arma::mat& beta,
+                                const arma::sp_mat& X, gsl_rng* rng_device,
+                                const arma::ivec& grupos_old) {
   int n = X.n_rows;
   int p = X.n_cols;
   arma::ivec vec_grupos = grupos_old;
@@ -831,8 +851,8 @@ arma::ivec sample_groups_sparse(const int& G, const arma::vec& y, const arma::ve
 // i-th observation is censored. Otherwise, the i-th observation is a
 // failure time.
 arma::vec augment_sparse(const int& G, const arma::vec& y, const arma::ivec& groups,
-                  const arma::ivec& delta, const arma::vec& sd, 
-                  const arma::mat& beta, const arma::sp_mat& X, gsl_rng* rng_device) {
+                         const arma::ivec& delta, const arma::vec& sd, 
+                         const arma::mat& beta, const arma::sp_mat& X, gsl_rng* rng_device) {
   
   int n = X.n_rows;
   arma::vec out(n);
@@ -873,8 +893,8 @@ arma::vec augment_sparse(const int& G, const arma::vec& y, const arma::ivec& gro
 
 // Compute weights matrix
 arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma::vec& eta, 
-                    const arma::mat& beta, const arma::vec& sigma, 
-                    const int& G) {
+                           const arma::mat& beta, const arma::vec& sigma, 
+                           const int& G) {
   
   int n = X.n_rows;
   double denom;
@@ -901,9 +921,9 @@ arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma
 
 // Create the latent variable z for censored observations
 arma::vec augment_em_sparse(const arma::vec& y, const arma::ivec& delta,
-                     const arma::sp_mat& X, const arma::mat& beta,
-                     const arma::vec& sigma, const arma::mat& W,
-                     const int& G) {
+                            const arma::sp_mat& X, const arma::mat& beta,
+                            const arma::vec& sigma, const arma::mat& W,
+                            const int& G) {
   int n = X.n_rows;
   arma::vec out = y;
   
@@ -944,8 +964,8 @@ arma::vec augment_em_sparse(const arma::vec& y, const arma::ivec& delta,
 
 // Internal implementation of the em_algorithm
 arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, const int& G,
-                                                     const arma::vec& y, const arma::ivec& delta,
-                                                     const arma::sp_mat& X, gsl_rng* rng_device) {
+                                                            const arma::vec& y, const arma::ivec& delta,
+                                                            const arma::sp_mat& X, gsl_rng* rng_device) {
   arma::vec eta(G);
   int n = X.n_rows;
   int k = X.n_cols;
@@ -969,7 +989,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
       eta = rdirichlet(repl(1.0, G), rng_device);
       
       for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(2.0, 8.0, rng_device);
+        phi(g) = rgamma_(0.1, 0.1, rng_device);
         
         for (int c = 0; c < k; c++) {
           beta(g, c) = rnorm_(0.0, 15.0, rng_device);
@@ -1040,12 +1060,12 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
 }
 
 arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const int& em_iter,
-                                                 const int& G, const arma::vec& exp_y,
-                                                 const arma::ivec& delta, 
-                                                 const arma::sp_mat& X, const double& a, 
-                                                 long long int starting_seed,
-                                                 const bool& show_output, 
-                                                 const int& chain_num) {
+                                                        const int& G, const arma::vec& exp_y,
+                                                        const arma::ivec& delta, 
+                                                        const arma::sp_mat& X, const double& a, 
+                                                        long long int starting_seed,
+                                                        const bool& show_output, 
+                                                        const int& chain_num) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -1305,7 +1325,7 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
                                    const int& n_cores, const int& n_chains,
                                    const bool& force_num_cores, const bool& sparse, const bool& use_W) {
   arma::cube out(Niter, (X.n_cols + 2) * G, n_chains);
-
+  
   if(sparse) {
     arma::sp_mat Y(X);
     
@@ -1334,12 +1354,12 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
     }
   } else {
     if(n_cores == 1) {
-    for(int chain = 0; chain < n_chains; chain ++) {
-      out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, starting_seed(chain), show_output,
-                chain + 1, use_W);
-    }
-    
-    return out;
+      for(int chain = 0; chain < n_chains; chain ++) {
+        out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, starting_seed(chain), show_output,
+                  chain + 1, use_W);
+      }
+      
+      return out;
     }
     
     if(force_num_cores) {
@@ -1364,7 +1384,8 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
 
 arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta,
                                const arma::mat& X, long long int starting_seed,
-                               const bool& better_initial_values) {
+                               const bool& better_initial_values, const int& N_em,
+                               const int& Niter_em) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -1392,19 +1413,22 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
   double max_loglik;
   arma::field<arma::mat> em_init(5);
   arma::field<arma::mat> best_em(5);
-
+  
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
       if(better_initial_values) {
-        for(int init = 0; init < 15; init++) { // search for high log-likelihoods on 15 different random initializations
+        for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
           // running a fast EM (10 iterations) starting at random values
-          em_init = fast_em(10, G, y, delta, X, global_rng);
-
+          em_init = fast_em(Niter_em, G, y, delta, X, global_rng);
+          
           if(init == 0) { // if it's the first EM running;
             max_loglik = arma::as_scalar(em_init(4));
             best_em = em_init;
+            
+            Rcout << "Initial LogLik: " << max_loglik << "\n";
           } else {
             if(arma::as_scalar(em_init(4)) > max_loglik) {
+              Rcout << "Previous maximum: " << max_loglik << " | New maxium: " << arma::as_scalar(em_init(4)) << "\n";
               max_loglik = arma::as_scalar(em_init(4));
               best_em = em_init;
             }
@@ -1415,7 +1439,7 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
         beta = best_em(1);
         phi = best_em(2);
         W = best_em(3);
-
+        
         sd = 1.0 / sqrt(phi);
       } else {
         eta = rdirichlet(repl(1.0, G), global_rng);
@@ -1424,10 +1448,10 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
           phi(g) = rgamma_(0.1, 0.1, global_rng);
           
           for (int c = 0; c < k; c++) {
-            beta(g, c) = rnorm_(0.0, 20.0, global_rng);
+            beta(g, c) = rnorm_(0.0, 15.0, global_rng);
           }
         }
-
+        
         sd = 1.0 / sqrt(phi);
         W = compute_W(y, X, eta, beta, sd, G);
       }
@@ -1478,7 +1502,7 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
         phi(g) = denom / quant;
         
         // to avoid numerical problems
-        if(phi(g) > 1e5) {
+        if((phi(g) > 1e5) || phi.has_nan()) {
           phi(g) = rgamma_(0.1, 0.1, global_rng); // resample phi
         }
       }
@@ -1504,8 +1528,8 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
 }
 
 arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma::vec& t,
-                               const arma::ivec& delta, const arma::sp_mat& X, 
-                               long long int starting_seed) {
+                                      const arma::ivec& delta, const arma::sp_mat& X, 
+                                      long long int starting_seed) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -1536,7 +1560,7 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
       eta = rdirichlet(repl(1.0, G), global_rng);
       
       for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(2.0, 8.0, global_rng);
+        phi(g) = rgamma_(0.1, 0.1, global_rng);
         
         for (int c = 0; c < k; c++) {
           beta(g, c) = rnorm_(0.0, 15.0, global_rng);
@@ -1592,8 +1616,8 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
         phi(g) = denom / quant;
         
         // to avoid numerical problems
-        if(phi(g) > 1e5) {
-          phi(g) = rgamma_(2.0, 8.0, global_rng); // resample phi
+        if(phi(g) > 1e5 || phi.has_nan()) {
+          phi(g) = rgamma_(0.1, 0.1, global_rng); // resample phi
         }
       }
     }
@@ -1614,192 +1638,194 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
     
     out.row(iter) = newRow;
   }
-  return(out);
+  
+  return out;
 }
 
 //[[Rcpp::export]]
 arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, const arma::vec& t,
-                               const arma::ivec& delta, const arma::mat& X, 
-                               long long int starting_seed, const bool& sparse,
-                               const bool& better_initial_values) {
+                                              const arma::ivec& delta, const arma::mat& X, 
+                                              long long int starting_seed, const bool& sparse,
+                                              const bool& better_initial_values, const int& N_em,
+                                              const int& Niter_em) {
   if(sparse) {
     arma::sp_mat Y(X);
     return lognormal_mixture_em_sparse(Niter, G, t, delta, Y, starting_seed);
   } else {
-    return lognormal_mixture_em(Niter, G, t, delta, X, starting_seed, better_initial_values);
+    return lognormal_mixture_em(Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em);
   }
-
+  
   return 0;
 }
 
 // Commented because more development is needed in this function
 /*
-arma::mat lognormal_mixture_sem(const int& Niter, const int& G, const arma::vec& y,
-                                const arma::vec& delta,
-                                const arma::sp_mat& X, long long int starting_seed) {
-  
-  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
-  
-  // setting global seed to start the sampler
-  setSeed(starting_seed, global_rng);
-  
-  arma::vec eta(G);
-  int n = X.n_rows;
-  int k = X.n_cols;
-  
-  arma::mat out(Niter, G * k + (G * 2));
-  arma::mat beta(G, k);
-  arma::vec phi(G);
-  arma::vec sd(G);
-  arma::vec var(G);
-  arma::mat W(n, G);
-  arma::ivec grupos(n);
-  arma::mat W_grupos(n, G, arma::fill::zeros);
-  arma::ivec n_grupos(G);
-  arma::sp_mat Wg(n, n);
-  arma::vec colg(n);
-  arma::vec z(n);
-  int idx;
-  int m;
-  
-  double quant;
-  double denom;
-  double alpha;
-  
-  for(int iter = 0; iter < Niter; iter++) {
-    if(iter == 0) { // sample starting values
-      eta = rdirichlet(repl(1.0, G), global_rng);
-      
-      for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(2.0, 8.0, global_rng);
-        
-        for (int c = 0; c < k; c++) {
-          beta(g, c) = rnorm_(0.0, 15.0, global_rng);
-        }
-      }
-      
-      sd = 1.0 / sqrt(phi);
-      W = compute_W(y, delta, X, eta, beta, sd, G);
-      
-      for(int i = 0; i < n; i++) {
-        grupos(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
-      }
-      
-      // Computing number of observations allocated at each class
-      n_grupos = groups_table(G, grupos);
-      
-      // ensuring that every class have, at least, 5 observations
-      for(int g = 0; g < G; g++) {
-        if(n_grupos(g) == 0) {
-          m = 0;
-          while(m < 5) {
-            idx = numeric_sample(seq(0, n),
-                                 repl(1.0 / n, n),
-                                 global_rng);
-            
-            if(n_grupos(grupos(idx)) > 5) {
-              grupos(idx) = g;
-              m += 1;
-            } 
-          }
-          
-          // recalculating the number of groups
-          n_grupos = groups_table(G, grupos);
-        }
-      }
-      
-      for(int i = 0; i < n; i++) {
-        W_grupos(i, grupos(i)) = 1;
-      }
-    } else {
-      sd = 1.0 / sqrt(phi);
-      var = arma::square(sd);
-      z = augment_em(y, delta, X, beta, sd, W_grupos, G);
-      W = compute_W(z, delta, X, eta, beta, sd, G);
-      
-      W_grupos.fill(0);
-      
-      for(int i = 0; i < n; i++) {
-        grupos(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
-      }
-      
-      // Computing number of observations allocated at each class
-      n_grupos = groups_table(G, grupos);
-      
-      // ensuring that every class have, at least, 5 observations
-      for(int g = 0; g < G; g++) {
-        if(n_grupos(g) == 0) {
-          m = 0;
-          while(m < 5) {
-            idx = numeric_sample(seq(0, n),
-                                 repl(1.0 / n, n),
-                                 global_rng);
-            
-            if(n_grupos(grupos(idx)) > 5) {
-              grupos(idx) = g;
-              m += 1;
-            } 
-          }
-          
-          // recalculating the number of groups
-          n_grupos = groups_table(G, grupos);
-        }
-      }
-      
-      for(int i = 0; i < n; i++) {
-        W_grupos(i, grupos(i)) = 1;
-      }
-      
-      for (int g = 0; g < G; g++) {
-        colg = W_grupos.col(g);
-        Wg = arma::diagmat(colg);
-        
-        eta(g) = arma::sum(colg) / n;
-        beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
-                 X.t() * Wg * z,
-                 arma::solve_opts::allow_ugly).t();
-        
-        quant = 0.0;
-        denom = arma::sum(colg);
-        
-        for (int i = 0; i < n; i++) {
-          quant += W_grupos(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
-          
-          if (delta(i) == 0.0) {
-            alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/sd(g);
-            
-            if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-              quant += W_grupos(i, g) * var(g) * (1.0 - 
-                (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
-                square(R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
-            } else {
-              quant += W_grupos(i, g) * var(g) * (1.0 - 
-                (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
-                square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
-            }
-          }
-        }
-        
-        phi(g) = denom / quant;
-      }
-    }
-    
-    // Fill the out matrix
-    arma::rowvec newRow = 
-      arma::join_rows(eta.row(0), 
-                      beta.row(0),
-                      phi.row(0));
-    
-    for (int g = 1; g < G; g++) {
-      newRow = 
-        arma::join_rows(newRow, 
-                        eta.row(g), 
-                        beta.row(g),
-                        phi.row(g));
-    }
-    
-    out.row(iter) = newRow;
-  }
-  
-  return(out);
-} */
+ arma::mat lognormal_mixture_sem(const int& Niter, const int& G, const arma::vec& y,
+ const arma::vec& delta,
+ const arma::sp_mat& X, long long int starting_seed) {
+ 
+ gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
+ 
+ // setting global seed to start the sampler
+ setSeed(starting_seed, global_rng);
+ 
+ arma::vec eta(G);
+ int n = X.n_rows;
+ int k = X.n_cols;
+ 
+ arma::mat out(Niter, G * k + (G * 2));
+ arma::mat beta(G, k);
+ arma::vec phi(G);
+ arma::vec sd(G);
+ arma::vec var(G);
+ arma::mat W(n, G);
+ arma::ivec grupos(n);
+ arma::mat W_grupos(n, G, arma::fill::zeros);
+ arma::ivec n_grupos(G);
+ arma::sp_mat Wg(n, n);
+ arma::vec colg(n);
+ arma::vec z(n);
+ int idx;
+ int m;
+ 
+ double quant;
+ double denom;
+ double alpha;
+ 
+ for(int iter = 0; iter < Niter; iter++) {
+ if(iter == 0) { // sample starting values
+ eta = rdirichlet(repl(1.0, G), global_rng);
+ 
+ for (int g = 0; g < G; g++) {
+ phi(g) = rgamma_(2.0, 8.0, global_rng);
+ 
+ for (int c = 0; c < k; c++) {
+ beta(g, c) = rnorm_(0.0, 15.0, global_rng);
+ }
+ }
+ 
+ sd = 1.0 / sqrt(phi);
+ W = compute_W(y, delta, X, eta, beta, sd, G);
+ 
+ for(int i = 0; i < n; i++) {
+ grupos(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
+ }
+ 
+ // Computing number of observations allocated at each class
+ n_grupos = groups_table(G, grupos);
+ 
+ // ensuring that every class have, at least, 5 observations
+ for(int g = 0; g < G; g++) {
+ if(n_grupos(g) == 0) {
+ m = 0;
+ while(m < 5) {
+ idx = numeric_sample(seq(0, n),
+ repl(1.0 / n, n),
+ global_rng);
+ 
+ if(n_grupos(grupos(idx)) > 5) {
+ grupos(idx) = g;
+ m += 1;
+ } 
+ }
+ 
+ // recalculating the number of groups
+ n_grupos = groups_table(G, grupos);
+ }
+ }
+ 
+ for(int i = 0; i < n; i++) {
+ W_grupos(i, grupos(i)) = 1;
+ }
+ } else {
+ sd = 1.0 / sqrt(phi);
+ var = arma::square(sd);
+ z = augment_em(y, delta, X, beta, sd, W_grupos, G);
+ W = compute_W(z, delta, X, eta, beta, sd, G);
+ 
+ W_grupos.fill(0);
+ 
+ for(int i = 0; i < n; i++) {
+ grupos(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
+ }
+ 
+ // Computing number of observations allocated at each class
+ n_grupos = groups_table(G, grupos);
+ 
+ // ensuring that every class have, at least, 5 observations
+ for(int g = 0; g < G; g++) {
+ if(n_grupos(g) == 0) {
+ m = 0;
+ while(m < 5) {
+ idx = numeric_sample(seq(0, n),
+ repl(1.0 / n, n),
+ global_rng);
+ 
+ if(n_grupos(grupos(idx)) > 5) {
+ grupos(idx) = g;
+ m += 1;
+ } 
+ }
+ 
+ // recalculating the number of groups
+ n_grupos = groups_table(G, grupos);
+ }
+ }
+ 
+ for(int i = 0; i < n; i++) {
+ W_grupos(i, grupos(i)) = 1;
+ }
+ 
+ for (int g = 0; g < G; g++) {
+ colg = W_grupos.col(g);
+ Wg = arma::diagmat(colg);
+ 
+ eta(g) = arma::sum(colg) / n;
+ beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
+ X.t() * Wg * z,
+ arma::solve_opts::allow_ugly).t();
+ 
+ quant = 0.0;
+ denom = arma::sum(colg);
+ 
+ for (int i = 0; i < n; i++) {
+ quant += W_grupos(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
+ 
+ if (delta(i) == 0.0) {
+ alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/sd(g);
+ 
+ if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
+ quant += W_grupos(i, g) * var(g) * (1.0 - 
+ (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
+ square(R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
+ } else {
+ quant += W_grupos(i, g) * var(g) * (1.0 - 
+ (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
+ square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
+ }
+ }
+ }
+ 
+ phi(g) = denom / quant;
+ }
+ }
+ 
+ // Fill the out matrix
+ arma::rowvec newRow = 
+ arma::join_rows(eta.row(0), 
+ beta.row(0),
+ phi.row(0));
+ 
+ for (int g = 1; g < G; g++) {
+ newRow = 
+ arma::join_rows(newRow, 
+ eta.row(g), 
+ beta.row(g),
+ phi.row(g));
+ }
+ 
+ out.row(iter) = newRow;
+ }
+ 
+ return(out);
+ } */

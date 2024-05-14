@@ -14,6 +14,9 @@ survival_ln_mixture_em(
   mixture_components = 2,
   starting_seed = sample(1:2^28, 1),
   sparse = FALSE,
+  better_initial_values = TRUE,
+  number_em_search = 100,
+  iteration_em_search = 1,
   ...
 )
 
@@ -37,6 +40,12 @@ object.}
 \item{starting_seed}{Starting seed for the algorithm. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
 
 \item{sparse}{Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.}
+
+\item{better_initial_values}{A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.}
+
+\item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.}
+
+\item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 10.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
