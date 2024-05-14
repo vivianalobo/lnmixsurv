@@ -32,10 +32,10 @@ plot.survival_ln_mixture_em <- function(x, ...) {
       names_to = "var"
     ) |>
       dplyr::mutate(cat = ifelse(startsWith(var, "phi"),
-                                 "phi",
-                                 ifelse(startsWith(var, "eta"),
-                                        "eta", "beta"
-                                 )
+        "phi",
+        ifelse(startsWith(var, "eta"),
+          "eta", "beta"
+        )
       )) |>
       ggplot2::ggplot() +
       ggplot2::geom_path(ggplot2::aes(x = iter, y = value, color = var)) +

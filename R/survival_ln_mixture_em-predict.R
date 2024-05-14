@@ -73,8 +73,10 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
 
   last_row <- model$em_iterations[nrow(model$em_iterations), -ncol(model$em_iterations)]
 
-  beta <- matrix(as.numeric(last_row[
-    !startsWith(names(last_row), "eta") & !(startsWith(names(last_row), 'phi'))]),
+  beta <- matrix(
+    as.numeric(last_row[
+      !startsWith(names(last_row), "eta") & !(startsWith(names(last_row), "phi"))
+    ]),
     ncol = model$mixture_groups
   )
 

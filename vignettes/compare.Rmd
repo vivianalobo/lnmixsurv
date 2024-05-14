@@ -70,7 +70,7 @@ ln_mixture_em <- survival_reg() %>%
   )
 
 specs <- list(
-  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em=ln_mixture_em
+  ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em = ln_mixture_em
 )
 ```
 

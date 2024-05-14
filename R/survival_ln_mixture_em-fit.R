@@ -17,11 +17,11 @@
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
 #' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
-#' 
+#'
 #' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
 #'
 #' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
-#' 
+#'
 #' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
 #'
 #' @param ... Not currently used, but required for extensibility.
@@ -140,9 +140,9 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     iter, mixture_components, outcome_times,
     outcome_status, predictors, seed, sparse, better_initial_values, number_em_search, iteration_em_search
   )
-  
+
   predictors_names <- colnames(predictors)
-  
+
   new_names <- NULL
 
   for (g in 1:mixture_components) {

@@ -40,7 +40,7 @@
 #' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
 #'
 #' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
-#' 
+#'
 #' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
 #'
 #' @param ... Not currently used, but required for extensibility.
@@ -65,7 +65,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1,...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
