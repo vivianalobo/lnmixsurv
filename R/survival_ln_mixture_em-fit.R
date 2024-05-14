@@ -22,12 +22,12 @@
 #'
 #' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
 #' 
-#' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 10.
+#' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, better_initial_values = TRUE, number_em_search = 100, iteration_em_search = 1, ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }
@@ -87,8 +87,8 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
                                         starting_seed = sample(1:2^28, 1),
                                         sparse = FALSE,
                                         better_initial_values = TRUE,
-                                        number_em_search = 100,
-                                        iteration_em_search = 5) {
+                                        number_em_search = 200,
+                                        iteration_em_search = 1) {
   # Verifications
   if (any(is.na(predictors))) {
     "There is one or more NA values in the predictors variable."

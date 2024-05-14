@@ -15,7 +15,7 @@ survival_ln_mixture_em(
   starting_seed = sample(1:2^28, 1),
   sparse = FALSE,
   better_initial_values = TRUE,
-  number_em_search = 100,
+  number_em_search = 200,
   iteration_em_search = 1,
   ...
 )
@@ -45,7 +45,7 @@ object.}
 
 \item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.}
 
-\item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 10.}
+\item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

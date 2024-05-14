@@ -37,6 +37,12 @@
 #'
 #' @param use_W Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.
 #'
+#' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
+#'
+#' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
+#' 
+#' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
+#'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -59,7 +65,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1,...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -120,7 +126,10 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      starting_seed = sample(1:2^28, 1),
                                      force_num_cores = FALSE,
                                      sparse = FALSE,
-                                     use_W = FALSE) {
+                                     use_W = FALSE,
+                                     better_initial_values = TRUE,
+                                     number_em_search = 200,
+                                     iteration_em_search = 1) {
   number_of_predictors <- ncol(predictors)
 
   if (any(is.na(predictors))) {
@@ -202,17 +211,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   posterior_dist <- run_posterior_samples(
-    iter, em_iter,
-    chains, cores,
-    force_num_cores,
-    mixture_components,
-    outcome_times,
-    outcome_status,
-    predictors,
-    proposal_variance,
-    starting_seed,
-    show_progress,
-    warmup, thin, sparse, use_W
+    iter, em_iter, chains, cores, force_num_cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search
   )
 
   # returning the function output
@@ -393,7 +392,9 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
-                                  show_progress, warmup, thin, sparse, use_W) {
+                                  show_progress, warmup, thin, sparse, use_W,
+                                  better_initial_values, number_em_search,
+                                  iterations_em_search) {
   set.seed(starting_seed)
   seeds <- sample(1:2^28, chains)
 
@@ -404,7 +405,8 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     outcome_times, outcome_status,
     predictors, proposal_variance,
     seeds, show_progress, cores,
-    chains, force_num_cores, sparse, use_W
+    chains, force_num_cores, sparse, use_W,
+    better_initial_values, number_em_search, iterations_em_search
   )
   for (i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[, , i])
