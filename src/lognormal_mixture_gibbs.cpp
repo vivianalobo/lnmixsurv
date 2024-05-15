@@ -1,18 +1,18 @@
 // -*- mode: C++; c-indent-level: 2; c-basic-offset: 2; indent-tabs-mode: nil; -*-
 
-#include <omp.h>
 #include <RcppArmadillo.h>
 #include <RcppGSL.h>
+#include <RcppParallel.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// [[Rcpp::plugins(openmp)]]
-
 using namespace Rcpp;
 
+//' @importFrom RcppParallel RcppParallelLibs
+ 
 // ------ RNG Framework ------
 // Function to initialize the GSL random number generator
 void initializeRNG(const long long int& seed, gsl_rng* rng_device) {
@@ -539,19 +539,19 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   double max_loglik;
   arma::field<arma::mat> init_em(5);
   arma::field<arma::mat> em_params(5);
-
+  
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
     if(better_initial_values) {
       for(int init = 0; init < N_em; init++) {
         init_em = lognormal_mixture_em_internal(Niter_em, G, y, delta, X, global_rng);
         loglik = loglik_em(init_em, G, X);
-
+        
         if(init == 0) {
           if(show_output) {
             Rcout << "Initial LogLik: " << loglik << "\n";
           }
-
+          
           em_params = init_em;
           max_loglik = loglik;
         } else {
@@ -1087,12 +1087,12 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
   out(2) = phi;
   out(3) = W;
   out(4) = augment_em_sparse(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
-
+  
   return out;
 }
 
 double loglik_em_sparse(const arma::field<arma::mat> em, const int& G,
-                 const arma::sp_mat& X) {
+                        const arma::sp_mat& X) {
   
   arma::vec eta = em(0);
   arma::mat beta = em(1);
@@ -1117,8 +1117,8 @@ double loglik_em_sparse(const arma::field<arma::mat> em, const int& G,
 }
 
 arma::field<arma::mat> fast_em_sparse(const int& Niter, const int& G, const arma::vec& y,
-                               const arma::ivec& delta, const arma::sp_mat& X,
-                               gsl_rng* rng_device) {
+                                      const arma::ivec& delta, const arma::sp_mat& X,
+                                      gsl_rng* rng_device) {
   arma::field<arma::mat> out(5);
   arma::field<arma::mat> em = lognormal_mixture_em_internal_sparse(Niter, G, y, delta, X, rng_device);
   
@@ -1174,22 +1174,22 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   arma::mat comb;
   arma::field<arma::mat> em_params(5);
   arma::field<arma::mat> init_em(5);
-
+  
   double loglik;
   double max_loglik;
-
+  
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
     if(better_initial_values) {
       for(int init = 0; init < N_em; init++) {
         init_em = lognormal_mixture_em_internal_sparse(Niter_em, G, y, delta, X, global_rng);
         loglik = loglik_em_sparse(init_em, G, X);
-
+        
         if(init == 0) {
           if(show_output) {
             Rcout << "Initial LogLik: " << loglik << "\n";
           }
-
+          
           em_params = init_em;
           max_loglik = loglik;
         } else {
@@ -1426,69 +1426,88 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   return out;
 }
 
+struct GibbsWorker : public RcppParallel::Worker {
+  const arma::vec& seeds; // starting seeds for each chain
+  arma::cube& out; // store matrix iterations for each chain
+  
+  // other parameters used to fit the model
+  const int& Niter;
+  const int& em_iter;
+  const int& G;
+  const arma::vec& exp_y;
+  const arma::ivec& delta;
+  const arma::mat& X;
+  const double& a;
+  const bool& use_W;
+  const bool& show_output;
+  const bool& better_initial_values;
+  const int& N_em;
+  const int& Niter_em;
+  
+  // Creating Worker
+  GibbsWorker(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& exp_y,
+              const arma::ivec& delta, const arma::mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
+              const int& N_em, const int& Niter_em) :
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), exp_y(exp_y), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+  
+  void operator()(std::size_t begin, std::size_t end) {
+    for (std::size_t i = begin; i < end; ++i) {
+      usleep(5000 * i); // avoid racing conditions
+      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+    }
+  }
+};
+
+struct GibbsWorkerSparse : public RcppParallel::Worker {
+  const arma::vec& seeds; // starting seeds for each chain
+  arma::cube& out; // store matrix iterations for each chain
+  
+  // other parameters used to fit the model
+  const int& Niter;
+  const int& em_iter;
+  const int& G;
+  const arma::vec& exp_y;
+  const arma::ivec& delta;
+  const arma::sp_mat& X;
+  const double& a;
+  const bool& use_W;
+  const bool& show_output;
+  const bool& better_initial_values;
+  const int& N_em;
+  const int& Niter_em;
+  
+  // Creating Worker
+  GibbsWorkerSparse(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& exp_y,
+              const arma::ivec& delta, const arma::sp_mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
+              const int& N_em, const int& Niter_em) :
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), exp_y(exp_y), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+  
+  void operator()(std::size_t begin, std::size_t end) {
+    for (std::size_t i = begin; i < end; ++i) {
+      usleep(5000 * i); // avoid racing conditions
+      out.slice(i) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+    }
+  }
+};
+
 // Function to call lognormal_mixture_gibbs_implementation with parallellization
 // [[Rcpp::export]]
 arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const int& G,
                                    const arma::vec& exp_y, const arma::ivec& delta, 
                                    const arma::mat& X, const double& a, 
-                                   arma::Col<long long int> starting_seed, const bool& show_output, 
-                                   const int& n_cores, const int& n_chains,
-                                   const bool& force_num_cores, const bool& sparse, const bool& use_W,
+                                   const arma::vec& starting_seed, const bool& show_output,
+                                   const int& n_chains, const bool& sparse, const bool& use_W,
                                    const bool& better_initial_values, const int& N_em, const int& Niter_em) {
-  arma::cube out(Niter, (X.n_cols + 2) * G, n_chains);
+  arma::cube out(Niter, (X.n_cols + 2) * G, n_chains); // initializing output object
   
+  // Fitting in parallel
   if(sparse) {
     arma::sp_mat Y(X);
-    
-    if(n_cores == 1) {
-      for(int chain = 0; chain < n_chains; chain ++) {
-        out.slice(chain) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, Y, a, starting_seed(chain), show_output, chain + 1,
-        use_W, better_initial_values, Niter_em, N_em);
-      }
-      
-      return out;
-    }
-    
-    if(force_num_cores) {
-      omp_set_dynamic(0); // related to https://stackoverflow.com/questions/11095309/openmp-set-num-threads-is-not-working
-    }
-    
-    omp_set_num_threads(n_cores);
-    
-    int chain;
-    
-#pragma omp parallel for private(chain)
-    for(int chain = 0; chain < n_chains; chain ++) {
-#pragma omp critical
-      usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
-      out.slice(chain) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, Y, a, 
-                starting_seed(chain), show_output, chain + 1, use_W, better_initial_values, Niter_em, N_em);
-    }
+    GibbsWorkerSparse worker(starting_seed, out, Niter, em_iter, G, exp_y, delta, Y, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    RcppParallel::parallelFor(0, n_chains, worker);
   } else {
-    if(n_cores == 1) {
-      for(int chain = 0; chain < n_chains; chain ++) {
-        out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, starting_seed(chain), show_output,
-                  chain + 1, use_W, better_initial_values, Niter_em, N_em);
-      }
-      
-      return out;
-    }
-    
-    if(force_num_cores) {
-      omp_set_dynamic(0); // related to https://stackoverflow.com/questions/11095309/openmp-set-num-threads-is-not-working
-    }
-    
-    omp_set_num_threads(n_cores);
-    
-    int chain;
-    
-#pragma omp parallel for private(chain)
-    for(int chain = 0; chain < n_chains; chain ++) {
-#pragma omp critical
-      usleep(5000 * chain); // sleep to avoid racing conditions at the beginning
-      out.slice(chain) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, 
-                starting_seed(chain), show_output, chain + 1, use_W, better_initial_values, Niter_em, N_em);
-    }
+    GibbsWorker worker(starting_seed, out, Niter, em_iter, G, exp_y, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    RcppParallel::parallelFor(0, n_chains, worker);
   }
   
   return out;
@@ -1668,14 +1687,14 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
   double quant;
   double denom;
   double alpha;
-
+  
   arma::field<arma::mat> best_em(5);
   arma::field<arma::mat> em_init(5);
   double max_loglik;
   
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
-    if(better_initial_values) {
+      if(better_initial_values) {
         for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
           // running a fast EM (10 iterations) starting at random values
           em_init = fast_em_sparse(Niter_em, G, y, delta, X, global_rng);

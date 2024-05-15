@@ -20,7 +20,6 @@ survival_ln_mixture(
   show_progress = FALSE,
   em_iter = 0,
   starting_seed = sample(1:2^28, 1),
-  force_num_cores = FALSE,
   sparse = FALSE,
   use_W = FALSE,
   better_initial_values = TRUE,
@@ -51,7 +50,7 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{chains}{A positive integer specifying the number of Markov chains.}
 
-\item{cores}{A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.}
+\item{cores}{A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode.}
 
 \item{mixture_components}{number of mixture componentes >= 2.}
 
@@ -62,8 +61,6 @@ The number of warmup iterations should be smaller than iter.}
 \item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
 
 \item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
-
-\item{force_num_cores}{A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.}
 
 \item{sparse}{Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.}
 

@@ -21,9 +21,8 @@
 #'
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
-#' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
+#' @param cores A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode.
 #'
-#' @param force_num_cores A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.
 #'
 #' @param mixture_components number of mixture componentes >= 2.
 #'
@@ -65,7 +64,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -124,7 +123,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      show_progress = FALSE,
                                      em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
-                                     force_num_cores = FALSE,
                                      sparse = FALSE,
                                      use_W = FALSE,
                                      better_initial_values = TRUE,
@@ -163,10 +161,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
 
   if (!is.logical(show_progress)) {
     rlang::abort("The parameter show_progress must be a logical (TRUE/FALSE).")
-  }
-
-  if (!is.logical(force_num_cores)) {
-    rlang::abort("The parameter force_num_cores must be a logical (TRUE/FALSE).")
   }
 
   if (!is.logical(use_W)) {
@@ -211,7 +205,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   posterior_dist <- run_posterior_samples(
-    iter, em_iter, chains, cores, force_num_cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search
+    iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search
   )
 
   # returning the function output
@@ -388,7 +382,6 @@ permute_columns <- function(posterior) {
 
 
 run_posterior_samples <- function(iter, em_iter, chains, cores,
-                                  force_num_cores,
                                   mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
@@ -400,12 +393,14 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
 
   list_posteriors <- NULL
 
+  RcppParallel::setThreadOptions(cores)
+
   posterior <- lognormal_mixture_gibbs(
     iter, em_iter, mixture_components,
     outcome_times, outcome_status,
     predictors, proposal_variance,
-    seeds, show_progress, cores,
-    chains, force_num_cores, sparse, use_W,
+    seeds, show_progress,
+    chains, sparse, use_W,
     better_initial_values, number_em_search, iterations_em_search
   )
   for (i in 1:chains) {
