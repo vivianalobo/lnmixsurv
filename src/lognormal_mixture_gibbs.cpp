@@ -1438,8 +1438,8 @@ struct GibbsWorker : public RcppParallel::Worker {
   const arma::ivec& delta;
   const arma::mat& X;
   const double& a;
-  const bool& use_W;
   const bool& show_output;
+  const bool& use_W;
   const bool& better_initial_values;
   const int& N_em;
   const int& Niter_em;
@@ -1470,8 +1470,8 @@ struct GibbsWorkerSparse : public RcppParallel::Worker {
   const arma::ivec& delta;
   const arma::sp_mat& X;
   const double& a;
-  const bool& use_W;
   const bool& show_output;
+  const bool& use_W;
   const bool& better_initial_values;
   const int& N_em;
   const int& Niter_em;
