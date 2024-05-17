@@ -10,6 +10,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![Codecov test
 coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph/badge.svg)](https://app.codecov.io/gh/vitorcapdeville/persistencia?branch=master)
 [![R-CMD-check](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
 The `lnmixsurv` package provides an easy interface to the Bayesian
@@ -23,57 +24,39 @@ packages](https://tidymodels.github.io/model-implementation-principles/),
 and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
 
 The underlying algorithm implementation is a Gibbs sampler which takes
-initial values from a small run of the EM-Algorithm. The samplers are
+initial values from a small run of the EM-Algorithm, with initial values
+selection based on the log-likelihood. Besides the Bayesian approach,
+the Expectation-Maximization approach (which focus on maximizing the
+likelihood) for censored data is also available. The methods are
 implemented in `C++` using `RcppArmadillo` for the linear algebra
-operations, `RcppGSL` for the random number generation and `OpenMP` for
-parallellization.
+operations, `RcppGSL` for the random number generation and seed control
+and `RcppParallel` (since version 3.0.0) for parallelization.
 
 ## Dependencies
 
-Before proceeding, make sure to have
-[GSL](https://www.gnu.org/software/gsl/) installed on your system.
-Below, there are specific tutorial on how to install these for each
+The only dependency is on GSL, so, make sure you have
+[GSL](https://www.gnu.org/software/gsl/) installed before proceeding
+Below, there are some basic guides on how to install these for each
 operational system other than Windows (Windows users are probably fine
 and ready to go).
 
-The package also depends on OpenMP, which should be fine for both Linux
-and Windows users. For MacOS users, there is a little guide bellow.
-
 ### Mac OS
 
-Specifically, on Mac OS, running `brew install gsl libomp` on the
-console/terminal should be enough for GSL and OpenMP. The OpenMP is
-[known](https://github.com/Rdatatable/data.table) to have issues with
-Mac’s default compiler (clang). Thus, there are some additional steps
-that envolves modifying your **~/.R/Makevars**, appending
+`brew install gsl` on the console/terminal should be enough for GSL.
 
-> CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp
->
-> LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp
+### Linux
 
-to it.
+The installation of GSL on Linux is distro-specific. For the main
+distros out-there:
 
-If you don’t know how to do it or are having troubles accessing the
-file, try opening the console/terminal and running `cat ~/.R/Makevars`.
-If it’s empty or doesn’t exist, simply run
-
-    mkdir ~/.R/ && touch ~/.R/Makevars && echo -e "LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp\nCPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> ~/.R/Makevars
-
-This will create the folder **~/.R**, create the file **Makevars**
-inside this folder and append the flags cited above to it. Your Makevars
-is something you don’t want to be messing around, so if after running
-`cat ~/.R/Makevars` you see something, just run
-
-    echo -e "LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp\nCPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> ~/.R/Makevars
-
-on your terminal to append the necessary flags to your **Makevars**.
-
-After that, you’re ready to install the package.
+- Debian/Ubuntu: `sudo apt-get install libgsl-dev`
+- Arch: `sudo pacman -S gsl`
+- Fedora: `sudo dnf install gsl-devel`
 
 ## Installation
 
-You can install the development version of `lnmixsurv` from
-[GitHub](https://github.com/) with:
+You can install the latest development version of `lnmixsurv` from
+[GitHub](https://github.com/):
 
 ``` r
 # install.packages("devtools")

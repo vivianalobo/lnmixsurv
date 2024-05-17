@@ -128,6 +128,22 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
   if (mixture_components <= 0 | (mixture_components %% 1) != 0) {
     rlang::abort("The parameter mixture_components should be a positive integer.")
   }
+  
+  if (!is.logical(sparse)) {
+    rlang::abort("The parameter sparse should be TRUE or FALSE.")
+  }
+  
+  if (!is.logical(better_initial_values)) {
+    rlang::abort("The parameter better_initial_values should be TRUE or FALSE.")
+  }
+  
+  if (number_em_search <= 0 | (number_em_search %% 1) != 0) {
+    rlang::abort("The parameter number_em_search should be a positive integer.")
+  }
+  
+  if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
+    rlang::abort("The parameter iteration_em_search should be a positive integer.")
+  }
 
   # These next two lines seems to be unecessary but they are essencial to ensure
   # the reproducibility of the EM iterations on the Gibbs sampler. For an user,

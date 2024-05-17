@@ -160,11 +160,27 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   if (!is.logical(show_progress)) {
-    rlang::abort("The parameter show_progress must be a logical (TRUE/FALSE).")
+    rlang::abort("The parameter show_progress must be TRUE or FALSE.")
   }
 
   if (!is.logical(use_W)) {
-    rlang::abort("The parameter use_W must be a logical (TRUE/FALSE).")
+    rlang::abort("The parameter use_W must be TRUE or FALSE.")
+  }
+  
+  if (!is.logical(better_initial_values)) {
+    rlang::abort("The parameter better_initial_values must be TRUE or FALSE.")
+  }
+  
+  if (!is.logical(sparse)) {
+    rlang::abort("The parameter sparse must be TRUE or FALSE.")
+  }
+  
+  if (number_em_search <= 0 | (number_em_search %% 1) != 0) {
+    rlang::abort("The parameter number_em_search should be a positive integer.")
+  }
+  
+  if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
+    rlang::abort("The parameter iteration_em_search should be a positive integer.")
   }
 
   if (use_W & (em_iter <= 0)) {
