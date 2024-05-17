@@ -216,6 +216,26 @@ arma::ivec sample_groups_start(const int& G, const arma::vec& y,
   return(vec_groups);
 }
 
+double augment_yi(const double& yi, const double& mean, const double& sd, gsl_rng* rng_device) {
+  double out_i = yi; // value to augment
+  int count = 0; // avoid infite loop
+  
+  while(out_i <= yi) { // ensure that the sampled observation is bigger than the censored one
+    out_i = rnorm_(mean, sd, rng_device);
+    
+    // break if it seems like it's going to run forever
+    // should never happen
+    if(count > 10000) {
+      out_i = yi + 0.01;
+      break;
+    }
+    
+    count ++;
+  }
+  
+  return out_i;
+}
+
 // Function used to simulate survival time for censored observations.
 // Here, delta is a vector such that delta(i) == 0 implies that the 
 // i-th observation is censored. Otherwise, the i-th observation is a
@@ -225,35 +245,12 @@ arma::vec augment(const int& G, const arma::vec& y, const arma::ivec& groups,
                   const arma::mat& beta, const arma::mat& X, gsl_rng* rng_device) {
   
   int n = X.n_rows;
-  arma::vec out(n);
-  int g;
-  double out_i;
-  int count;
-  arma::mat mean = X * beta.t();
+  arma::vec out = y;
+  arma::mat mean = X * beta.t(); // pre-compute the mean matrix
+  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
   
-  for (int i = 0; i < n; i++) {
-    if (delta(i) == 1) {
-      out(i) = y(i);
-    } else {
-      g = groups(i);
-      out_i = y(i);
-      count = 0;
-      
-      while(out_i <= y(i)) {
-        out_i = rnorm_(arma::as_scalar(mean(i, g)),
-                       sd(g), rng_device);
-        
-        // break if it seems like it's going to run forever
-        // should never happen
-        if(count > 10000) {
-          out_i = y(i) + 0.01;
-          break;
-        }
-        count ++;
-      }
-      
-      out(i) = out_i;
-    }
+  for (int i : censored_indexes) {
+    out(i) = augment_yi(y(i), arma::as_scalar(mean(i, groups(i))), sd(groups(i)), rng_device);
   }
   
   return out;
@@ -302,6 +299,7 @@ arma::mat compute_W(const arma::vec& y, const arma::mat& X, const arma::vec& eta
   arma::mat out(n, G);
   arma::mat mat_denom(n, G);
   arma::rowvec repl_vec = repl(1.0 / G, G).t();
+  
   for(int g = 0; g < G; g++) {
     mat_denom.col(g) = eta(g) * arma::normpdf(y,
                   X * beta.row(g).t(),
@@ -344,28 +342,17 @@ arma::vec augment_em(const arma::vec& y, const arma::ivec& delta,
   arma::vec out = y;
   arma::mat mean = X * beta.t();
   arma::mat alpha_mat(n, G);
-  
-  double quant;
-  double alpha;
-  double expected;
-  
+  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
+    
   for(int g = 0; g < G; g++) {
     alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
   }
   
-  for (int i = 0; i < n; i++) {
-    if(delta(i) == 0) {
-      quant = 0.0;
-      
-      for (int g = 0; g < G; g++) {
-        alpha = arma::as_scalar(alpha_mat(i, g));
-        
-        expected = compute_expected_value_truncnorm(alpha, arma::as_scalar(mean(i, g)), sigma(g));
-        
-        quant += W(i, g) * expected;
-      }
-      
-      out(i) = quant;
+  for (int i : censored_indexes) {
+    out(i) = 0.0;
+    
+    for (int g = 0; g < G; g++) {
+      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));;
     }
   }
   
@@ -431,6 +418,7 @@ void update_phi_g(const double& denom, const arma::ivec& delta, const arma::mat&
           square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
       }
     }
+    
     quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
   }
   
@@ -929,35 +917,13 @@ arma::vec augment_sparse(const int& G, const arma::vec& y, const arma::ivec& gro
                          const arma::mat& beta, const arma::sp_mat& X, gsl_rng* rng_device) {
   
   int n = X.n_rows;
-  arma::vec out(n);
-  int g;
-  double out_i;
-  int count;
+  arma::vec out = y;
   arma::mat mean = X * beta.t();
   
-  for (int i = 0; i < n; i++) {
-    if (delta(i) == 1) {
-      out(i) = y(i);
-    } else {
-      g = groups(i);
-      out_i = y(i);
-      count = 0;
-      
-      while(out_i <= y(i)) {
-        out_i = rnorm_(arma::as_scalar(mean(i, g)),
-                       sd(g), rng_device);
-        
-        // break if it seems like it's going to run forever
-        // should never happen
-        if(count > 10000) {
-          out_i = y(i) + 0.01;
-          break;
-        }
-        count ++;
-      }
-      
-      out(i) = out_i;
-    }
+  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
+  
+  for (int i : censored_indexes) {
+    out(i) = augment_yi(y(i), arma::as_scalar(mean(i, groups(i))), sd(groups(i)), rng_device);
   }
   
   return out;
@@ -975,6 +941,7 @@ arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma
   arma::mat out(n, G);
   arma::mat mat_denom(n, G);
   arma::rowvec repl_vec = repl(1.0 / G, G).t();
+
   for(int g = 0; g < G; g++) {
     mat_denom.col(g) = eta(g) * arma::normpdf(y,
                   X * beta.row(g).t(),
@@ -983,6 +950,7 @@ arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma
   
   for(int i = 0; i < n; i++) {
     denom = arma::sum(mat_denom.row(i));
+
     if(denom > 0) {
       out.row(i) = mat_denom.row(i) / denom;
     } else {
@@ -1000,40 +968,23 @@ arma::vec augment_em_sparse(const arma::vec& y, const arma::ivec& delta,
                             const int& G) {
   int n = X.n_rows;
   arma::vec out = y;
-  
-  double quant;
-  double alpha;
-  double expected;
   arma::mat mean = X * beta.t();
   arma::mat alpha_mat(n, G);
+  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
   
   for(int g = 0; g < G; g++) {
     alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
   }
   
-  for (int i = 0; i < n; i++) {
-    if(delta(i) == 0) {
-      quant = 0;
-      
-      for (int g = 0; g < G; g++) {
-        alpha = alpha_mat(i, g);
-        
-        if (R::pnorm(alpha, 0, 1, true, false) < 1) {
-          expected = arma::as_scalar(mean(i, g)) + sigma(g) *
-            (R::dnorm(alpha, 0, 1, false)/(1 - R::pnorm(alpha, 0, 1, true, false)));
-        } else {
-          expected = arma::as_scalar(mean(i, g)) + sigma(g) *
-            (R::dnorm(alpha, 0, 1, false)/(1 - 0.999));
-        }
-        
-        quant += W(i, g) * expected;
-      }
-      
-      out(i) = quant;
+  for (int i : censored_indexes) {
+    out(i) = 0.0;
+    
+    for (int g = 0; g < G; g++) {
+      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));;
     }
   }
   
-  return(out);
+  return out;
 }
 
 // Internal implementation of the em_algorithm
