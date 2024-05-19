@@ -343,7 +343,7 @@ arma::vec augment_em(const arma::vec& y, const arma::ivec& delta,
   arma::mat mean = X * beta.t();
   arma::mat alpha_mat(n, G);
   arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
-    
+  
   for(int g = 0; g < G; g++) {
     alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
   }
@@ -399,27 +399,23 @@ void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, cons
 }
 
 // Update the parameter phi(g)
-void update_phi_g(const double& denom, const arma::ivec& delta, const arma::mat& X, const arma::mat& W, const arma::vec& y, const arma::vec& z,
+void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const arma::mat& X, const arma::vec& colg, const arma::vec& y, const arma::vec& z,
                   const arma::vec& sd, const arma::mat& beta, const arma::vec& var, const int& g, const int& n, arma::vec& phi, gsl_rng* rng_device) {
   double alpha = 0.0;
-  double quant = 0.0;
+  double quant = arma::as_scalar(arma::square(z - (X * beta.row(g).t())).t() * colg);
   
-  for (int i = 0; i < n; i++) {
-    if (delta(i) == 0) {
-      alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
-      
-      if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-        quant += W(i, g) * var(g) * (1.0 - 
-          (- alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)) -
-          square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
-      } else {
-        quant += W(i, g) * var(g) * (1.0 - 
-          (-alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - 0.999) -
-          square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
-      }
-    }
+  for(int i : censored_indexes) {
+    alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
     
-    quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
+    if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
+      quant += colg(i) * var(g) * (1.0 - 
+        (- alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)) -
+        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
+    } else {
+      quant += colg(i) * var(g) * (1.0 - 
+        (-alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - 0.999) -
+        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
+    }
   }
   
   // to avoid numerical problems
@@ -439,7 +435,7 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
   arma::vec colg(n);
   arma::vec var;
   double quant, denom, alpha;
-  
+  arma::uvec censored_indexes = arma::find(delta == 0);
   var = arma::square(sd);
   
   for (int g = 0; g < G; g++) {
@@ -447,7 +443,7 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
     
     eta(g) = arma::sum(colg) / n; // updating eta(g)
     update_beta_g(colg, X, g, z, beta); // updating beta for the group g
-    update_phi_g(arma::sum(colg), delta, X, W, y, z, sd, beta, var, g, n, phi, rng_device);
+    update_phi_g(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device);
   }
 }
 
@@ -941,7 +937,7 @@ arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma
   arma::mat out(n, G);
   arma::mat mat_denom(n, G);
   arma::rowvec repl_vec = repl(1.0 / G, G).t();
-
+  
   for(int g = 0; g < G; g++) {
     mat_denom.col(g) = eta(g) * arma::normpdf(y,
                   X * beta.row(g).t(),
@@ -950,7 +946,7 @@ arma::mat compute_W_sparse(const arma::vec& y, const arma::sp_mat& X, const arma
   
   for(int i = 0; i < n; i++) {
     denom = arma::sum(mat_denom.row(i));
-
+    
     if(denom > 0) {
       out.row(i) = mat_denom.row(i) / denom;
     } else {
@@ -987,6 +983,63 @@ arma::vec augment_em_sparse(const arma::vec& y, const arma::ivec& delta,
   return out;
 }
 
+void update_beta_g_sparse(const arma::vec& colg, const arma::sp_mat& X, const int& g, const arma::vec& z, arma::mat& beta) {
+  arma::sp_mat Wg;
+  Wg = arma::diagmat(colg);
+  
+  if(arma::det(arma::mat(X.t() * Wg * X)) != 0.0) {
+    beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
+             arma::vec(X.t() * Wg * z),
+             arma::solve_opts::allow_ugly).t();
+  }
+}
+
+void update_phi_g_sparse(const double& denom, const arma::uvec& censored_indexes, const arma::sp_mat& X, const arma::vec& colg, const arma::vec& y, const arma::vec& z,
+                         const arma::vec& sd, const arma::mat& beta, const arma::vec& var, const int& g, const int& n, arma::vec& phi, gsl_rng* rng_device) {
+  double alpha = 0.0;
+  double quant = arma::as_scalar(arma::square(z - (X * beta.row(g).t())).t() * colg);
+  
+  for(int i : censored_indexes) {
+    alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
+    
+    if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
+      quant += colg(i) * var(g) * (1.0 - 
+        (- alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)) -
+        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
+    } else {
+      quant += colg(i) * var(g) * (1.0 - 
+        (-alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - 0.999) -
+        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
+    }
+  }
+  
+  // to avoid numerical problems
+  if (quant == 0) {
+    phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
+  }
+  
+  // to avoid numerical problems
+  if(phi(g) > 1e5 || phi.has_nan()) {
+    phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
+  }
+}
+
+void update_em_parameters_sparse(const int& n, const int& G, arma::vec& eta, arma::mat& beta, arma::vec& phi, const arma::mat& W, const arma::sp_mat& X, const arma::vec& y,
+                                 const arma::vec& z, const arma::ivec& delta, arma::vec& sd, gsl_rng* rng_device) {
+  arma::vec colg(n);
+  arma::vec var;
+  double quant, denom, alpha;
+  arma::uvec censored_indexes = arma::find(delta == 0);
+  var = arma::square(sd);
+  
+  for (int g = 0; g < G; g++) {
+    colg = W.col(g);
+    
+    eta(g) = arma::sum(colg) / n; // updating eta(g)
+    update_beta_g_sparse(colg, X, g, z, beta); // updating beta for the group g
+    update_phi_g_sparse(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device);
+  }
+}
 // Internal implementation of the em_algorithm
 arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, const int& G,
                                                             const arma::vec& y, const arma::ivec& delta,
@@ -1000,28 +1053,12 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
   arma::vec sd(G);
   arma::vec var(G);
   arma::mat W(n, G);
-  arma::sp_mat Wg(n, n);
   arma::vec z(n);
-  arma::vec colg(n);
   arma::vec eta(G);
-  
-  double quant;
-  double denom;
-  double alpha;
   
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
-      eta = rdirichlet(repl(1.0, G), rng_device);
-      
-      for (int g = 0; g < G; g++) {
-        phi(g) = rgamma_(0.5, 0.5, rng_device);
-        
-        for (int c = 0; c < k; c++) {
-          beta(g, c) = rnorm_(0.0, 15.0, rng_device);
-        }
-      }
-      
-      sd = 1.0 / sqrt(phi);
+      sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
       W = compute_W_sparse(y, X, eta, beta, sd, G);
     } else {
       sd = 1.0 / sqrt(phi);
@@ -1029,51 +1066,7 @@ arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, co
       z = augment_em_sparse(y, delta, X, beta, sd, W, G);
       W = compute_W_sparse(z, X, eta, beta, sd, G);
       
-      for (int g = 0; g < G; g++) {
-        colg = W.col(g);
-        Wg = arma::diagmat(colg);
-        
-        eta(g) = arma::sum(colg) / n;
-        
-        if(arma::det(arma::mat(X.t() * Wg * X)) != 0) {
-          beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
-                   X.t() * Wg * z,
-                   arma::solve_opts::allow_ugly).t();
-        }
-        
-        quant = 0.0;
-        denom = arma::sum(colg);
-        
-        for (int i = 0; i < n; i++) {
-          quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
-          
-          if (delta(i) == 0) {
-            alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
-            
-            if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-              quant += W(i, g) * var(g) * (1.0 - 
-                (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
-                square(R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
-            } else {
-              quant += W(i, g) * var(g) * (1.0 - 
-                (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
-                square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
-            }
-          }
-        }
-        
-        // to avoid numerical problems
-        if (quant == 0) {
-          quant = denom; 
-        }
-        
-        phi(g) = denom / quant;
-        
-        // to avoid numerical problems
-        if(phi(g) > 1e5 || phi.has_nan()) {
-          phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
-        }
-      }
+      update_em_parameters_sparse(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
     }
   }
   
@@ -1508,6 +1501,38 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
   return out;
 }
 
+void sample_better_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::mat& W, arma::vec& sd, const int& N_em, const int& Niter_em, const int& G,
+                                     const arma::vec& y, const arma::ivec& delta, const arma::mat& X, gsl_rng* rng_device) {
+  double max_loglik;
+  arma::field<arma::mat> em_init(5);
+  arma::field<arma::mat> best_em(5);
+  
+  for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
+    // running a fast EM (10 iterations) starting at random values
+    em_init = fast_em(Niter_em, G, y, delta, X, rng_device);
+    
+    if(init == 0) { // if it's the first EM running;
+      max_loglik = arma::as_scalar(em_init(4));
+      best_em = em_init;
+      
+      Rcout << "Initial LogLik: " << max_loglik << "\n";
+    } else {
+      if(arma::as_scalar(em_init(4)) > max_loglik) { // if the new parameters 
+        Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
+        max_loglik = arma::as_scalar(em_init(4));
+        best_em = em_init;
+      }
+    }
+  }
+  
+  eta = best_em(0);
+  beta = best_em(1);
+  phi = best_em(2);
+  W = best_em(3);
+  
+  sd = 1.0 / sqrt(phi);
+}
+
 // EM for the lognormal mixture model. The other one (lognormal_mixture_em_internal) runs before the Gibbs sampler.
 // They could not be the same because the return if different.
 arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta,
@@ -1533,37 +1558,10 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
   arma::mat beta(G, k);
   arma::mat out(Niter, G * k + (G * 2));
   
-  double max_loglik;
-  arma::field<arma::mat> em_init(5);
-  arma::field<arma::mat> best_em(5);
-  
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
       if(better_initial_values) {
-        for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
-          // running a fast EM (10 iterations) starting at random values
-          em_init = fast_em(Niter_em, G, y, delta, X, global_rng);
-          
-          if(init == 0) { // if it's the first EM running;
-            max_loglik = arma::as_scalar(em_init(4));
-            best_em = em_init;
-            
-            Rcout << "Initial LogLik: " << max_loglik << "\n";
-          } else {
-            if(arma::as_scalar(em_init(4)) > max_loglik) {
-              Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
-              max_loglik = arma::as_scalar(em_init(4));
-              best_em = em_init;
-            }
-          }
-        }
-        
-        eta = best_em(0);
-        beta = best_em(1);
-        phi = best_em(2);
-        W = best_em(3);
-        
-        sd = 1.0 / sqrt(phi);
+        sample_better_initial_values_em(eta, phi, beta, W, sd, N_em, Niter_em, G, y, delta, X, global_rng);
       } else {
         sample_initial_values_em(eta, phi, beta, sd, G, k, global_rng);
         W = compute_W(y, X, eta, beta, sd, G);
@@ -1592,6 +1590,38 @@ arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& 
     out.row(iter) = newRow;
   }
   return(out);
+}
+
+void sample_better_initial_values_em_sparse(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::mat& W, arma::vec& sd, const int& N_em, const int& Niter_em, const int& G,
+                                            const arma::vec& y, const arma::ivec& delta, const arma::sp_mat& X, gsl_rng* rng_device) {
+  double max_loglik;
+  arma::field<arma::mat> em_init(5);
+  arma::field<arma::mat> best_em(5);
+  
+  for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
+    // running a fast EM (10 iterations) starting at random values
+    em_init = fast_em_sparse(Niter_em, G, y, delta, X, rng_device);
+    
+    if(init == 0) { // if it's the first EM running;
+      max_loglik = arma::as_scalar(em_init(4));
+      best_em = em_init;
+      
+      Rcout << "Initial LogLik: " << max_loglik << "\n";
+    } else {
+      if(arma::as_scalar(em_init(4)) > max_loglik) { // if the new parameters 
+        Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
+        max_loglik = arma::as_scalar(em_init(4));
+        best_em = em_init;
+      }
+    }
+  }
+  
+  eta = best_em(0);
+  beta = best_em(1);
+  phi = best_em(2);
+  W = best_em(3);
+  
+  sd = 1.0 / sqrt(phi);
 }
 
 arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma::vec& t,
@@ -1631,42 +1661,9 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
       if(better_initial_values) {
-        for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
-          // running a fast EM (10 iterations) starting at random values
-          em_init = fast_em_sparse(Niter_em, G, y, delta, X, global_rng);
-          
-          if(init == 0) { // if it's the first EM running;
-            max_loglik = arma::as_scalar(em_init(4));
-            best_em = em_init;
-            
-            Rcout << "Initial LogLik: " << max_loglik << "\n";
-          } else {
-            if(arma::as_scalar(em_init(4)) > max_loglik) {
-              Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
-              max_loglik = arma::as_scalar(em_init(4));
-              best_em = em_init;
-            }
-          }
-        }
-        
-        eta = best_em(0);
-        beta = best_em(1);
-        phi = best_em(2);
-        W = best_em(3);
-        
-        sd = 1.0 / sqrt(phi);
+        sample_better_initial_values_em_sparse(eta, phi, beta, W, sd, N_em, Niter_em, G, y, delta, X, global_rng);
       } else {
-        eta = rdirichlet(repl(1.0, G), global_rng);
-        
-        for (int g = 0; g < G; g++) {
-          phi(g) = rgamma_(0.5, 0.5, global_rng);
-          
-          for (int c = 0; c < k; c++) {
-            beta(g, c) = rnorm_(0.0, 15.0, global_rng);
-          }
-        }
-        
-        sd = 1.0 / sqrt(phi);
+        sample_initial_values_em(eta, phi, beta, sd, G, k, global_rng);
         W = compute_W_sparse(y, X, eta, beta, sd, G);
       }
     } else {
@@ -1674,52 +1671,7 @@ arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma
       var = arma::square(sd);
       z = augment_em_sparse(y, delta, X, beta, sd, W, G);
       W = compute_W_sparse(z, X, eta, beta, sd, G);
-      
-      for (int g = 0; g < G; g++) {
-        colg = W.col(g);
-        Wg = arma::diagmat(colg);
-        
-        eta(g) = arma::sum(colg) / n;
-        
-        if(arma::det(arma::mat(X.t() * Wg * X)) != 0) {
-          beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
-                   X.t() * Wg * z,
-                   arma::solve_opts::allow_ugly).t();
-        }
-        
-        quant = 0.0;
-        denom = arma::sum(colg);
-        
-        for (int i = 0; i < n; i++) {
-          quant += W(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
-          
-          if (delta(i) == 0) {
-            alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
-            
-            if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-              quant += W(i, g) * var(g) * (1.0 - 
-                (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
-                square(R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
-            } else {
-              quant += W(i, g) * var(g) * (1.0 - 
-                (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
-                square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
-            }
-          }
-        }
-        
-        // to avoid numerical problems
-        if (quant == 0) {
-          quant = denom; 
-        }
-        
-        phi(g) = denom / quant;
-        
-        // to avoid numerical problems
-        if(phi(g) > 1e5 || phi.has_nan()) {
-          phi(g) = rgamma_(0.5, 0.5, global_rng); // resample phi
-        }
-      }
+      update_em_parameters_sparse(n, G, eta, beta, phi, W, X, y, z, delta, sd, global_rng);
     }
     
     // Fill the out matrix
