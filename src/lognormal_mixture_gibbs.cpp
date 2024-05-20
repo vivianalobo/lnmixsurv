@@ -447,52 +447,10 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
   }
 }
 
-// Internal implementation of the em_algorithm
-arma::field<arma::mat> lognormal_mixture_em_internal(const int& Niter, const int& G,
-                                                     const arma::vec& y, const arma::ivec& delta,
-                                                     const arma::mat& X, gsl_rng* rng_device) {
-  int n = X.n_rows;
-  int k = X.n_cols;
-  
-  // initializing objects used on EM algorithm
-  arma::field<arma::mat> out(5);
-  arma::vec eta(G);
-  arma::vec phi(G);
-  arma::vec sd(G);
-  arma::vec z(n);
-  arma::mat W(n, G);
-  arma::mat beta(G, k);
-  
-  for(int iter = 0; iter < Niter; iter++) {
-    if(iter == 0) { // sample starting values
-      sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
-      W = compute_W(y, X, eta, beta, sd, G);
-    } else {
-      sd = 1.0 / sqrt(phi);
-      z = augment_em(y, delta, X, beta, sd, W, G);
-      W = compute_W(z, X, eta, beta, sd, G);
-      update_em_parameters(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
-    }
-  }
-  
-  out(0) = eta;
-  out(1) = beta;
-  out(2) = phi;
-  out(3) = W;
-  out(4) = augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
-  
-  return out;
-}
-
 // Compute model's log-likelihood to select the EM initial values
-double loglik_em(const arma::field<arma::mat>& em, const int& G,
+double loglik_em(const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& W, const arma::vec& z, const int& G,
                  const arma::mat& X) {
   int N = X.n_rows;
-  arma::vec eta = em(0);
-  arma::mat beta = em(1);
-  arma::vec phi = em(2);
-  arma::mat W = em(3);
-  arma::vec z = em(4);
   arma::vec sd = 1.0 / sqrt(phi);
   arma::mat mean = X * beta.t();
   double loglik = 0.0;
@@ -507,25 +465,99 @@ double loglik_em(const arma::field<arma::mat>& em, const int& G,
   return loglik;
 }
 
-// Shortcut for calling lognormal_mixture_em_internal and adding log-likehood to it
-arma::field<arma::mat> fast_em(const int& Niter, const int& G, const arma::vec& y,
-                               const arma::ivec& delta, const arma::mat& X,
-                               gsl_rng* rng_device) {
-  arma::field<arma::mat> out(5);
-  arma::field<arma::mat> em = lognormal_mixture_em_internal(Niter, G, y, delta, X, rng_device);
+// EM for the lognormal mixture model.
+arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X,
+                                            const bool& better_initial_values, const int& N_em,
+                                            const int& Niter_em, const bool& internal, gsl_rng* rng_device) {
   
-  out(0) = em(0);
-  out(1) = em(1);
-  out(2) = em(2); 
-  out(3) = em(3);
-  out(4) = loglik_em(em, G, X);
+  int n = X.n_rows;
+  int k = X.n_cols;
   
-  return out;
+  // initializing objects used on EM algorithm
+  arma::vec y = log(t);
+  arma::vec eta(G);
+  arma::vec phi(G);
+  arma::vec sd(G);
+  arma::vec z(n);
+  arma::mat W(n, G);
+  arma::mat beta(G, k);
+  arma::mat out(Niter, G * k + (G * 2));
+  arma::field<arma::mat> out_internal_true(6);
+  arma::field<arma::mat> out_internal_false(2);
+  
+  arma::field<arma::mat> em_params(6);
+  arma::field<arma::mat> best_em(6);
+  for(int iter = 0; iter < Niter; iter++) {
+    if(iter == 0) { // sample starting values
+      if(better_initial_values) {
+        for (int init = 0; init < N_em; init ++) {
+          em_params = lognormal_mixture_em(Niter_em, G, t, delta, X, false, 0, 0, true, rng_device);
+          
+          if(init == 0) {
+            best_em = em_params;
+            Rcout << "Initial LogLik: " << arma::as_scalar(best_em(5)) << "\n";
+          } else {
+            if(arma::as_scalar(em_params(5)) > arma::as_scalar(best_em(5))) { // comparing logliks
+              Rcout << "Previous maximum: " << arma::as_scalar(best_em(5)) << " | New maximum: " << arma::as_scalar(em_params(5))  << "\n";
+              best_em = em_params;
+            }
+          }
+        }
+        
+        eta = best_em(0);
+        beta = best_em(1);
+        phi = best_em(2);
+        W = best_em(3);
+      } else {
+        sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
+        W = compute_W(y, X, eta, beta, sd, G);
+      }
+    } else {
+      sd = 1.0 / sqrt(phi);
+      z = augment_em(y, delta, X, beta, sd, W, G);
+      W = compute_W(z, X, eta, beta, sd, G);
+      update_em_parameters(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
+    }
+    
+    // Fill the out matrix
+    arma::rowvec newRow = 
+      arma::join_rows(eta.row(0), 
+                      beta.row(0),
+                      phi.row(0));
+    
+    for (int g = 1; g < G; g++) {
+      newRow = 
+        arma::join_rows(newRow, 
+                        eta.row(g), 
+                        beta.row(g),
+                        phi.row(g));
+    }
+    
+    out.row(iter) = newRow;
+  }
+  
+  if(internal) {
+    out_internal_true(0) = eta;
+    out_internal_true(1) = beta;
+    out_internal_true(2) = phi;
+    out_internal_true(3) = W;
+    out_internal_true(4) = augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
+    out_internal_true(5) = loglik_em(eta, beta, phi, W, out_internal_true(4), G, X);
+    
+    return out_internal_true;
+  } else {
+    out_internal_false(0) = out;
+    out_internal_false(1) = loglik_em(eta, beta, phi, W, augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G), G, X);
+    
+    return out_internal_false;
+  }
+  
+  return out_internal_false; // should never be reached
 }
 
 // Internal implementation of the lognormal mixture model via Gibbs sampler
 arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter, const int& G, 
-                                                 const arma::vec& exp_y, const arma::ivec& delta, 
+                                                 const arma::vec& t, const arma::ivec& delta, 
                                                  const arma::mat& X, const double& a, 
                                                  long long int starting_seed,
                                                  const bool& show_output, const int& chain_num,
@@ -546,7 +578,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   int nColsOutput = (p + 2) * G;
   int N = X.n_rows;
   
-  arma::vec y = log(exp_y);
+  arma::vec y = log(t);
   
   // The output matrix should have Niter rows (1 row for each iteration) and
   // nColsOutput columns (1 column for each element).
@@ -563,38 +595,11 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   arma::vec linearComb(N);
   arma::mat comb;
   
-  double loglik;
-  double max_loglik;
-  arma::field<arma::mat> init_em(5);
-  arma::field<arma::mat> em_params(5);
+  arma::field<arma::mat> em_params(6);
   
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
-    if(better_initial_values) {
-      for(int init = 0; init < N_em; init++) {
-        init_em = lognormal_mixture_em_internal(Niter_em, G, y, delta, X, global_rng);
-        loglik = loglik_em(init_em, G, X);
-        
-        if(init == 0) {
-          if(show_output) {
-            Rcout << "Initial LogLik: " << loglik << "\n";
-          }
-          
-          em_params = init_em;
-          max_loglik = loglik;
-        } else {
-          if(loglik > max_loglik) {
-            if(show_output) {
-              Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << loglik << "\n";
-              max_loglik = loglik;
-              em_params = init_em;
-            }
-          }
-        }
-      }
-    } else {
-      em_params = lognormal_mixture_em_internal(em_iter, G, y, delta, X, global_rng);
-    }
+    em_params = lognormal_mixture_em(em_iter, G, t, delta, X, better_initial_values, N_em, Niter_em, true, global_rng);
   } else if(show_output) {
     Rcout << "Skipping EM Algorithm" << "\n";
   }
@@ -1040,58 +1045,13 @@ void update_em_parameters_sparse(const int& n, const int& G, arma::vec& eta, arm
     update_phi_g_sparse(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device);
   }
 }
-// Internal implementation of the em_algorithm
-arma::field<arma::mat> lognormal_mixture_em_internal_sparse(const int& Niter, const int& G,
-                                                            const arma::vec& y, const arma::ivec& delta,
-                                                            const arma::sp_mat& X, gsl_rng* rng_device) {
-  int n = X.n_rows;
-  int k = X.n_cols;
-  
-  arma::field<arma::mat> out(5);
-  arma::mat beta(G, k);
-  arma::vec phi(G);
-  arma::vec sd(G);
-  arma::vec var(G);
-  arma::mat W(n, G);
-  arma::vec z(n);
-  arma::vec eta(G);
-  
-  for(int iter = 0; iter < Niter; iter++) {
-    if(iter == 0) { // sample starting values
-      sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
-      W = compute_W_sparse(y, X, eta, beta, sd, G);
-    } else {
-      sd = 1.0 / sqrt(phi);
-      var = arma::square(sd);
-      z = augment_em_sparse(y, delta, X, beta, sd, W, G);
-      W = compute_W_sparse(z, X, eta, beta, sd, G);
-      
-      update_em_parameters_sparse(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
-    }
-  }
-  
-  out(0) = eta;
-  out(1) = beta;
-  out(2) = phi;
-  out(3) = W;
-  out(4) = augment_em_sparse(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
-  
-  return out;
-}
 
-double loglik_em_sparse(const arma::field<arma::mat> em, const int& G,
+// Compute model's log-likelihood to select the EM initial values
+double loglik_em_sparse(const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& W, const arma::vec& z, const int& G,
                         const arma::sp_mat& X) {
-  
-  arma::vec eta = em(0);
-  arma::mat beta = em(1);
-  arma::vec phi = em(2);
-  arma::mat W = em(3);
-  arma::vec z = em(4);
-  arma::vec sd = 1.0 / sqrt(phi);
   int N = X.n_rows;
-  
+  arma::vec sd = 1.0 / sqrt(phi);
   arma::mat mean = arma::mat(X * beta.t());
-  
   double loglik = 0.0;
   
   for(int i = 0; i < N; i++) {
@@ -1104,23 +1064,98 @@ double loglik_em_sparse(const arma::field<arma::mat> em, const int& G,
   return loglik;
 }
 
-arma::field<arma::mat> fast_em_sparse(const int& Niter, const int& G, const arma::vec& y,
-                                      const arma::ivec& delta, const arma::sp_mat& X,
-                                      gsl_rng* rng_device) {
-  arma::field<arma::mat> out(5);
-  arma::field<arma::mat> em = lognormal_mixture_em_internal_sparse(Niter, G, y, delta, X, rng_device);
+// EM for the lognormal mixture model.
+arma::field<arma::mat> lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::sp_mat& X,
+                                                   const bool& better_initial_values, const int& N_em,
+                                                   const int& Niter_em, const bool& internal, gsl_rng* rng_device) {
   
-  out(0) = em(0);
-  out(1) = em(1);
-  out(2) = em(2); 
-  out(3) = em(3);
-  out(4) = loglik_em_sparse(em, G, X);
+  int n = X.n_rows;
+  int k = X.n_cols;
   
-  return out;
+  // initializing objects used on EM algorithm
+  arma::vec y = log(t);
+  arma::vec eta(G);
+  arma::vec phi(G);
+  arma::vec sd(G);
+  arma::vec z(n);
+  arma::mat W(n, G);
+  arma::mat beta(G, k);
+  arma::mat out(Niter, G * k + (G * 2));
+  arma::field<arma::mat> out_internal_true(6);
+  arma::field<arma::mat> out_internal_false(2);
+  
+  arma::field<arma::mat> em_params(6);
+  arma::field<arma::mat> best_em(6);
+  for(int iter = 0; iter < Niter; iter++) {
+    if(iter == 0) { // sample starting values
+      if(better_initial_values) {
+        for (int init = 0; init < N_em; init ++) {
+          em_params = lognormal_mixture_em_sparse(Niter_em, G, t, delta, X, false, 0, 0, true, rng_device);
+          
+          if(init == 0) {
+            best_em = em_params;
+            Rcout << "Initial LogLik: " << arma::as_scalar(best_em(5)) << "\n";
+          } else {
+            if(arma::as_scalar(em_params(5)) > arma::as_scalar(best_em(5))) { // comparing logliks
+              Rcout << "Previous maximum: " << arma::as_scalar(best_em(5)) << " | New maximum: " << arma::as_scalar(em_params(5))  << "\n";
+              best_em = em_params;
+            }
+          }
+        }
+        
+        eta = best_em(0);
+        beta = best_em(1);
+        phi = best_em(2);
+        W = best_em(3);
+      } else {
+        sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
+        W = compute_W_sparse(y, X, eta, beta, sd, G);
+      }
+    } else {
+      sd = 1.0 / sqrt(phi);
+      z = augment_em_sparse(y, delta, X, beta, sd, W, G);
+      W = compute_W_sparse(z, X, eta, beta, sd, G);
+      update_em_parameters_sparse(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
+    }
+    
+    // Fill the out matrix
+    arma::rowvec newRow = 
+      arma::join_rows(eta.row(0), 
+                      beta.row(0),
+                      phi.row(0));
+    
+    for (int g = 1; g < G; g++) {
+      newRow = 
+        arma::join_rows(newRow, 
+                        eta.row(g), 
+                        beta.row(g),
+                        phi.row(g));
+    }
+    
+    out.row(iter) = newRow;
+  }
+  
+  if(internal) {
+    out_internal_true(0) = eta;
+    out_internal_true(1) = beta;
+    out_internal_true(2) = phi;
+    out_internal_true(3) = W;
+    out_internal_true(4) = augment_em_sparse(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
+    out_internal_true(5) = loglik_em_sparse(eta, beta, phi, W, out_internal_true(4), G, X);
+    
+    return out_internal_true;
+  } else {
+    out_internal_false(0) = out;
+    out_internal_false(1) = loglik_em_sparse(eta, beta, phi, W, augment_em_sparse(y, delta, X, beta, 1.0 / sqrt(phi), W, G), G, X);
+    
+    return out_internal_false;
+  }
+  
+  return out_internal_false; // should never be reached
 }
 
 arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const int& em_iter,
-                                                        const int& G, const arma::vec& exp_y,
+                                                        const int& G, const arma::vec& t,
                                                         const arma::ivec& delta, 
                                                         const arma::sp_mat& X, const double& a, 
                                                         long long int starting_seed,
@@ -1143,7 +1178,7 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   int nColsOutput = (p + 2) * G;
   int N = X.n_rows;
   
-  arma::vec y = log(exp_y);
+  arma::vec y = log(t);
   
   // The output matrix should have Niter rows (1 row for each iteration) and
   // nColsOutput columns (1 column for each element).
@@ -1160,39 +1195,11 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   arma::vec sd(G);
   arma::vec linearComb(N);
   arma::mat comb;
-  arma::field<arma::mat> em_params(5);
-  arma::field<arma::mat> init_em(5);
-  
-  double loglik;
-  double max_loglik;
-  
+  arma::field<arma::mat> em_params(6);
+
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
-    if(better_initial_values) {
-      for(int init = 0; init < N_em; init++) {
-        init_em = lognormal_mixture_em_internal_sparse(Niter_em, G, y, delta, X, global_rng);
-        loglik = loglik_em_sparse(init_em, G, X);
-        
-        if(init == 0) {
-          if(show_output) {
-            Rcout << "Initial LogLik: " << loglik << "\n";
-          }
-          
-          em_params = init_em;
-          max_loglik = loglik;
-        } else {
-          if(loglik > max_loglik) {
-            if(show_output) {
-              Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << loglik << "\n";
-              max_loglik = loglik;
-              em_params = init_em;
-            }
-          }
-        }
-      }
-    } else {
-      em_params = lognormal_mixture_em_internal_sparse(em_iter, G, y, delta, X, global_rng);
-    }
+    em_params = lognormal_mixture_em_sparse(em_iter, G, t, delta, X, better_initial_values, N_em, Niter_em, true, global_rng);
   } else if(show_output) {
     Rcout << "Skipping EM Algorithm" << "\n";
   }
@@ -1422,7 +1429,7 @@ struct GibbsWorker : public RcppParallel::Worker {
   const int& Niter;
   const int& em_iter;
   const int& G;
-  const arma::vec& exp_y;
+  const arma::vec& t;
   const arma::ivec& delta;
   const arma::mat& X;
   const double& a;
@@ -1433,15 +1440,15 @@ struct GibbsWorker : public RcppParallel::Worker {
   const int& Niter_em;
   
   // Creating Worker
-  GibbsWorker(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& exp_y,
+  GibbsWorker(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& t,
               const arma::ivec& delta, const arma::mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
               const int& N_em, const int& Niter_em) :
-    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), exp_y(exp_y), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
   
   void operator()(std::size_t begin, std::size_t end) {
     for (std::size_t i = begin; i < end; ++i) {
       usleep(5000 * i); // avoid racing conditions
-      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, exp_y, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
     }
   }
 };
@@ -1454,7 +1461,7 @@ struct GibbsWorkerSparse : public RcppParallel::Worker {
   const int& Niter;
   const int& em_iter;
   const int& G;
-  const arma::vec& exp_y;
+  const arma::vec& t;
   const arma::ivec& delta;
   const arma::sp_mat& X;
   const double& a;
@@ -1465,15 +1472,15 @@ struct GibbsWorkerSparse : public RcppParallel::Worker {
   const int& Niter_em;
   
   // Creating Worker
-  GibbsWorkerSparse(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& exp_y,
+  GibbsWorkerSparse(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& t,
                     const arma::ivec& delta, const arma::sp_mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
                     const int& N_em, const int& Niter_em) :
-    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), exp_y(exp_y), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
   
   void operator()(std::size_t begin, std::size_t end) {
     for (std::size_t i = begin; i < end; ++i) {
       usleep(5000 * i); // avoid racing conditions
-      out.slice(i) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, exp_y, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+      out.slice(i) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
     }
   }
 };
@@ -1481,7 +1488,7 @@ struct GibbsWorkerSparse : public RcppParallel::Worker {
 // Function to call lognormal_mixture_gibbs_implementation with parallellization
 // [[Rcpp::export]]
 arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const int& G,
-                                   const arma::vec& exp_y, const arma::ivec& delta, 
+                                   const arma::vec& t, const arma::ivec& delta, 
                                    const arma::mat& X, const double& a, 
                                    const arma::vec& starting_seed, const bool& show_output,
                                    const int& n_chains, const bool& sparse, const bool& use_W,
@@ -1491,204 +1498,11 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
   // Fitting in parallel
   if(sparse) {
     arma::sp_mat Y(X);
-    GibbsWorkerSparse worker(starting_seed, out, Niter, em_iter, G, exp_y, delta, Y, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    GibbsWorkerSparse worker(starting_seed, out, Niter, em_iter, G, t, delta, Y, a, show_output, use_W, better_initial_values, N_em, Niter_em);
     RcppParallel::parallelFor(0, n_chains, worker);
   } else {
-    GibbsWorker worker(starting_seed, out, Niter, em_iter, G, exp_y, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    GibbsWorker worker(starting_seed, out, Niter, em_iter, G, t, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em);
     RcppParallel::parallelFor(0, n_chains, worker);
-  }
-  
-  return out;
-}
-
-void sample_better_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::mat& W, arma::vec& sd, const int& N_em, const int& Niter_em, const int& G,
-                                     const arma::vec& y, const arma::ivec& delta, const arma::mat& X, gsl_rng* rng_device) {
-  double max_loglik;
-  arma::field<arma::mat> em_init(5);
-  arma::field<arma::mat> best_em(5);
-  
-  for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
-    // running a fast EM (10 iterations) starting at random values
-    em_init = fast_em(Niter_em, G, y, delta, X, rng_device);
-    
-    if(init == 0) { // if it's the first EM running;
-      max_loglik = arma::as_scalar(em_init(4));
-      best_em = em_init;
-      
-      Rcout << "Initial LogLik: " << max_loglik << "\n";
-    } else {
-      if(arma::as_scalar(em_init(4)) > max_loglik) { // if the new parameters 
-        Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
-        max_loglik = arma::as_scalar(em_init(4));
-        best_em = em_init;
-      }
-    }
-  }
-  
-  eta = best_em(0);
-  beta = best_em(1);
-  phi = best_em(2);
-  W = best_em(3);
-  
-  sd = 1.0 / sqrt(phi);
-}
-
-// EM for the lognormal mixture model. The other one (lognormal_mixture_em_internal) runs before the Gibbs sampler.
-// They could not be the same because the return if different.
-arma::mat lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta,
-                               const arma::mat& X, long long int starting_seed,
-                               const bool& better_initial_values, const int& N_em,
-                               const int& Niter_em) {
-  
-  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
-  
-  // setting global seed to start the sampler
-  setSeed(starting_seed, global_rng);
-  
-  int n = X.n_rows;
-  int k = X.n_cols;
-  
-  // initializing objects used on EM algorithm
-  arma::vec y = log(t);
-  arma::vec eta(G);
-  arma::vec phi(G);
-  arma::vec sd(G);
-  arma::vec z(n);
-  arma::mat W(n, G);
-  arma::mat beta(G, k);
-  arma::mat out(Niter, G * k + (G * 2));
-  
-  for(int iter = 0; iter < Niter; iter++) {
-    if(iter == 0) { // sample starting values
-      if(better_initial_values) {
-        sample_better_initial_values_em(eta, phi, beta, W, sd, N_em, Niter_em, G, y, delta, X, global_rng);
-      } else {
-        sample_initial_values_em(eta, phi, beta, sd, G, k, global_rng);
-        W = compute_W(y, X, eta, beta, sd, G);
-      }
-    } else {
-      sd = 1.0 / sqrt(phi);
-      z = augment_em(y, delta, X, beta, sd, W, G);
-      W = compute_W(z, X, eta, beta, sd, G);
-      update_em_parameters(n, G, eta, beta, phi, W, X, y, z, delta, sd, global_rng);
-    }
-    
-    // Fill the out matrix
-    arma::rowvec newRow = 
-      arma::join_rows(eta.row(0), 
-                      beta.row(0),
-                      phi.row(0));
-    
-    for (int g = 1; g < G; g++) {
-      newRow = 
-        arma::join_rows(newRow, 
-                        eta.row(g), 
-                        beta.row(g),
-                        phi.row(g));
-    }
-    
-    out.row(iter) = newRow;
-  }
-  return(out);
-}
-
-void sample_better_initial_values_em_sparse(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::mat& W, arma::vec& sd, const int& N_em, const int& Niter_em, const int& G,
-                                            const arma::vec& y, const arma::ivec& delta, const arma::sp_mat& X, gsl_rng* rng_device) {
-  double max_loglik;
-  arma::field<arma::mat> em_init(5);
-  arma::field<arma::mat> best_em(5);
-  
-  for(int init = 0; init < N_em; init++) { // search for high log-likelihoods on 15 different random initializations
-    // running a fast EM (10 iterations) starting at random values
-    em_init = fast_em_sparse(Niter_em, G, y, delta, X, rng_device);
-    
-    if(init == 0) { // if it's the first EM running;
-      max_loglik = arma::as_scalar(em_init(4));
-      best_em = em_init;
-      
-      Rcout << "Initial LogLik: " << max_loglik << "\n";
-    } else {
-      if(arma::as_scalar(em_init(4)) > max_loglik) { // if the new parameters 
-        Rcout << "Previous maximum: " << max_loglik << " | New maximum: " << arma::as_scalar(em_init(4)) << "\n";
-        max_loglik = arma::as_scalar(em_init(4));
-        best_em = em_init;
-      }
-    }
-  }
-  
-  eta = best_em(0);
-  beta = best_em(1);
-  phi = best_em(2);
-  W = best_em(3);
-  
-  sd = 1.0 / sqrt(phi);
-}
-
-arma::mat lognormal_mixture_em_sparse(const int& Niter, const int& G, const arma::vec& t,
-                                      const arma::ivec& delta, const arma::sp_mat& X, 
-                                      long long int starting_seed,
-                                      const bool& better_initial_values, const int& N_em,
-                                      const int& Niter_em) {
-  
-  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
-  
-  // setting global seed to start the sampler
-  setSeed(starting_seed, global_rng);
-  
-  arma::vec eta(G);
-  int n = X.n_rows;
-  int k = X.n_cols;
-  arma::vec y = log(t);
-  
-  arma::mat out(Niter, G * k + (G * 2));
-  arma::mat beta(G, k);
-  arma::vec phi(G);
-  arma::vec sd(G);
-  arma::vec var(G);
-  arma::mat W(n, G);
-  arma::sp_mat Wg(n, n);
-  arma::vec z(n);
-  arma::vec colg(n);
-  
-  double quant;
-  double denom;
-  double alpha;
-  
-  arma::field<arma::mat> best_em(5);
-  arma::field<arma::mat> em_init(5);
-  double max_loglik;
-  
-  for(int iter = 0; iter < Niter; iter++) {
-    if(iter == 0) { // sample starting values
-      if(better_initial_values) {
-        sample_better_initial_values_em_sparse(eta, phi, beta, W, sd, N_em, Niter_em, G, y, delta, X, global_rng);
-      } else {
-        sample_initial_values_em(eta, phi, beta, sd, G, k, global_rng);
-        W = compute_W_sparse(y, X, eta, beta, sd, G);
-      }
-    } else {
-      sd = 1.0 / sqrt(phi);
-      var = arma::square(sd);
-      z = augment_em_sparse(y, delta, X, beta, sd, W, G);
-      W = compute_W_sparse(z, X, eta, beta, sd, G);
-      update_em_parameters_sparse(n, G, eta, beta, phi, W, X, y, z, delta, sd, global_rng);
-    }
-    
-    // Fill the out matrix
-    arma::rowvec newRow = 
-      arma::join_rows(eta.row(0), 
-                      beta.row(0),
-                      phi.row(0));
-    
-    for (int g = 1; g < G; g++) {
-      newRow = 
-        arma::join_rows(newRow, 
-                        eta.row(g), 
-                        beta.row(g),
-                        phi.row(g));
-    }
-    
-    out.row(iter) = newRow;
   }
   
   return out;
@@ -1700,184 +1514,19 @@ arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, co
                                               long long int starting_seed, const bool& sparse,
                                               const bool& better_initial_values, const int& N_em,
                                               const int& Niter_em) {
+  
+  gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
+  
+  // setting global seed to start the sampler
+  setSeed(starting_seed, global_rng);
+  
+  arma::field<arma::mat> out;
   if(sparse) {
-    arma::sp_mat Y(X);
-    return lognormal_mixture_em_sparse(Niter, G, t, delta, Y, starting_seed, better_initial_values, N_em, Niter_em);
+    arma::sp_mat X_sp(X);
+    out = lognormal_mixture_em_sparse(Niter, G, t, delta, X_sp, better_initial_values, N_em, Niter_em, false, global_rng);
   } else {
-    return lognormal_mixture_em(Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em);
+    out = lognormal_mixture_em(Niter, G, t, delta, X, better_initial_values, N_em, Niter_em, false, global_rng);
   }
   
-  return 0;
+  return out(0);
 }
-
-// Commented because more development is needed in this function
-/*
- arma::mat lognormal_mixture_sem(const int& Niter, const int& G, const arma::vec& y,
- const arma::vec& delta,
- const arma::sp_mat& X, long long int starting_seed) {
- 
- gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
- 
- // setting global seed to start the sampler
- setSeed(starting_seed, global_rng);
- 
- arma::vec eta(G);
- int n = X.n_rows;
- int k = X.n_cols;
- 
- arma::mat out(Niter, G * k + (G * 2));
- arma::mat beta(G, k);
- arma::vec phi(G);
- arma::vec sd(G);
- arma::vec var(G);
- arma::mat W(n, G);
- arma::ivec groups(n);
- arma::mat W_groups(n, G, arma::fill::zeros);
- arma::ivec n_groups(G);
- arma::sp_mat Wg(n, n);
- arma::vec colg(n);
- arma::vec z(n);
- int idx;
- int m;
- 
- double quant;
- double denom;
- double alpha;
- 
- for(int iter = 0; iter < Niter; iter++) {
- if(iter == 0) { // sample starting values
- eta = rdirichlet(repl(1.0, G), global_rng);
- 
- for (int g = 0; g < G; g++) {
- phi(g) = rgamma_(2.0, 8.0, global_rng);
- 
- for (int c = 0; c < k; c++) {
- beta(g, c) = rnorm_(0.0, 15.0, global_rng);
- }
- }
- 
- sd = 1.0 / sqrt(phi);
- W = compute_W(y, delta, X, eta, beta, sd, G);
- 
- for(int i = 0; i < n; i++) {
- groups(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
- }
- 
- // Computing number of observations allocated at each class
- n_groups = groups_table(G, groups);
- 
- // ensuring that every class have, at least, 5 observations
- for(int g = 0; g < G; g++) {
- if(n_groups(g) == 0) {
- m = 0;
- while(m < 5) {
- idx = numeric_sample(seq(0, n),
- repl(1.0 / n, n),
- global_rng);
- 
- if(n_groups(groups(idx)) > 5) {
- groups(idx) = g;
- m += 1;
- } 
- }
- 
- // recalculating the number of groups
- n_groups = groups_table(G, groups);
- }
- }
- 
- for(int i = 0; i < n; i++) {
- W_groups(i, groups(i)) = 1;
- }
- } else {
- sd = 1.0 / sqrt(phi);
- var = arma::square(sd);
- z = augment_em(y, delta, X, beta, sd, W_groups, G);
- W = compute_W(z, delta, X, eta, beta, sd, G);
- 
- W_groups.fill(0);
- 
- for(int i = 0; i < n; i++) {
- groups(i) = numeric_sample(seq(0, G - 1), W.row(i).t(), global_rng);
- }
- 
- // Computing number of observations allocated at each class
- n_groups = groups_table(G, groups);
- 
- // ensuring that every class have, at least, 5 observations
- for(int g = 0; g < G; g++) {
- if(n_groups(g) == 0) {
- m = 0;
- while(m < 5) {
- idx = numeric_sample(seq(0, n),
- repl(1.0 / n, n),
- global_rng);
- 
- if(n_groups(groups(idx)) > 5) {
- groups(idx) = g;
- m += 1;
- } 
- }
- 
- // recalculating the number of groups
- n_groups = groups_table(G, groups);
- }
- }
- 
- for(int i = 0; i < n; i++) {
- W_groups(i, groups(i)) = 1;
- }
- 
- for (int g = 0; g < G; g++) {
- colg = W_groups.col(g);
- Wg = arma::diagmat(colg);
- 
- eta(g) = arma::sum(colg) / n;
- beta.row(g) = arma::solve(arma::mat(X.t() * Wg * X),
- X.t() * Wg * z,
- arma::solve_opts::allow_ugly).t();
- 
- quant = 0.0;
- denom = arma::sum(colg);
- 
- for (int i = 0; i < n; i++) {
- quant += W_groups(i, g) * square(z(i) - arma::as_scalar(X.row(i) * beta.row(g).t()));
- 
- if (delta(i) == 0.0) {
- alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t()))/sd(g);
- 
- if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
- quant += W_groups(i, g) * var(g) * (1.0 - 
- (- alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - R::pnorm(alpha, 0, 1, true, false)) -
- square(R::dnorm(alpha, 0, 1, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
- } else {
- quant += W_groups(i, g) * var(g) * (1.0 - 
- (-alpha * R::dnorm(alpha, 0, 1, false))/(1.0 - 0.999) -
- square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
- }
- }
- }
- 
- phi(g) = denom / quant;
- }
- }
- 
- // Fill the out matrix
- arma::rowvec newRow = 
- arma::join_rows(eta.row(0), 
- beta.row(0),
- phi.row(0));
- 
- for (int g = 1; g < G; g++) {
- newRow = 
- arma::join_rows(newRow, 
- eta.row(g), 
- beta.row(g),
- phi.row(g));
- }
- 
- out.row(iter) = newRow;
- }
- 
- return(out);
- } */
