@@ -555,6 +555,180 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
   return out_internal_false; // should never be reached
 }
 
+// Setting parameter's values for the first Gibbs iteration
+void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, arma::mat& beta, arma::vec& phi, const int& em_iter, const int& G, const arma::vec& y,
+                      double& e0, arma::vec& sd, arma::ivec& groups, const arma::mat& X, const bool& use_W, const arma::ivec& delta, gsl_rng* rng_device) {
+  arma::ivec groups_start(y.n_rows);
+  int p = X.n_cols;
+  if (em_iter != 0) {
+    // we are going to start the values using the last EM iteration
+    eta = em_params(0);
+    beta = em_params(1);
+    phi = em_params(2);
+    sd = 1.0 / sqrt(phi);
+    groups_start = sample_groups_from_W(em_params(3));
+  } else {
+    eta = rdirichlet(repl(1, G), rng_device);
+    
+    for (int g = 0; g < G; g++) {
+      phi(g) = rgamma_(0.5, 0.5, rng_device);
+      beta.row(g) = rmvnorm(repl(0.0, p),
+               arma::diagmat(repl(15.0 * 15.0, p)),
+               rng_device).t();
+    }
+    
+    sd = 1.0 / sqrt(phi);
+    // Sampling classes for the observations
+    groups_start = sample_groups_start(G, y, eta, rng_device);
+  }
+  
+  // sampling value for e0
+  e0 = rgamma_(1.0, 1.0, rng_device);
+  
+  if(use_W == false) {
+    groups = sample_groups(G, augment(G, y, groups_start, delta, sd, beta, X, rng_device), eta, phi, beta, X, rng_device, groups_start);
+  } else {
+    groups = groups_start;
+  }
+}
+
+// Function to update groups
+void update_groups_gibbs(const int& iter, const bool& use_W, const arma::field<arma::mat>& em_params, const int& G, const arma::vec& y_aug, 
+                         const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& X, arma::ivec& groups, gsl_rng* rng_device) {
+  if (iter > 0) {
+    if(use_W) {
+      groups = sample_groups_from_W(em_params(3));
+    } else {
+      groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups);
+    }
+  }
+}
+
+// Avoiding groups with zero number of observations in it (causes numerical issues)
+void avoid_group_with_zero_allocation(arma::ivec& n_groups, arma::ivec& groups, const int& G, const int& N, gsl_rng* rng_device) {
+  int idx = 0;
+  int m;
+  
+  for(int g = 0; g < G; g++) {
+    if(n_groups(g) == 0) {
+      m = 0;
+      while(m < 5) {
+        idx = numeric_sample(seq(0, N),
+                             repl(1.0 / N, N),
+                             rng_device);
+        
+        if(n_groups(groups(idx)) > 5) {
+          groups(idx) = g;
+          m += 1;
+        } 
+      }
+      
+      // recalculating the number of groups
+      n_groups = groups_table(G, groups);
+    }
+  }
+}
+
+double update_phi_g_gibbs(const int& n_groups_g, const arma::vec& linearComb, gsl_rng* rng_device) {
+  return rgamma_(n_groups_g / 2.0 + 0.01, (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.01, rng_device);
+}
+
+arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const arma::mat& Xgt, const arma::vec& yg, gsl_rng* rng_device) {
+  arma::rowvec out;
+  arma::mat comb = phi_g * Xgt * Xg + arma::diagmat(repl(1.0 / 30.0, Xg.n_cols));
+  arma::mat Sg;
+  arma::vec mg;
+  
+  if(arma::det(comb) != 0) {
+    Sg = arma::solve(comb,
+                     arma::eye(Xg.n_cols, Xg.n_cols),
+                     arma::solve_opts::allow_ugly);
+    
+    mg = arma::solve(comb,
+                     phi_g * Xgt * yg,
+                     arma::solve_opts::allow_ugly);
+    
+    out = rmvnorm(mg, Sg, rng_device).t();
+  }
+  
+  return out;
+}
+
+// update all the Gibbs parameters
+void update_gibbs_parameters(const int& G, const arma::mat& X, const arma::vec& y_aug, const arma::ivec& n_groups, const arma::ivec& groups, 
+                             arma::vec& eta, arma::mat& beta, arma::vec& phi, double& e0, gsl_rng* rng_device) {
+  
+  arma::mat Xg;
+  arma::mat Xgt;
+  arma::vec yg;
+  arma::vec linearComb;
+  arma::uvec indexg;
+  
+  // updating eta
+  eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0, 
+                   rng_device);
+  
+  // For each g, sample new phi[g] and beta[g, _]
+  for (int g = 0; g < G; g++) {
+    indexg = arma::find(groups == g);
+    Xg = X.rows(indexg);
+    Xgt = Xg.t();
+    yg = y_aug.rows(indexg);
+    linearComb = yg - Xg * beta.row(g).t();
+    
+    // updating phi(g)
+    // the priori used was Gamma(0.01, 0.01)
+    phi(g) = update_phi_g_gibbs(n_groups(g), linearComb, rng_device);
+    
+    // updating beta.row(g)
+    // the priori used was MNV(vec 0, diag 1000)
+    beta.row(g) = update_beta_g_gibbs(phi(g), Xg, Xgt, yg, rng_device);
+  }
+}
+
+// update e0, hyperparameter of the eta's dirichlet prior
+void update_e0(const int& G, const int& iter, double& prop_aceite, int& n_aceite, double& cte, const double& a, const arma::vec& eta, double& e0, double& count, gsl_rng* rng_device) {  
+  arma::vec log_eta_new = log(eta);
+  
+  // atualizando o valor da constante de sintonização
+  // cte a cada 200 iterações
+  if ((iter % 200) == 0) {
+    prop_aceite = n_aceite/200.0;
+    
+    if (prop_aceite > 0.25) {
+      cte = cte/((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
+    } else if (prop_aceite < 0.17) {
+      cte = cte*((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
+    }
+    // ((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1) é um valor
+    // de correção que converge para 1 quando count -> Inf e,
+    // quando count = 0, o resultado é sqrt(3).
+    
+    // o valor 0.04 representa a velocidade da convergência
+    // para 1 e sqrt(3), o valor em count = 0, foi definido
+    // arbitrariamente.
+    
+    n_aceite = 0;
+    count = count + 1.0;
+  }
+  
+  double b = cte * a;
+  
+  // updating the value of e0 (eta's dirichlet hyperparameter)
+  double e0_prop = rgamma_(b*e0, b, rng_device);
+  
+  double log_alpha = arma::sum(log_eta_new) * (e0_prop - e0) + 9.0 * log(e0_prop/e0) -
+    10.0*  G * (e0_prop - e0) + b * (e0_prop - e0) + (b * e0_prop - 1.0) *
+    log(e0) - (b*e0 - 1.0) * log(e0_prop);
+  
+  double u = runif_0_1(rng_device);
+  
+  e0 = (log(u) < log_alpha) * e0_prop +
+    (log(u) >= log_alpha) * e0;
+  
+  n_aceite += (log(u) < log_alpha);
+}
+
 // Internal implementation of the lognormal mixture model via Gibbs sampler
 arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter, const int& G, 
                                                  const arma::vec& t, const arma::ivec& delta, 
@@ -592,9 +766,21 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   arma::ivec n_groups(G);
   arma::mat means(N, G);
   arma::vec sd(G);
-  arma::vec linearComb(N);
-  arma::mat comb;
   
+  // Starting other new values for MCMC algorithms
+  arma::vec eta(G);
+  arma::vec phi(G);
+  arma::mat beta(G, p);
+  arma::ivec groups(N);
+  arma::vec log_eta_new(G);
+  
+  double e0;
+  double prop_aceite;
+  int n_aceite;
+  double count = 0.0;
+  double cte;
+
+  arma::rowvec newRow;
   arma::field<arma::mat> em_params(6);
   
   if(em_iter > 0) {
@@ -604,186 +790,34 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
     Rcout << "Skipping EM Algorithm" << "\n";
   }
   
-  // Starting other new values for MCMC algorithms
-  arma::vec eta(G);
-  arma::vec phi(G);
-  arma::mat beta(G, p);
-  arma::ivec groups(N);
-  arma::ivec groups_start(N);
-  arma::vec e0new_vec(2);
-  
-  arma::mat Xg;
-  arma::mat Xgt;
-  arma::vec yg;
-  
-  arma::uvec indexg;
-  arma::mat Sg(p, p);
-  arma::vec mg(p);
-  arma::vec log_eta_new(G);
-  
-  double e0;
-  double e0_prop;
-  double log_alpha;
-  double b;
-  double cte;
-  double prop_aceite;
-  int n_aceite;
-  double count = 0;
-  double u;
-  arma::rowvec newRow;
-  int m;
-  int idx;
-  
   for (int iter = 0; iter < Niter; iter++) {
     // Starting empty objects for Gibbs Sampler
     if (iter == 0) {
-      if (em_iter != 0) {
-        // we are going to start the values using the last EM iteration
-        eta = em_params(0);
-        beta = em_params(1);
-        phi = em_params(2);
-        
-        groups_start = sample_groups_from_W(em_params(3));
-      } else {
-        eta = rdirichlet(repl(1, G), global_rng);
-        
-        for (int g = 0; g < G; g++) {
-          phi(g) = rgamma_(0.5, 0.5, global_rng);
-          beta.row(g) = rmvnorm(repl(0.0, p),
-                   arma::diagmat(repl(15.0 * 15.0, p)),
-                   global_rng).t();
-        }
-        
-        sd = 1.0 / sqrt(phi);
-        // Sampling classes for the observations
-        groups_start = sample_groups_start(G, y, eta, global_rng);
-      }
-      
-      // sampling value for e0
-      e0 = rgamma_(1.0, 1.0, global_rng);
+      first_iter_gibbs(em_params, eta, beta, phi, em_iter, G, y, e0, sd, groups, X, use_W, delta, global_rng);
       
       // defining values for sintonizing the variance
       // of e0 proposal
-      cte = 1;
+      cte = 1.0;
       n_aceite = 0;
-      
-      if(use_W == false) {
-        groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups_start);
-      } else {
-        groups = groups_start;
-      }
     }
     
     sd = 1.0 / sqrt(phi);
     
     // Data augmentation
     y_aug = augment(G, y, groups, delta, sd, beta, X, global_rng); 
-    
-    if (iter > 0) {
-      if(use_W) {
-        groups = sample_groups_from_W(em_params(3));
-      } else {
-        groups = sample_groups(G, y_aug, eta, phi, beta, X, global_rng, groups);
-      }
-    }
+    update_groups_gibbs(iter, use_W, em_params, G, y_aug, eta, beta, phi, X, groups, global_rng);
     
     // Computing number of observations allocated at each class
     n_groups = groups_table(G, groups);
     
     // ensuring that every class have, at least, 5 observations
-    for(int g = 0; g < G; g++) {
-      if(n_groups(g) == 0) {
-        m = 0;
-        while(m < 5) {
-          idx = numeric_sample(seq(0, N),
-                               repl(1.0 / N, N),
-                               global_rng);
-          
-          if(n_groups(groups(idx)) > 5) {
-            groups(idx) = g;
-            m += 1;
-          } 
-        }
-        
-        // recalculating the number of groups
-        n_groups = groups_table(G, groups);
-      }
-    }
+    avoid_group_with_zero_allocation(n_groups, groups, G, N, global_rng);
     
-    // Sampling new eta
-    eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0, 
-                     global_rng);
+    // updating all parameters
+    update_gibbs_parameters(G, X, y_aug, n_groups, groups, eta, beta, phi, e0, global_rng);
     
-    // For each g, sample new phi[g] and beta[g, _]
-    for (int g = 0; g < G; g++) {
-      indexg = arma::find(groups == g);
-      Xg = X.rows(indexg);
-      Xgt = Xg.t();
-      yg = y_aug.rows(indexg);
-      
-      linearComb = yg - Xg * beta.row(g).t();
-      
-      // sampling new phi
-      // the priori used was Gamma(0.01, 0.01)
-      phi(g) = rgamma_(n_groups(g) / 2.0 + 0.01, 
-          (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.01,
-          global_rng);
-      
-      // sampling beta new
-      // the priori used was MNV(vec 0, diag 1000)
-      comb = phi(g) * Xgt * Xg + arma::diagmat(repl(1.0 / 30.0, p));
-      
-      if(arma::det(comb) != 0) {
-        Sg = arma::solve(comb,
-                         arma::eye(X.n_cols, X.n_cols),
-                         arma::solve_opts::allow_ugly);
-        
-        mg = arma::solve(comb,
-                         phi(g) * Xgt * yg,
-                         arma::solve_opts::allow_ugly);
-        
-        beta.row(g) = rmvnorm(mg, Sg, global_rng).t();
-      }
-    }
-    
-    // atualizando o valor da constante de sintonização
-    // cte a cada 200 iterações
-    if ((iter % 200) == 0) {
-      prop_aceite = n_aceite/200.0;
-      
-      if (prop_aceite > 0.25) {
-        cte = cte/((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-      } else if (prop_aceite < 0.17) {
-        cte = cte*((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-      }
-      // ((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1) é um valor
-      // de correção que converge para 1 quando count -> Inf e,
-      // quando count = 0, o resultado é sqrt(3).
-      
-      // o valor 0.04 representa a velocidade da convergência
-      // para 1 e sqrt(3), o valor em count = 0, foi definido
-      // arbitrariamente.
-      
-      n_aceite = 0;
-      count = count + 1.0;
-    }
-    
-    b = cte * a;
-    
-    // updating the value of e0 (eta's dirichlet hyperparameter)
-    e0_prop = rgamma_(b*e0, b, global_rng);
-    
-    log_eta_new = log(eta);
-    
-    log_alpha = arma::sum(log_eta_new) * (e0_prop - e0) + 9.0 * log(e0_prop/e0) -
-      10.0*  G * (e0_prop - e0) + b * (e0_prop - e0) + (b * e0_prop - 1.0) *
-      log(e0) - (b*e0 - 1.0) * log(e0_prop);
-    
-    u = runif_0_1(global_rng);
-    e0 = (log(u) < log_alpha) * e0_prop +
-      (log(u) >= log_alpha) * e0;
-    
-    n_aceite += (log(u) < log_alpha);
+    // this one is done separated from Gibbs because it's done via Metropolis-Hastings
+    update_e0(G, iter, prop_aceite, n_aceite, cte, a, eta, e0, count, global_rng);
     
     // filling the ith iteration row of the output matrix
     // the order of filling will always be the following:
@@ -1196,7 +1230,7 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   arma::vec linearComb(N);
   arma::mat comb;
   arma::field<arma::mat> em_params(6);
-
+  
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
     em_params = lognormal_mixture_em_sparse(em_iter, G, t, delta, X, better_initial_values, N_em, Niter_em, true, global_rng);
@@ -1210,7 +1244,6 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
   arma::mat beta(G, p);
   arma::ivec groups(N);
   arma::ivec groups_start(N);
-  arma::vec e0new_vec(2);
   
   arma::sp_mat Xg;
   arma::sp_mat Xgt;
