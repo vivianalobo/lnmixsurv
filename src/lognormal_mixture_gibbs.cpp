@@ -270,23 +270,6 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
   return out;
 }
 
-/*
- // Force matrix X to be symmetric. 
- arma::mat makeSymmetric(const arma::mat X) {
- arma::mat out(X.n_rows, X.n_cols);
- int rows = X.n_rows;
- int cols = X.n_cols;
- for(int r = 0; r < rows; r++) {
- for(int c = 0; c < cols; c++) {
- out(r, c) = X(r, c);
- out(c, r) = X(r, c);
- }
- }
- 
- return out;
- }
- */
-
 /* Auxiliary functions for EM algorithm */
 
 // Compute weights matrix
