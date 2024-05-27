@@ -110,17 +110,13 @@ int numeric_sample(const arma::ivec& groups,
 }
 
 /* NON SPARSE ALTERNATIVES */
-
-// Function used to sample the latent groups for each observation.
-arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& phi, const arma::mat& beta,
-                         const arma::mat& X, gsl_rng* rng_device,
-                         const arma::ivec& groups_old) {
-  
+void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& eta, 
+                            const arma::vec& sd, const arma::mat& beta,
+                            const arma::mat& X, gsl_rng* rng_device,
+                            arma::ivec& vec_groups) {
   // Initializing variables used for sampling groups
   int n = X.n_rows;
   int p = X.n_cols;
-  arma::ivec vec_groups = groups_old;
   arma::ivec sequence = seq(0, G - 1);
   arma::uvec indexg;
   arma::mat Vg0 = arma::diagmat(repl(30.0, p));
@@ -139,6 +135,7 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
   arma::mat denom_mat(n, G);
   arma::vec probsEqual(G);
   probsEqual.fill(1.0 / G);
+  arma::vec phi = 1.0 / arma::square(sd);
   
   double m;
   double yi;
@@ -198,6 +195,44 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
         }
       }
     }
+  }
+}
+
+void sample_groups_fast(const int& G, const arma::vec& y, const arma::vec& eta, 
+                        const arma::vec& sd, const arma::mat& beta,
+                        const arma::mat& X, gsl_rng* rng_device, arma::ivec& vec_groups) {
+  arma::vec probs(G);
+  arma::mat mean = X * beta.t();
+  
+  double denom;
+  int n = y.n_elem;
+  
+  for (int i = 0; i < n; i++) {
+    denom = 0.0;
+    
+    for (int g = 0; g < G; g++) {
+      probs(g) = eta(g) * R::dnorm(y(i), mean(i, g), sd(g), false);
+      denom += probs(g); 
+    }
+    
+    probs = (denom == 0) * (repl(1.0 / G, G)) + (denom != 0) * (probs / denom);
+    
+    vec_groups(i) = numeric_sample(seq(0, G - 1), probs, rng_device);
+  }
+}
+
+// Function used to sample the latent groups for each observation.
+arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
+                         const arma::vec& sd, const arma::mat& beta,
+                         const arma::mat& X, gsl_rng* rng_device,
+                         const arma::ivec& groups_old, const bool& fast_groups) {
+  
+  arma::ivec vec_groups = groups_old;
+  
+  if(fast_groups) {
+    sample_groups_fast(G, y, eta, sd, beta, X, rng_device, vec_groups);
+  } else {
+    sample_groups_advanced(G, y, eta, sd, beta, X, rng_device, vec_groups);
   }
   
   return(vec_groups);
@@ -540,7 +575,7 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
 
 // Setting parameter's values for the first Gibbs iteration
 void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, arma::mat& beta, arma::vec& phi, const int& em_iter, const int& G, const arma::vec& y,
-                      double& e0, arma::vec& sd, arma::ivec& groups, const arma::mat& X, const bool& use_W, const arma::ivec& delta, gsl_rng* rng_device) {
+                      double& e0, arma::vec& sd, arma::ivec& groups, const arma::mat& X, const bool& use_W, const arma::ivec& delta, gsl_rng* rng_device, const bool& fast_groups) {
   arma::ivec groups_start(y.n_rows);
   int p = X.n_cols;
   if (em_iter != 0) {
@@ -569,7 +604,7 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
   e0 = rgamma_(1.0, 1.0, rng_device);
   
   if(use_W == false) {
-    groups = sample_groups(G, augment(G, y, groups_start, delta, sd, beta, X, rng_device), eta, phi, beta, X, rng_device, groups_start);
+    groups = sample_groups(G, augment(G, y, groups_start, delta, sd, beta, X, rng_device), eta, sd, beta, X, rng_device, groups_start, fast_groups);
   } else {
     groups = groups_start;
   }
@@ -577,12 +612,13 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
 
 // Function to update groups
 void update_groups_gibbs(const int& iter, const bool& use_W, const arma::field<arma::mat>& em_params, const int& G, const arma::vec& y_aug, 
-                         const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& X, arma::ivec& groups, gsl_rng* rng_device) {
+                         const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& X, arma::ivec& groups, gsl_rng* rng_device,
+                         const bool& fast_groups) {
   if (iter > 0) {
     if(use_W) {
       groups = sample_groups_from_W(em_params(3));
     } else {
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups);
+      groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups, fast_groups);
     }
   }
 }
@@ -719,7 +755,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
                                                  long long int starting_seed,
                                                  const bool& show_output, const int& chain_num,
                                                  const bool& use_W, const bool& better_initial_values,
-                                                 const int& Niter_em, const int& N_em) {
+                                                 const int& Niter_em, const int& N_em, const bool& fast_groups) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -762,7 +798,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   int n_aceite;
   double count = 0.0;
   double cte;
-
+  
   arma::rowvec newRow;
   arma::field<arma::mat> em_params(6);
   
@@ -776,7 +812,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   for (int iter = 0; iter < Niter; iter++) {
     // Starting empty objects for Gibbs Sampler
     if (iter == 0) {
-      first_iter_gibbs(em_params, eta, beta, phi, em_iter, G, y, e0, sd, groups, X, use_W, delta, global_rng);
+      first_iter_gibbs(em_params, eta, beta, phi, em_iter, G, y, e0, sd, groups, X, use_W, delta, global_rng, fast_groups);
       
       // defining values for sintonizing the variance
       // of e0 proposal
@@ -788,7 +824,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
     
     // Data augmentation
     y_aug = augment(G, y, groups, delta, sd, beta, X, global_rng); 
-    update_groups_gibbs(iter, use_W, em_params, G, y_aug, eta, beta, phi, X, groups, global_rng);
+    update_groups_gibbs(iter, use_W, em_params, G, y_aug, eta, beta, phi, X, groups, global_rng, fast_groups);
     
     // Computing number of observations allocated at each class
     n_groups = groups_table(G, groups);
@@ -1179,7 +1215,7 @@ arma::mat lognormal_mixture_gibbs_implementation_sparse(const int& Niter, const 
                                                         const bool& show_output, 
                                                         const int& chain_num,
                                                         const bool& use_W, const bool& better_initial_values,
-                                                        const int& Niter_em, const int& N_em) {
+                                                        const int& Niter_em, const int& N_em, const bool& fast_groups) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
@@ -1454,17 +1490,18 @@ struct GibbsWorker : public RcppParallel::Worker {
   const bool& better_initial_values;
   const int& N_em;
   const int& Niter_em;
+  const bool& fast_groups;
   
   // Creating Worker
   GibbsWorker(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& t,
               const arma::ivec& delta, const arma::mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
-              const int& N_em, const int& Niter_em) :
-    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+              const int& N_em, const int& Niter_em, const bool& fast_groups) :
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em), fast_groups(fast_groups) {}
   
   void operator()(std::size_t begin, std::size_t end) {
     for (std::size_t i = begin; i < end; ++i) {
       usleep(5000 * i); // avoid racing conditions
-      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em, fast_groups);
     }
   }
 };
@@ -1486,17 +1523,18 @@ struct GibbsWorkerSparse : public RcppParallel::Worker {
   const bool& better_initial_values;
   const int& N_em;
   const int& Niter_em;
+  const bool& fast_groups;
   
   // Creating Worker
   GibbsWorkerSparse(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& t,
                     const arma::ivec& delta, const arma::sp_mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
-                    const int& N_em, const int& Niter_em) :
-    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em) {}
+                    const int& N_em, const int& Niter_em, const bool& fast_groups) :
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em), fast_groups(fast_groups) {}
   
   void operator()(std::size_t begin, std::size_t end) {
     for (std::size_t i = begin; i < end; ++i) {
       usleep(5000 * i); // avoid racing conditions
-      out.slice(i) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em);
+      out.slice(i) = lognormal_mixture_gibbs_implementation_sparse(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em, fast_groups);
     }
   }
 };
@@ -1508,16 +1546,16 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
                                    const arma::mat& X, const double& a, 
                                    const arma::vec& starting_seed, const bool& show_output,
                                    const int& n_chains, const bool& sparse, const bool& use_W,
-                                   const bool& better_initial_values, const int& N_em, const int& Niter_em) {
+                                   const bool& better_initial_values, const int& N_em, const int& Niter_em, const bool& fast_groups) {
   arma::cube out(Niter, (X.n_cols + 2) * G, n_chains); // initializing output object
   
   // Fitting in parallel
   if(sparse) {
     arma::sp_mat Y(X);
-    GibbsWorkerSparse worker(starting_seed, out, Niter, em_iter, G, t, delta, Y, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    GibbsWorkerSparse worker(starting_seed, out, Niter, em_iter, G, t, delta, Y, a, show_output, use_W, better_initial_values, N_em, Niter_em, fast_groups);
     RcppParallel::parallelFor(0, n_chains, worker);
   } else {
-    GibbsWorker worker(starting_seed, out, Niter, em_iter, G, t, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em);
+    GibbsWorker worker(starting_seed, out, Niter, em_iter, G, t, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em, fast_groups);
     RcppParallel::parallelFor(0, n_chains, worker);
   }
   

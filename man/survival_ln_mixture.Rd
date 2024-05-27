@@ -25,6 +25,7 @@ survival_ln_mixture(
   better_initial_values = TRUE,
   number_em_search = 200,
   iteration_em_search = 1,
+  fast_groups = TRUE,
   ...
 )
 
@@ -71,6 +72,8 @@ The number of warmup iterations should be smaller than iter.}
 \item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.}
 
 \item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.}
+
+\item{fast_groups}{Use fast computation of groups allocations probabilities, defaults to TRUE. Setting it to FALSE can increase the computation time (a lot) but it's worth trying if the chains are not converging.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }

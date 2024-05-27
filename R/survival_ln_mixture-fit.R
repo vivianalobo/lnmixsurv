@@ -42,6 +42,8 @@
 #'
 #' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
 #'
+#' @param fast_groups Use fast computation of groups allocations probabilities, defaults to TRUE. Setting it to FALSE can increase the computation time (a lot) but it's worth trying if the chains are not converging.
+#' 
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -64,7 +66,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -127,7 +129,8 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      use_W = FALSE,
                                      better_initial_values = TRUE,
                                      number_em_search = 200,
-                                     iteration_em_search = 1) {
+                                     iteration_em_search = 1,
+                                     fast_groups = TRUE) {
   number_of_predictors <- ncol(predictors)
 
   if (any(is.na(predictors))) {
@@ -169,6 +172,10 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   
   if (!is.logical(better_initial_values)) {
     rlang::abort("The parameter better_initial_values must be TRUE or FALSE.")
+  }
+  
+  if (!is.logical(fast_groups)) {
+    rlang::abort("The parameter fast_groups must be TRUE or FALSE.")
   }
   
   if (!is.logical(sparse)) {
@@ -221,7 +228,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   posterior_dist <- run_posterior_samples(
-    iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search
+    iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups
   )
 
   # returning the function output
@@ -403,7 +410,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   proposal_variance, starting_seed,
                                   show_progress, warmup, thin, sparse, use_W,
                                   better_initial_values, number_em_search,
-                                  iterations_em_search) {
+                                  iterations_em_search, fast_groups) {
   set.seed(starting_seed)
   seeds <- sample(1:2^28, chains)
 
@@ -417,8 +424,10 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     predictors, proposal_variance,
     seeds, show_progress,
     chains, sparse, use_W,
-    better_initial_values, number_em_search, iterations_em_search
+    better_initial_values, number_em_search, iterations_em_search,
+    fast_groups
   )
+  
   for (i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[, , i])
 

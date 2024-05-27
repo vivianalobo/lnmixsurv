@@ -13,8 +13,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lognormal_mixture_gibbs
-arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X, const double& a, const arma::vec& starting_seed, const bool& show_output, const int& n_chains, const bool& sparse, const bool& use_W, const bool& better_initial_values, const int& N_em, const int& Niter_em);
-RcppExport SEXP _lnmixsurv_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP em_iterSEXP, SEXP GSEXP, SEXP tSEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP starting_seedSEXP, SEXP show_outputSEXP, SEXP n_chainsSEXP, SEXP sparseSEXP, SEXP use_WSEXP, SEXP better_initial_valuesSEXP, SEXP N_emSEXP, SEXP Niter_emSEXP) {
+arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X, const double& a, const arma::vec& starting_seed, const bool& show_output, const int& n_chains, const bool& sparse, const bool& use_W, const bool& better_initial_values, const int& N_em, const int& Niter_em, const bool& fast_groups);
+RcppExport SEXP _lnmixsurv_lognormal_mixture_gibbs(SEXP NiterSEXP, SEXP em_iterSEXP, SEXP GSEXP, SEXP tSEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP aSEXP, SEXP starting_seedSEXP, SEXP show_outputSEXP, SEXP n_chainsSEXP, SEXP sparseSEXP, SEXP use_WSEXP, SEXP better_initial_valuesSEXP, SEXP N_emSEXP, SEXP Niter_emSEXP, SEXP fast_groupsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -33,7 +33,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool& >::type better_initial_values(better_initial_valuesSEXP);
     Rcpp::traits::input_parameter< const int& >::type N_em(N_emSEXP);
     Rcpp::traits::input_parameter< const int& >::type Niter_em(Niter_emSEXP);
-    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_gibbs(Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, sparse, use_W, better_initial_values, N_em, Niter_em));
+    Rcpp::traits::input_parameter< const bool& >::type fast_groups(fast_groupsSEXP);
+    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_gibbs(Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, sparse, use_W, better_initial_values, N_em, Niter_em, fast_groups));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -59,7 +60,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_lnmixsurv_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_lognormal_mixture_gibbs, 15},
+    {"_lnmixsurv_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_lognormal_mixture_gibbs, 16},
     {"_lnmixsurv_lognormal_mixture_em_implementation", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em_implementation, 10},
     {NULL, NULL, 0}
 };
