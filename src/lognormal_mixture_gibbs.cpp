@@ -309,13 +309,8 @@ arma::ivec groups_table(const int& G, const arma::ivec& groups) {
 // Compute weights matrix
 arma::mat compute_W(const arma::vec& y, const arma::mat& X, const arma::vec& eta, 
                     const arma::mat& beta, const arma::vec& sigma, 
-                    const int& G) {
-  
-  int n = X.n_rows;
-  double denom;
+                    const int& G, const int& n, double& denom, arma::mat& mat_denom, const arma::rowvec& repl_vec) {
   arma::mat out(n, G);
-  arma::mat mat_denom(n, G);
-  arma::rowvec repl_vec = repl(1.0 / G, G).t();
   
   for(int g = 0; g < G; g++) {
     mat_denom.col(g) = eta(g) * arma::normpdf(y,
@@ -332,7 +327,7 @@ arma::mat compute_W(const arma::vec& y, const arma::mat& X, const arma::vec& eta
     }
   }
   
-  return(out);
+  return out;
 }
 
 // Function used to computed the expected value of a truncated normal distribution
@@ -351,15 +346,12 @@ double compute_expected_value_truncnorm(const double& alpha, const double& mean,
 }
 
 // Create the latent variable z for censored observations
-arma::vec augment_em(const arma::vec& y, const arma::ivec& delta,
+arma::vec augment_em(const arma::vec& y, const arma::uvec& censored_indexes,
                      const arma::mat& X, const arma::mat& beta,
                      const arma::vec& sigma, const arma::mat& W,
-                     const int& G) {
-  int n = X.n_rows;
+                     const int& G, const arma::mat& mean, arma::mat& alpha_mat,
+                     const int& n) {
   arma::vec out = y;
-  arma::mat mean = X * beta.t();
-  arma::mat alpha_mat(n, G);
-  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
   
   for(int g = 0; g < G; g++) {
     alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
@@ -377,8 +369,7 @@ arma::vec augment_em(const arma::vec& y, const arma::ivec& delta,
 }
 
 // Function used to sample groups from W. It samples one group by row based on the max weight.
-arma::ivec sample_groups_from_W(const arma::mat& W) {
-  int N = W.n_rows;
+arma::ivec sample_groups_from_W(const arma::mat& W, const int& N) {
   arma::vec out(N);
   
   for(int r = 0; r < N; r++) {
@@ -404,8 +395,8 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 }
 
 // Update the matrix beta for the group g
-void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta) {
-  arma::sp_mat Wg;
+void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
+                   arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
   
   if(arma::det(X.t() * Wg * X) != 0.0) {
@@ -417,9 +408,10 @@ void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, cons
 
 // Update the parameter phi(g)
 void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const arma::mat& X, const arma::vec& colg, const arma::vec& y, const arma::vec& z,
-                  const arma::vec& sd, const arma::mat& beta, const arma::vec& var, const int& g, const int& n, arma::vec& phi, gsl_rng* rng_device) {
-  double alpha = 0.0;
-  double quant = arma::as_scalar(arma::square(z - (X * beta.row(g).t())).t() * colg);
+                  const arma::vec& sd, const arma::mat& beta, const arma::vec& var, const int& g, const int& n, arma::vec& phi, gsl_rng* rng_device,
+                  double& alpha, double& quant) {
+  alpha = 0.0;
+  quant = arma::as_scalar(arma::square(z - (X * beta.row(g).t())).t() * colg);
   
   for(int i : censored_indexes) {
     alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
@@ -448,28 +440,22 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
 
 // Update the model parameters with EM
 void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat& beta, arma::vec& phi, const arma::mat& W, const arma::mat& X, 
-                          const arma::vec& y, const arma::vec& z, const arma::ivec& delta, const arma::vec& sd, gsl_rng* rng_device) {
-  arma::vec colg(n);
-  arma::vec var;
-  double quant, denom, alpha;
-  arma::uvec censored_indexes = arma::find(delta == 0);
-  var = arma::square(sd);
+                          const arma::vec& y, const arma::vec& z, const arma::uvec& censored_indexes, const arma::vec& sd, gsl_rng* rng_device,
+                          double& quant, double& denom, double& alpha, arma::sp_mat& Wg, arma::vec& colg) {
+  arma::vec var = arma::square(sd);
   
   for (int g = 0; g < G; g++) {
     colg = W.col(g);
     
     eta(g) = arma::sum(colg) / n; // updating eta(g)
-    update_beta_g(colg, X, g, z, beta); // updating beta for the group g
-    update_phi_g(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device);
+    update_beta_g(colg, X, g, z, beta, Wg); // updating beta for the group g
+    update_phi_g(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device, alpha, quant);
   }
 }
 
 // Compute model's log-likelihood to select the EM initial values
-double loglik_em(const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& W, const arma::vec& z, const int& G,
-                 const arma::mat& X) {
-  int N = X.n_rows;
-  arma::vec sd = 1.0 / sqrt(phi);
-  arma::mat mean = X * beta.t();
+double loglik_em(const arma::vec& eta, const arma::mat& beta, const arma::vec& sd, const arma::mat& W, const arma::vec& z, const int& G,
+                 const arma::mat& X, const int& N, const arma::mat& mean) {
   double loglik = 0.0;
   
   for(int i = 0; i < N; i++) {
@@ -489,7 +475,8 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
   
   int n = X.n_rows;
   int k = X.n_cols;
-  
+  double quant, denom, alpha;
+
   // initializing objects used on EM algorithm
   arma::vec y = log(t);
   arma::vec eta(G);
@@ -498,14 +485,22 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
   arma::vec z(n);
   arma::mat W(n, G);
   arma::mat beta(G, k);
+  arma::mat mean(n, k);
   arma::mat out(Niter, G * k + (G * 2));
+  arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
+  arma::mat alpha_mat(n, G);
+  arma::vec colg(n);
+  arma::sp_mat Wg;
   arma::field<arma::mat> out_internal_true(6);
   arma::field<arma::mat> out_internal_false(2);
-  
   arma::field<arma::mat> em_params(6);
   arma::field<arma::mat> best_em(6);
+  arma::mat mat_denom(n, G);
+  arma::rowvec repl_vec = repl(1.0 / G, G).t();
+  
   for(int iter = 0; iter < Niter; iter++) {
     if(iter == 0) { // sample starting values
+      
       if(better_initial_values) {
         for (int init = 0; init < N_em; init ++) {
           em_params = lognormal_mixture_em(Niter_em, G, t, delta, X, false, 0, 0, true, rng_device);
@@ -527,13 +522,15 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
         W = best_em(3);
       } else {
         sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
-        W = compute_W(y, X, eta, beta, sd, G);
+        W = compute_W(y, X, eta, beta, sd, G, n, denom, mat_denom, repl_vec);
       }
+      
     } else {
+      mean = X * beta.t();
       sd = 1.0 / sqrt(phi);
-      z = augment_em(y, delta, X, beta, sd, W, G);
-      W = compute_W(z, X, eta, beta, sd, G);
-      update_em_parameters(n, G, eta, beta, phi, W, X, y, z, delta, sd, rng_device);
+      z = augment_em(y, censored_indexes, X, beta, sd, W, G, mean, alpha_mat, n);
+      W = compute_W(z, X, eta, beta, sd, G, n, denom, mat_denom, repl_vec);
+      update_em_parameters(n, G, eta, beta, phi, W, X, y, z, censored_indexes, sd, rng_device, quant, denom, alpha, Wg, colg);
     }
     
     // Fill the out matrix
@@ -553,18 +550,20 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
     out.row(iter) = newRow;
   }
   
+  mean = X * beta.t();
+  
   if(internal) {
     out_internal_true(0) = eta;
     out_internal_true(1) = beta;
     out_internal_true(2) = phi;
     out_internal_true(3) = W;
-    out_internal_true(4) = augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G);
-    out_internal_true(5) = loglik_em(eta, beta, phi, W, out_internal_true(4), G, X);
+    out_internal_true(4) = augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, alpha_mat, n);
+    out_internal_true(5) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, out_internal_true(4), G, X, n, mean);
     
     return out_internal_true;
   } else {
     out_internal_false(0) = out;
-    out_internal_false(1) = loglik_em(eta, beta, phi, W, augment_em(y, delta, X, beta, 1.0 / sqrt(phi), W, G), G, X);
+    out_internal_false(1) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, alpha_mat, n), G, X, n, X * beta.t());
     
     return out_internal_false;
   }
@@ -583,7 +582,7 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
     beta = em_params(1);
     phi = em_params(2);
     sd = 1.0 / sqrt(phi);
-    groups_start = sample_groups_from_W(em_params(3));
+    groups_start = sample_groups_from_W(em_params(3), y.n_rows);
   } else {
     eta = rdirichlet(repl(1, G), rng_device);
     
@@ -615,7 +614,7 @@ void update_groups_gibbs(const int& iter, const bool& use_W, const arma::field<a
                          const bool& fast_groups) {
   if (iter > 0) {
     if(use_W) {
-      groups = sample_groups_from_W(em_params(3));
+      groups = sample_groups_from_W(em_params(3), y_aug.n_rows);
     } else {
       groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups, fast_groups);
     }
@@ -934,7 +933,7 @@ arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, co
   
   // setting global seed to start the sampler
   setSeed(starting_seed, global_rng);
-
+  
   arma::field<arma::mat> out = lognormal_mixture_em(Niter, G, t, delta, X, better_initial_values, N_em, Niter_em, false, global_rng);
   
   return out(0);
