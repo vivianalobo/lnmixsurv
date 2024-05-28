@@ -20,7 +20,6 @@ survival_ln_mixture(
   show_progress = FALSE,
   em_iter = 0,
   starting_seed = sample(1:2^28, 1),
-  sparse = FALSE,
   use_W = FALSE,
   better_initial_values = TRUE,
   number_em_search = 200,
@@ -62,8 +61,6 @@ The number of warmup iterations should be smaller than iter.}
 \item{em_iter}{A positive integer specifying the number of iterations for the EM algorithm. The EM algorithm is performed before the Gibbs sampler to find better initial values for the chains. On simulations, values lower than 200 seems to work nice.}
 
 \item{starting_seed}{Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
-
-\item{sparse}{Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.}
 
 \item{use_W}{Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.}
 

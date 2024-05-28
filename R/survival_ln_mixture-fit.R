@@ -32,8 +32,6 @@
 #'
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #'
-#' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
-#'
 #' @param use_W Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.
 #'
 #' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
@@ -66,7 +64,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), sparse = FALSE, use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), use_W = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -125,7 +123,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      show_progress = FALSE,
                                      em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
-                                     sparse = FALSE,
                                      use_W = FALSE,
                                      better_initial_values = TRUE,
                                      number_em_search = 200,
@@ -178,10 +175,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("The parameter fast_groups must be TRUE or FALSE.")
   }
   
-  if (!is.logical(sparse)) {
-    rlang::abort("The parameter sparse must be TRUE or FALSE.")
-  }
-  
   if (number_em_search <= 0 | (number_em_search %% 1) != 0) {
     rlang::abort("The parameter number_em_search should be a positive integer.")
   }
@@ -228,7 +221,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   posterior_dist <- run_posterior_samples(
-    iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, sparse, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups
+    iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups
   )
 
   # returning the function output
@@ -395,8 +388,6 @@ permute_columns <- function(posterior) {
 #'
 #' @param thin thinning das cadeias
 #'
-#' @param sparse indica se deve utilizar computação esparsa
-#'
 #' @param use_W indica se deve utilizar Empirical Bayes, mantendo a matriz W do EM constante
 #'
 #' @return matriz
@@ -408,7 +399,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
-                                  show_progress, warmup, thin, sparse, use_W,
+                                  show_progress, warmup, thin, use_W,
                                   better_initial_values, number_em_search,
                                   iterations_em_search, fast_groups) {
   set.seed(starting_seed)
@@ -423,7 +414,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     outcome_times, outcome_status,
     predictors, proposal_variance,
     seeds, show_progress,
-    chains, sparse, use_W,
+    chains, use_W,
     better_initial_values, number_em_search, iterations_em_search,
     fast_groups
   )

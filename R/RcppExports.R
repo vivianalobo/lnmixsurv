@@ -4,11 +4,11 @@
 #' @importFrom RcppParallel RcppParallelLibs
 NULL
 
-lognormal_mixture_gibbs <- function(Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, sparse, use_W, better_initial_values, N_em, Niter_em, fast_groups) {
-    .Call(`_lnmixsurv_lognormal_mixture_gibbs`, Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, sparse, use_W, better_initial_values, N_em, Niter_em, fast_groups)
+lognormal_mixture_gibbs <- function(Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, use_W, better_initial_values, N_em, Niter_em, fast_groups) {
+    .Call(`_lnmixsurv_lognormal_mixture_gibbs`, Niter, em_iter, G, t, delta, X, a, starting_seed, show_output, n_chains, use_W, better_initial_values, N_em, Niter_em, fast_groups)
 }
 
-lognormal_mixture_em_implementation <- function(Niter, G, t, delta, X, starting_seed, sparse, better_initial_values, N_em, Niter_em) {
-    .Call(`_lnmixsurv_lognormal_mixture_em_implementation`, Niter, G, t, delta, X, starting_seed, sparse, better_initial_values, N_em, Niter_em)
+lognormal_mixture_em_implementation <- function(Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em) {
+    .Call(`_lnmixsurv_lognormal_mixture_em_implementation`, Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em)
 }
 

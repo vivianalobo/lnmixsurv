@@ -16,8 +16,6 @@
 #'
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
-#' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
-#'
 #' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
 #'
 #' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
@@ -27,7 +25,7 @@
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), sparse = FALSE, better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }
@@ -85,7 +83,6 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
                                         predictors, iter = 50,
                                         mixture_components = 2,
                                         starting_seed = sample(1:2^28, 1),
-                                        sparse = FALSE,
                                         better_initial_values = TRUE,
                                         number_em_search = 200,
                                         iteration_em_search = 1) {
@@ -129,10 +126,6 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     rlang::abort("The parameter mixture_components should be a positive integer.")
   }
   
-  if (!is.logical(sparse)) {
-    rlang::abort("The parameter sparse should be TRUE or FALSE.")
-  }
-  
   if (!is.logical(better_initial_values)) {
     rlang::abort("The parameter better_initial_values should be TRUE or FALSE.")
   }
@@ -154,7 +147,7 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
 
   matrix_em_iter <- lognormal_mixture_em_implementation(
     iter, mixture_components, outcome_times,
-    outcome_status, predictors, seed, sparse, better_initial_values, number_em_search, iteration_em_search
+    outcome_status, predictors, seed, better_initial_values, number_em_search, iteration_em_search
   )
 
   predictors_names <- colnames(predictors)
