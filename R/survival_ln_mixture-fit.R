@@ -21,9 +21,7 @@
 #'
 #' @param chains A positive integer specifying the number of Markov chains.
 #'
-#' @param cores A positive integer specifying the maximum number of cores to run the chains. If cores == 1, the chains will run sequentially on one core each. If cores > 1, each chain will run in each core. For example, if chains = 6 and cores = 4, the first 4 chains will run with the 4 cores (one core each) and after that, 2 chains are going to run using 2 cores. If the number of cores is bigger than the number of chains, the excess will be ignored and the number of cores used will be the number of chains specified.
-#'
-#' @param force_num_cores A logical value indicating if the number of cores desired should be forced. Specifically, setting this to true runs omp_set_dynamic(0). Forcing the number of cores can result on C stack getting to close to the limit, resulting in the program to break. If this error keeps happening, try reducing the number of cores utilized in the parallellization.
+#' @param cores A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode
 #'
 #' @param mixture_components number of mixture componentes >= 2.
 #'
@@ -33,9 +31,13 @@
 #'
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
 #'
-#' @param sparse Useful if the design matrix is sparse (most cases with categorical only regressors). Can save a lot of memory, allowing for huge data to be fitted.
-#'
 #' @param use_W Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.
+#'
+#' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100. This value can be set to 0 to disable the search for maximum likelihood initial values.
+#'
+#' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
+#'
+#' @param fast_groups Use fast computation of groups allocations probabilities, defaults to TRUE. Setting it to FALSE can increase the computation time (a lot) but it's worth trying if the chains are not converging.
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
@@ -59,7 +61,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), force_num_cores = FALSE, sparse = FALSE, use_W = FALSE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), use_W = FALSE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -118,9 +120,10 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      show_progress = FALSE,
                                      em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
-                                     force_num_cores = FALSE,
-                                     sparse = FALSE,
-                                     use_W = FALSE) {
+                                     use_W = FALSE,
+                                     number_em_search = 200,
+                                     iteration_em_search = 1,
+                                     fast_groups = TRUE) {
   number_of_predictors <- ncol(predictors)
 
   if (any(is.na(predictors))) {
@@ -153,15 +156,23 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   }
 
   if (!is.logical(show_progress)) {
-    rlang::abort("The parameter show_progress must be a logical (TRUE/FALSE).")
-  }
-
-  if (!is.logical(force_num_cores)) {
-    rlang::abort("The parameter force_num_cores must be a logical (TRUE/FALSE).")
+    rlang::abort("The parameter show_progress must be TRUE or FALSE.")
   }
 
   if (!is.logical(use_W)) {
-    rlang::abort("The parameter use_W must be a logical (TRUE/FALSE).")
+    rlang::abort("The parameter use_W must be TRUE or FALSE.")
+  }
+
+  if (!is.logical(fast_groups)) {
+    rlang::abort("The parameter fast_groups must be TRUE or FALSE.")
+  }
+
+  if (number_em_search < 0 | (number_em_search %% 1) != 0) {
+    rlang::abort("The parameter number_em_search should be a non-negative integer.")
+  }
+
+  if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
+    rlang::abort("The parameter iteration_em_search should be a positive integer.")
   }
 
   if (use_W & (em_iter <= 0)) {
@@ -201,19 +212,9 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
     rlang::abort("The number of cores should be a natural number, at least 1.")
   }
 
-  posterior_dist <- run_posterior_samples(
-    iter, em_iter,
-    chains, cores,
-    force_num_cores,
-    mixture_components,
-    outcome_times,
-    outcome_status,
-    predictors,
-    proposal_variance,
-    starting_seed,
-    show_progress,
-    warmup, thin, sparse, use_W
-  )
+  better_initial_values <- as.logical((em_iter > 0) & (number_em_search > 0))
+
+  posterior_dist <- run_posterior_samples(iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups)
 
   # returning the function output
   list(
@@ -379,8 +380,6 @@ permute_columns <- function(posterior) {
 #'
 #' @param thin thinning das cadeias
 #'
-#' @param sparse indica se deve utilizar computação esparsa
-#'
 #' @param use_W indica se deve utilizar Empirical Bayes, mantendo a matriz W do EM constante
 #'
 #' @return matriz
@@ -389,23 +388,29 @@ permute_columns <- function(posterior) {
 
 
 run_posterior_samples <- function(iter, em_iter, chains, cores,
-                                  force_num_cores,
                                   mixture_components, outcome_times,
                                   outcome_status, predictors,
                                   proposal_variance, starting_seed,
-                                  show_progress, warmup, thin, sparse, use_W) {
+                                  show_progress, warmup, thin, use_W,
+                                  better_initial_values, number_em_search,
+                                  iterations_em_search, fast_groups) {
   set.seed(starting_seed)
   seeds <- sample(1:2^28, chains)
 
   list_posteriors <- NULL
 
+  RcppParallel::setThreadOptions(cores)
+
   posterior <- lognormal_mixture_gibbs(
     iter, em_iter, mixture_components,
     outcome_times, outcome_status,
     predictors, proposal_variance,
-    seeds, show_progress, cores,
-    chains, force_num_cores, sparse, use_W
+    seeds, show_progress,
+    chains, use_W,
+    better_initial_values, number_em_search, iterations_em_search,
+    fast_groups
   )
+
   for (i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[, , i])
 

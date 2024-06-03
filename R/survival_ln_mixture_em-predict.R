@@ -71,9 +71,12 @@ predict_survival_ln_mixture_em_hazard <- function(model, predictors, eval_time) 
 extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
 
-  last_row <- model$em_iterations[nrow(model$em_iterations), ]
+  last_row <- model$em_iterations[nrow(model$em_iterations), -ncol(model$em_iterations)]
 
-  beta <- matrix(as.numeric(last_row[startsWith(names(last_row), "beta")]),
+  beta <- matrix(
+    as.numeric(last_row[
+      !startsWith(names(last_row), "eta") & !(startsWith(names(last_row), "phi"))
+    ]),
     ncol = model$mixture_groups
   )
 
