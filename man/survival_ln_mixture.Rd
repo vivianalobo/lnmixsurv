@@ -21,7 +21,6 @@ survival_ln_mixture(
   em_iter = 0,
   starting_seed = sample(1:2^28, 1),
   use_W = FALSE,
-  better_initial_values = TRUE,
   number_em_search = 200,
   iteration_em_search = 1,
   fast_groups = TRUE,
@@ -50,7 +49,7 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{chains}{A positive integer specifying the number of Markov chains.}
 
-\item{cores}{A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode.}
+\item{cores}{A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode}
 
 \item{mixture_components}{number of mixture componentes >= 2.}
 
@@ -64,9 +63,7 @@ The number of warmup iterations should be smaller than iter.}
 
 \item{use_W}{Specifies is the W (groups weight's matrix for each observation) should be used from EM. It holds W constant through the code, resulting in a faster Bayesian Inference (close to what Empirical Bayes would do). It may helps generating credible intervals for the survival and hazard curves, using the information from the previous EM iteration. Make sure the EM have converged before setting this parameter to true. In doubt, leave this as FALSE, the default.}
 
-\item{better_initial_values}{A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.}
-
-\item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.}
+\item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100. This value can be set to 0 to disable the search for maximum likelihood initial values.}
 
 \item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.}
 

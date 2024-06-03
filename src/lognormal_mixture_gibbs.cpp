@@ -277,8 +277,6 @@ double augment_yi(const double& yi, const double& mean, const double& sd, gsl_rn
 arma::vec augment(const int& G, const arma::vec& y, const arma::ivec& groups,
                   const arma::ivec& delta, const arma::vec& sd, 
                   const arma::mat& beta, const arma::mat& X, gsl_rng* rng_device) {
-  
-  int n = X.n_rows;
   arma::vec out = y;
   arma::mat mean = X * beta.t(); // pre-compute the mean matrix
   arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
@@ -471,7 +469,7 @@ double loglik_em(const arma::vec& eta, const arma::mat& beta, const arma::vec& s
 // EM for the lognormal mixture model.
 arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X,
                                             const bool& better_initial_values, const int& N_em,
-                                            const int& Niter_em, const bool& internal, gsl_rng* rng_device) {
+                                            const int& Niter_em, const bool& internal, const bool& show_output, gsl_rng* rng_device) {
   
   int n = X.n_rows;
   int k = X.n_cols;
@@ -503,14 +501,18 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
       
       if(better_initial_values) {
         for (int init = 0; init < N_em; init ++) {
-          em_params = lognormal_mixture_em(Niter_em, G, t, delta, X, false, 0, 0, true, rng_device);
+          em_params = lognormal_mixture_em(Niter_em, G, t, delta, X, false, 0, 0, true, false, rng_device);
           
           if(init == 0) {
             best_em = em_params;
-            Rcout << "Initial LogLik: " << arma::as_scalar(best_em(5)) << "\n";
+            if(show_output) {
+              Rcout << "Initial LogLik: " << arma::as_scalar(best_em(5)) << "\n";
+            }
           } else {
             if(arma::as_scalar(em_params(5)) > arma::as_scalar(best_em(5))) { // comparing logliks
-              Rcout << "Previous maximum: " << arma::as_scalar(best_em(5)) << " | New maximum: " << arma::as_scalar(em_params(5))  << "\n";
+              if(show_output) {
+                Rcout << "Previous maximum: " << arma::as_scalar(best_em(5)) << " | New maximum: " << arma::as_scalar(em_params(5))  << "\n";
+              }
               best_em = em_params;
             }
           }
@@ -520,6 +522,9 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
         beta = best_em(1);
         phi = best_em(2);
         W = best_em(3);
+        if(show_output) {
+          Rcout << "Starting EM with better initial values" << "\n";
+        }
       } else {
         sample_initial_values_em(eta, phi, beta, sd, G, k, rng_device);
         W = compute_W(y, X, eta, beta, sd, G, n, denom, mat_denom, repl_vec);
@@ -531,6 +536,12 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
       z = augment_em(y, censored_indexes, X, beta, sd, W, G, mean, alpha_mat, n);
       W = compute_W(z, X, eta, beta, sd, G, n, denom, mat_denom, repl_vec);
       update_em_parameters(n, G, eta, beta, phi, W, X, y, z, censored_indexes, sd, rng_device, quant, denom, alpha, Wg, colg);
+
+      if(show_output) {
+        if((iter + 1) % 20 == 0) {
+          Rcout << "EM Iter: " << (iter + 1) << " | " << Niter << "\n";
+        }
+      }
     }
     
     // Fill the out matrix
@@ -802,7 +813,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   
   if(em_iter > 0) {
     // starting EM algorithm to find values close to the MLE
-    em_params = lognormal_mixture_em(em_iter, G, t, delta, X, better_initial_values, N_em, Niter_em, true, global_rng);
+    em_params = lognormal_mixture_em(em_iter, G, t, delta, X, better_initial_values, N_em, Niter_em, true, false, global_rng);
   } else if(show_output) {
     Rcout << "Skipping EM Algorithm" << "\n";
   }
@@ -927,14 +938,14 @@ arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, co
                                               const arma::ivec& delta, const arma::mat& X, 
                                               long long int starting_seed,
                                               const bool& better_initial_values, const int& N_em,
-                                              const int& Niter_em) {
+                                              const int& Niter_em, const bool& show_output) {
   
   gsl_rng* global_rng = gsl_rng_alloc(gsl_rng_default);
   
   // setting global seed to start the sampler
   setSeed(starting_seed, global_rng);
   
-  arma::field<arma::mat> out = lognormal_mixture_em(Niter, G, t, delta, X, better_initial_values, N_em, Niter_em, false, global_rng);
+  arma::field<arma::mat> out = lognormal_mixture_em(Niter, G, t, delta, X, better_initial_values, N_em, Niter_em, false, show_output, global_rng);
   
   return out(0);
 }

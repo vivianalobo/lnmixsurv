@@ -16,16 +16,17 @@
 #'
 #' @param intercept A logical. Should an intercept be included in the processed data?
 #'
-#' @param better_initial_values A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.
-#'
 #' @param number_em_search Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.
 #'
 #' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
+#' 
+#' @param show_progress A logical. Should the progress of the EM algorithm be shown?
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @export
-survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), better_initial_values = TRUE, number_em_search = 200, iteration_em_search = 1, ...) {
+survival_ln_mixture_em <- function(formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), number_em_search = 200, iteration_em_search = 1,
+show_progress = FALSE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture_em")
 }
@@ -83,9 +84,9 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
                                         predictors, iter = 50,
                                         mixture_components = 2,
                                         starting_seed = sample(1:2^28, 1),
-                                        better_initial_values = TRUE,
                                         number_em_search = 200,
-                                        iteration_em_search = 1) {
+                                        iteration_em_search = 1,
+                                        show_progress = FALSE) {
   # Verifications
   if (any(is.na(predictors))) {
     "There is one or more NA values in the predictors variable."
@@ -126,28 +127,31 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     rlang::abort("The parameter mixture_components should be a positive integer.")
   }
   
-  if (!is.logical(better_initial_values)) {
-    rlang::abort("The parameter better_initial_values should be TRUE or FALSE.")
-  }
-  
-  if (number_em_search <= 0 | (number_em_search %% 1) != 0) {
-    rlang::abort("The parameter number_em_search should be a positive integer.")
+  if (number_em_search < 0 | (number_em_search %% 1) != 0) {
+    rlang::abort("The parameter number_em_search should be a non-negative integer.")
   }
   
   if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
     rlang::abort("The parameter iteration_em_search should be a positive integer.")
   }
 
+  if (!is.logical(show_progress)) {
+    rlang::abort("The parameter show_progress should be a logical value.")
+  }
+  
+  better_initial_values <- as.logical(number_em_search > 0)
+  
   # These next two lines seems to be unecessary but they are essencial to ensure
   # the reproducibility of the EM iterations on the Gibbs sampler. For an user,
   # interested only in using the EM, this is irrelevant.
+  
   set.seed(starting_seed)
 
   seed <- sample(1:2^28, 1)
 
   matrix_em_iter <- lognormal_mixture_em_implementation(
     iter, mixture_components, outcome_times,
-    outcome_status, predictors, seed, better_initial_values, number_em_search, iteration_em_search
+    outcome_status, predictors, seed, better_initial_values, number_em_search, iteration_em_search, show_progress
   )
 
   predictors_names <- colnames(predictors)

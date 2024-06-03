@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
   
 The Expectation-Maximization (EM) algorithm is available through the function `survival_ln_mixture_em` and it's a frequentist method in alternative to the Bayesian approach. It handles better big data situations when the Bayesian approach will run out of memory or take a lot of time to finish.
   
-Using it is similar to using the Bayesian method, `survival_ln_mixture`, sharing a lot of similar parameters and specifications.
+Using it is similar to using the Bayesian method, `survival_ln_mixture`, sharing a lot of similar parameters and specifications. Here follows a really basic code to fit the model using the EM algorithm.
   
 ```{r}
 library(lnmixsurv)
@@ -25,16 +25,22 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 
-data <- sim_data$data
+set.seed(25)
+
+data <- simulate_data(4000, mixture_components = 3, k = 2, 
+                         percentage_censored = 0.2)$data |> 
+  rename(x = cat, y = t)
+
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-  data = data,
-  iter = 250,
-  starting_seed = 20,
-  mixture_components = 2
-)
+                                   data = data,
+                                   iter = 100,
+                                   starting_seed = 5,
+                                   number_em_search = 0)
 ```
 
-Unlike the Bayesian approach, which samples from the posteriori via Gibbs sampler, the EM algorithm is a maximum likelihood method, moving, in each iteration, closer to the maximum of each parameter. The function `plot` can be used to visualize the iterations path towards the maximum.
+The parameters `number_em_search` is used to find initial values closer to the maximum likelihood, avoid local maximas. Here, we are just disabling it to show it's impact.
+
+Unlike the Bayesian approach, which samples from the posteriori via Gibbs sampler, the EM algorithm is a maximum likelihood method, moving, in each iteration, closer the parameters values closer to the model's maximum likelihood. The function `plot` can be used to visualize the iterations of the algorithm, assessing for convergence.
 
 ```{r fig.width=7}
 plot(model_em)
@@ -43,10 +49,10 @@ plot(model_em)
 The predict of survival and hazard curves proceeds just like with the Bayesian approach, noting that using the EM method we don't have credible or confidence intervals.
 
 ```{r}
-new_data <- data %>% distinct(x)
-predictions <- model_em %>%
-  predict(new_data, type = "survival", eval_time = 1:300) %>%
-  mutate(x = new_data$x) %>%
+new_data <- data |> distinct(x)
+predictions <- model_em |>
+  predict(new_data, type = "survival", eval_time = seq(1500)) |>
+  mutate(x = new_data$x) |>
   unnest(cols = c(.pred))
 ```
 
@@ -59,37 +65,36 @@ km_surv <- ggsurvfit::survfit2(Surv(y, delta) ~ x, data) |>
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
     data = km_surv,
-    alpha = 0.6
-  ) +
+    alpha = 0.6) +
   geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```
 
-Increasing the number of mixture components may produce better estimates.
+As expected, the fitted model isn't very great. One can find that increasing the parameter `number_em_search` helps to find better initial values, and thus, better fits, in exchange of computational time. We can see how the initials values likelihood change setting the parameter `show_progress = TRUE`.
 
-```{r fig.width=7}
+```{r}
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-  data = data,
-  iter = 400,
-  starting_seed = 20,
-  mixture_components = 4
-)
-
-plot(model_em)
+                                   data = data,
+                                   iter = 100,
+                                   starting_seed = 5,
+                                   number_em_search = 200,
+                                   show_progress = TRUE)
 ```
 
-```{r fig.width=7}
-new_data <- data %>% distinct(x)
-predictions <- model_em %>%
-  predict(new_data, type = "survival", eval_time = 1:300) %>%
-  mutate(x = new_data$x) %>%
+Now, we have a maximum likelihood estimator that avoids local maximas. The model can be used to predict new data, as before.
+
+```{r fig.width = 7}
+predictions <- model_em |>
+  predict(new_data, type = "survival", eval_time = seq(1500)) |>
+  mutate(x = new_data$x) |>
   unnest(cols = c(.pred))
 
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
     data = km_surv,
-    alpha = 0.6
-  ) +
+    alpha = 0.6) +
   geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```
+
+In fact, the model is now much better. The EM algorithm is a good alternative to the Bayesian approach when dealing with big data, but it's important to note that it's a maximum likelihood method, and thus, it doesn't provide credible or confidence intervals.

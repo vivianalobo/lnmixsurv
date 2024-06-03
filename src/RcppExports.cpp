@@ -38,8 +38,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // lognormal_mixture_em_implementation
-arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X, long long int starting_seed, const bool& better_initial_values, const int& N_em, const int& Niter_em);
-RcppExport SEXP _lnmixsurv_lognormal_mixture_em_implementation(SEXP NiterSEXP, SEXP GSEXP, SEXP tSEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP starting_seedSEXP, SEXP better_initial_valuesSEXP, SEXP N_emSEXP, SEXP Niter_emSEXP) {
+arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, const arma::vec& t, const arma::ivec& delta, const arma::mat& X, long long int starting_seed, const bool& better_initial_values, const int& N_em, const int& Niter_em, const bool& show_output);
+RcppExport SEXP _lnmixsurv_lognormal_mixture_em_implementation(SEXP NiterSEXP, SEXP GSEXP, SEXP tSEXP, SEXP deltaSEXP, SEXP XSEXP, SEXP starting_seedSEXP, SEXP better_initial_valuesSEXP, SEXP N_emSEXP, SEXP Niter_emSEXP, SEXP show_outputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -52,14 +52,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool& >::type better_initial_values(better_initial_valuesSEXP);
     Rcpp::traits::input_parameter< const int& >::type N_em(N_emSEXP);
     Rcpp::traits::input_parameter< const int& >::type Niter_em(Niter_emSEXP);
-    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_em_implementation(Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em));
+    Rcpp::traits::input_parameter< const bool& >::type show_output(show_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(lognormal_mixture_em_implementation(Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em, show_output));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_lnmixsurv_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_lognormal_mixture_gibbs, 15},
-    {"_lnmixsurv_lognormal_mixture_em_implementation", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em_implementation, 9},
+    {"_lnmixsurv_lognormal_mixture_em_implementation", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em_implementation, 10},
     {NULL, NULL, 0}
 };
 

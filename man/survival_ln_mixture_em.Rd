@@ -13,9 +13,9 @@ survival_ln_mixture_em(
   iter = 50,
   mixture_components = 2,
   starting_seed = sample(1:2^28, 1),
-  better_initial_values = TRUE,
   number_em_search = 200,
   iteration_em_search = 1,
+  show_progress = FALSE,
   ...
 )
 
@@ -38,11 +38,11 @@ object.}
 
 \item{starting_seed}{Starting seed for the algorithm. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.}
 
-\item{better_initial_values}{A logical value indicating if the algorithm should search for better initial values of the EM algorithm. Recommended to leave it to TRUE, always, since the computational cost is very small.}
-
 \item{number_em_search}{Number of different EM's to search for maximum likelihoods. Recommended to leave, at least, at 100.}
 
 \item{iteration_em_search}{Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.}
+
+\item{show_progress}{A logical. Should the progress of the EM algorithm be shown?}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
