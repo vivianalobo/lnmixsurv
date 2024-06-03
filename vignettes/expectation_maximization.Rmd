@@ -27,15 +27,18 @@ library(ggplot2)
 
 set.seed(25)
 
-data <- simulate_data(4000, mixture_components = 3, k = 2, 
-                         percentage_censored = 0.2)$data |> 
+data <- simulate_data(4000,
+  mixture_components = 3, k = 2,
+  percentage_censored = 0.2
+)$data |>
   rename(x = cat, y = t)
 
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-                                   data = data,
-                                   iter = 100,
-                                   starting_seed = 5,
-                                   number_em_search = 0)
+  data = data,
+  iter = 100,
+  starting_seed = 5,
+  number_em_search = 0
+)
 ```
 
 The parameters `number_em_search` is used to find initial values closer to the maximum likelihood, avoid local maximas. Here, we are just disabling it to show it's impact.
@@ -65,7 +68,8 @@ km_surv <- ggsurvfit::survfit2(Surv(y, delta) ~ x, data) |>
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
     data = km_surv,
-    alpha = 0.6) +
+    alpha = 0.6
+  ) +
   geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```
@@ -74,11 +78,12 @@ As expected, the fitted model isn't very great. One can find that increasing the
 
 ```{r}
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-                                   data = data,
-                                   iter = 100,
-                                   starting_seed = 5,
-                                   number_em_search = 200,
-                                   show_progress = TRUE)
+  data = data,
+  iter = 100,
+  starting_seed = 5,
+  number_em_search = 200,
+  show_progress = TRUE
+)
 ```
 
 Now, we have a maximum likelihood estimator that avoids local maximas. The model can be used to predict new data, as before.
@@ -92,7 +97,8 @@ predictions <- model_em |>
 ggplot() +
   geom_path(aes(x = time, y = estimate, color = strata),
     data = km_surv,
-    alpha = 0.6) +
+    alpha = 0.6
+  ) +
   geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
   theme_light()
 ```

@@ -30,10 +30,12 @@ require(ggplot2)
 
 set.seed(25)
 
-dados <- simulate_data(n = 4000, 
-                       mixture_components = 3, 
-                       k = 2, 
-                       percentage_censored = 0.2)$data |> 
+dados <- simulate_data(
+  n = 4000,
+  mixture_components = 3,
+  k = 2,
+  percentage_censored = 0.2
+)$data |>
   rename(x = cat, y = t)
 
 new_data <- dados |> distinct(x)
@@ -69,12 +71,14 @@ decision_tree <- decision_tree(cost_complexity = 0) |>
 ln_mixture <- survival_reg() |>
   set_engine("survival_ln_mixture",
     iter = 500, warmup = 0, em_iter = 100, mixture_components = 3,
-    starting_seed = 5)
+    starting_seed = 5
+  )
 
 ln_mixture_em <- survival_reg() |>
   set_engine("survival_ln_mixture_em",
     iter = 100, mixture_components = 3,
-    starting_seed = 5)
+    starting_seed = 5
+  )
 
 specs <- list(
   ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em = ln_mixture_em

@@ -38,7 +38,7 @@
 #' @param iteration_em_search Number of iterations for each of the EM's used to find the maximum likelihoods. Recommended to leave at small values, such as from 1 to 5.
 #'
 #' @param fast_groups Use fast computation of groups allocations probabilities, defaults to TRUE. Setting it to FALSE can increase the computation time (a lot) but it's worth trying if the chains are not converging.
-#' 
+#'
 #' @param ... Not currently used, but required for extensibility.
 #'
 #' @note Categorical predictors must be converted to factors before the fit,
@@ -162,15 +162,15 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   if (!is.logical(use_W)) {
     rlang::abort("The parameter use_W must be TRUE or FALSE.")
   }
-  
+
   if (!is.logical(fast_groups)) {
     rlang::abort("The parameter fast_groups must be TRUE or FALSE.")
   }
-  
+
   if (number_em_search < 0 | (number_em_search %% 1) != 0) {
     rlang::abort("The parameter number_em_search should be a non-negative integer.")
   }
-  
+
   if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
     rlang::abort("The parameter iteration_em_search should be a positive integer.")
   }
@@ -211,9 +211,9 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
   if (cores < 1 | (cores %% 1) != 0) {
     rlang::abort("The number of cores should be a natural number, at least 1.")
   }
-  
+
   better_initial_values <- as.logical((em_iter > 0) & (number_em_search > 0))
-  
+
   posterior_dist <- run_posterior_samples(iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups)
 
   # returning the function output
@@ -410,7 +410,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
     better_initial_values, number_em_search, iterations_em_search,
     fast_groups
   )
-  
+
   for (i in 1:chains) {
     posterior_chain_i <- as.data.frame(posterior[, , i])
 
