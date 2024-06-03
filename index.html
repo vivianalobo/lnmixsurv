@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,9 +47,8 @@
     <a class="dropdown-item" href="articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="articles/expectation_maximization.html">Expectation Maximization</a>
     <a class="dropdown-item" href="articles/intercept_only.html">Intercept only fits</a>
-    <a class="dropdown-item" href="articles/parallel_computation.html">Parallel computation</a>
+    <a class="dropdown-item" href="articles/parallel_computation.html">Parallel computation and posterior analysis</a>
     <a class="dropdown-item" href="articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
-    <a class="dropdown-item" href="articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
 </li>
       </ul>
@@ -69,36 +68,38 @@
 </h1></div>
 <!-- badges: start -->
 
+<!-- badges: end -->
 <p>The <code>lnmixsurv</code> package provides an easy interface to the Bayesian lognormal mixture model proposed by <a href="https://www.cambridge.org/core/journals/annals-of-actuarial-science/article/abs/lapse-risk-modeling-in-insurance-a-bayesian-mixture-approach/EDA511D313959D9A4040C51289A29B4A" class="external-link">Lobo, Fonseca and Alves, 2023</a>.</p>
 <p>An usual formula-type model is implemented in <code>survival_ln_mixture</code>, with the usual <code>suvival::Surv()</code> interface. The model tries to follow the <a href="https://tidymodels.github.io/model-implementation-principles/" class="external-link">conventions for R modeling packages</a>, and uses the <a href="https://hardhat.tidymodels.org/" class="external-link">hardhat</a> structure.</p>
-<p>The underlying algorithm implementation is a Gibbs sampler which takes initial values from a small run of the EM-Algorithm. The samplers are implemented in <code>C++</code> using <code>RcppArmadillo</code> for the linear algebra operations, <code>RcppGSL</code> for the random number generation and <code>OpenMP</code> for parallellization.</p>
+<p>The underlying algorithm implementation is a Gibbs sampler which takes initial values from a small run of the EM-Algorithm, with initial values selection based on the log-likelihood. Besides the Bayesian approach, the Expectation-Maximization approach (which focus on maximizing the likelihood) for censored data is also available. The methods are implemented in <code>C++</code> using <code>RcppArmadillo</code> for the linear algebra operations, <code>RcppGSL</code> for the random number generation and seed control and <code>RcppParallel</code> (since version 3.0.0) for parallelization.</p>
 <div class="section level2">
 <h2 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a>
 </h2>
-<p>Before proceeding, make sure to have <a href="https://www.gnu.org/software/gsl/" class="external-link">GSL</a> installed on your system. Below, there are specific tutorial on how to install these for each operational system other than Windows (Windows users are probably fine and ready to go).</p>
-<p>The package also depends on OpenMP, which should be fine for both Linux and Windows users. For MacOS users, there is a little guide bellow.</p>
+<p>The only dependency is on GSL, so, make sure you have <a href="https://www.gnu.org/software/gsl/" class="external-link">GSL</a> installed before proceeding Below, there are some basic guides on how to install these for each operational system other than Windows (Windows users are probably fine and ready to go).</p>
 <div class="section level3">
 <h3 id="mac-os">Mac OS<a class="anchor" aria-label="anchor" href="#mac-os"></a>
 </h3>
-<p>Specifically, on Mac OS, running <code>brew install gsl libomp</code> on the console/terminal should be enough for GSL and OpenMP. The OpenMP is <a href="https://github.com/Rdatatable/data.table" class="external-link">known</a> to have issues with Mac’s default compiler (clang). Thus, there are some additional steps that envolves modifying your <strong>~/.R/Makevars</strong>, appending</p>
-<blockquote>
-<p>CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp</p>
-<p>LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp</p>
-</blockquote>
-<p>to it.</p>
-<p>If you don’t know how to do it or are having troubles accessing the file, try opening the console/terminal and running <code>cat ~/.R/Makevars</code>. If it’s empty or doesn’t exist, simply run</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>mkdir <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span> <span class="er">&amp;&amp;</span> touch <span class="sc">~</span><span class="er">/</span>.R<span class="sc">/</span>Makevars <span class="sc">&amp;&amp;</span> echo <span class="sc">-</span>e <span class="st">"LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp</span><span class="sc">\n</span><span class="st">CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp"</span> <span class="sc">&gt;</span><span class="er">&gt;</span> <span class="er">~/</span>.R<span class="sc">/</span>Makevars</span></code></pre></div>
-<p>This will create the folder <strong>~/.R</strong>, create the file <strong>Makevars</strong> inside this folder and append the flags cited above to it. Your Makevars is something you don’t want to be messing around, so if after running <code>cat ~/.R/Makevars</code> you see something, just run</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>echo <span class="sc">-</span>e <span class="st">"LDFLAGS += -L/opt/homebrew/opt/libomp/lib -lomp</span><span class="sc">\n</span><span class="st">CPPFLAGS += -I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp"</span> <span class="sc">&gt;</span><span class="er">&gt;</span> <span class="er">~/</span>.R<span class="sc">/</span>Makevars</span></code></pre></div>
-<p>on your terminal to append the necessary flags to your <strong>Makevars</strong>.</p>
-<p>After that, you’re ready to install the package.</p>
+<p><code>brew install gsl</code> on the console/terminal should be enough for GSL.</p>
+</div>
+<div class="section level3">
+<h3 id="linux">Linux<a class="anchor" aria-label="anchor" href="#linux"></a>
+</h3>
+<p>The installation of GSL on Linux is distro-specific. For the main distros out-there:</p>
+<ul>
+<li>Debian/Ubuntu: <code>sudo apt-get install libgsl-dev</code>
+</li>
+<li>Arch: <code>sudo pacman -S gsl</code>
+</li>
+<li>Fedora: <code>sudo dnf install gsl-devel</code>
+</li>
+</ul>
 </div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of <code>lnmixsurv</code> from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>You can install the latest development version of <code>lnmixsurv</code> from <a href="https://github.com/" class="external-link">GitHub</a>:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"vivianalobo/lnmixsurv"</span><span class="op">)</span></span></code></pre></div>
 </div>

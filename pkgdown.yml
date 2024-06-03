@@ -8,8 +8,7 @@ articles:
   lnmixsurv: lnmixsurv.html
   parallel_computation: parallel_computation.html
   parsnip_spec: parsnip_spec.html
-  posterior_analysis: posterior_analysis.html
-last_built: 2024-05-09T18:20Z
+last_built: 2024-06-03T19:41Z
 urls:
   reference: https://vivianalobo.github.io/lnmixsurv/reference
   article: https://vivianalobo.github.io/lnmixsurv/articles

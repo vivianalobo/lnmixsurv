@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,9 +47,8 @@
     <a class="dropdown-item" href="../articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="../articles/expectation_maximization.html">Expectation Maximization</a>
     <a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a>
-    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation</a>
+    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation and posterior analysis</a>
     <a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
-    <a class="dropdown-item" href="../articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
 </li>
       </ul>
@@ -105,17 +104,17 @@ package.</p>
 <span><span class="co">#&gt;  observations: 10000</span></span>
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; x0_1 4.045702 0.006138878 4.038495  4.053610</span></span>
-<span><span class="co">#&gt; x1_1 4.854249 0.006682625 4.846740  4.862596</span></span>
-<span><span class="co">#&gt; x0_2 3.433504 0.017049377 3.410715  3.454840</span></span>
-<span><span class="co">#&gt; x1_2 3.921988 0.021530883 3.896473  3.950619</span></span>
+<span><span class="co">#&gt;      estimate  std.error conf.low conf.high</span></span>
+<span><span class="co">#&gt; x0_1 3.776367 0.01284261 3.760174  3.792874</span></span>
+<span><span class="co">#&gt; x1_1 4.421211 0.01710622 4.398339  4.442778</span></span>
+<span><span class="co">#&gt; x0_2 3.777377 0.01598793 3.755727  3.798543</span></span>
+<span><span class="co">#&gt; x1_2 4.420467 0.02093817 4.393251  4.447830</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;         estimate   std.error   conf.low conf.high</span></span>
-<span><span class="co">#&gt; phi_1 27.0891539 1.295943283 25.5222495 28.645857</span></span>
-<span><span class="co">#&gt; phi_2  3.1512527 0.098025212  3.0290668  3.286397</span></span>
-<span><span class="co">#&gt; eta_1  0.5012071 0.009506147  0.4880692  0.512890</span></span></code></pre></div>
+<span><span class="co">#&gt;        estimate  std.error  conf.low conf.high</span></span>
+<span><span class="co">#&gt; phi_1 2.5721278 0.06928957 2.4871508 2.6619667</span></span>
+<span><span class="co">#&gt; phi_2 2.5705568 0.07741117 2.4683215 2.6747917</span></span>
+<span><span class="co">#&gt; eta_1 0.5777683 0.10141585 0.4311156 0.7275651</span></span></code></pre></div>
 <p>When using <code>recipes</code>, some caution must be taken due to
 the fact that recipes do not support inline functions (like
 <code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code>). A possible way to use them is to set both
@@ -157,17 +156,17 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt;  observations: 10000</span></span>
 <span><span class="co">#&gt;  predictors:   1</span></span>
 <span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;      estimate   std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; z0_1 4.045702 0.006138878 4.038495  4.053610</span></span>
-<span><span class="co">#&gt; z1_1 4.854249 0.006682625 4.846740  4.862596</span></span>
-<span><span class="co">#&gt; z0_2 3.433504 0.017049377 3.410715  3.454840</span></span>
-<span><span class="co">#&gt; z1_2 3.921988 0.021530883 3.896473  3.950619</span></span>
+<span><span class="co">#&gt;      estimate  std.error conf.low conf.high</span></span>
+<span><span class="co">#&gt; z0_1 3.776367 0.01284261 3.760174  3.792874</span></span>
+<span><span class="co">#&gt; z1_1 4.421211 0.01710622 4.398339  4.442778</span></span>
+<span><span class="co">#&gt; z0_2 3.777377 0.01598793 3.755727  3.798543</span></span>
+<span><span class="co">#&gt; z1_2 4.420467 0.02093817 4.393251  4.447830</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;         estimate   std.error   conf.low conf.high</span></span>
-<span><span class="co">#&gt; phi_1 27.0891539 1.295943283 25.5222495 28.645857</span></span>
-<span><span class="co">#&gt; phi_2  3.1512527 0.098025212  3.0290668  3.286397</span></span>
-<span><span class="co">#&gt; eta_1  0.5012071 0.009506147  0.4880692  0.512890</span></span></code></pre></div>
+<span><span class="co">#&gt;        estimate  std.error  conf.low conf.high</span></span>
+<span><span class="co">#&gt; phi_1 2.5721278 0.06928957 2.4871508 2.6619667</span></span>
+<span><span class="co">#&gt; phi_2 2.5705568 0.07741117 2.4683215 2.6747917</span></span>
+<span><span class="co">#&gt; eta_1 0.5777683 0.10141585 0.4311156 0.7275651</span></span></code></pre></div>
 <p>The predictions work as usual.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">new_data</span> <span class="op">&lt;-</span> <span class="va">dados</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
@@ -177,17 +176,18 @@ predicting, and thus, not needing to set these variables in
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.010<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.509</span></span>
-<span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.091<span style="text-decoration: underline;">9</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.384</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="va">mod_tidy</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">new_data</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/unnest.html" class="external-link">unnest</a></span><span class="op">(</span>cols <span class="op">=</span> <span class="va">.pred</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
 <span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
 <span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.010<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.509</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.091<span style="text-decoration: underline;">9</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.384</span></span></code></pre></div>
   </main>
 </div>
 

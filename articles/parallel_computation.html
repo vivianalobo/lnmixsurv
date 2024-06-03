@@ -6,12 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="lnmixsurv">
-<title>Parallel computation • lnmixsurv</title>
+<title>Parallel computation and posterior analysis • lnmixsurv</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Parallel computation">
+<!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js" integrity="sha512-7O5pXpc0oCRrxk8RUfDYFgn0nO1t+jLuIOQdOMRp4APB7uZ4vSjspzp5y6YDtDs4VzUSTbWzBFZ/LKJhnyFOKw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Parallel computation and posterior analysis">
 <meta property="og:description" content="lnmixsurv">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,9 +47,8 @@
     <a class="dropdown-item" href="../articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="../articles/expectation_maximization.html">Expectation Maximization</a>
     <a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a>
-    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation</a>
+    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation and posterior analysis</a>
     <a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
-    <a class="dropdown-item" href="../articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
 </li>
       </ul>
@@ -69,7 +68,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="" class="logo" alt=""><h1>Parallel computation</h1>
+      <img src="" class="logo" alt=""><h1>Parallel computation and posterior analysis</h1>
             
       
       
@@ -79,80 +78,82 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">knitr</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/knitr/man/opts_chunk.html" class="external-link">opts_chunk</a></span><span class="op">$</span><span class="fu">set</span><span class="op">(</span>warning <span class="op">=</span> <span class="cn">FALSE</span>, message <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: parsnip</span></span>
-<span><span class="co">#&gt; Loading required package: survival</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is bayesplot version 1.11.1</span></span>
-<span><span class="co">#&gt; - Online documentation and vignettes at mc-stan.org/bayesplot</span></span>
-<span><span class="co">#&gt; - bayesplot theme set to bayesplot::theme_default()</span></span>
-<span><span class="co">#&gt;    * Does _not_ affect other ggplot2 plots</span></span>
-<span><span class="co">#&gt;    * See ?bayesplot_theme_set for details on theme setting</span></span>
 <span></span>
 <span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot-colors.html" class="external-link">color_scheme_set</a></span><span class="op">(</span><span class="st">"viridis"</span><span class="op">)</span></span></code></pre></div>
 <p>It’s possible to run multiple chains in parallel, where each chain
 will run on one core, by specifying the cores argument. Any value above
-1 will automatically turn on the parallel mode.</p>
-<p><strong>This section is under construction</strong></p>
-<!-- ```{r} -->
-<!-- start <- Sys.time() -->
-<!-- mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                       data = sim_data$data, -->
-<!--                                       chains = 4, starting_seed = 50, -->
-<!--                                       em_iter = 10) -->
-<!-- # Time to run 4 chains sequentially: -->
-<!-- print(Sys.time() - start) -->
-<!-- start <- Sys.time() -->
-<!-- mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                     data = sim_data$data, -->
-<!--                                     chains = 4, cores = 4, -->
-<!--                                     starting_seed = 50, -->
-<!--                                     em_iter = 10) -->
-<!-- # Time to run 4 chains in parallel: -->
-<!-- print(Sys.time() - start) -->
-<!-- ``` -->
-<!-- Since the parallel approach is implemented with OpenMP, this should be faster than sequential approach for longer runs, but for really small runs they may be equivalent. Just make sure to have enough RAM available to run the chains in parallel. -->
-<!-- ```{r} -->
-<!-- start <- Sys.time() -->
-<!-- mod_sequential_small <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                             data = sim_data$data, -->
-<!--                                             iter = 100, em_iter = 5, -->
-<!--                                             chains = 4) -->
-<!-- # Time to run 1 EM iter and 400 MCMC iter on 4 chains, sequentially: -->
-<!-- print(Sys.time() - start) -->
-<!-- start <- Sys.time() -->
-<!-- mod_parallel_small <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                           data = sim_data$data, -->
-<!--                                           iter = 100, em_iter = 5, -->
-<!--                                           chains = 4, cores = 4) -->
-<!-- # Time to run 1 EM iter and 4 MCMC iter on 4 chains in parallel: -->
-<!-- print(Sys.time() - start) -->
-<!-- ``` -->
-<!-- ```{r} -->
-<!-- start <- Sys.time() -->
-<!-- mod_sequential_longer <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                            data = sim_data$data, -->
-<!--                                            iter = 8000, chains = 6, -->
-<!--                                            starting_seed = 50, -->
-<!--                                            em_iter = 50) -->
-<!-- # Time to run 6000 iterations in 6 chains in sequence: -->
-<!-- print(Sys.time() - start) -->
-<!-- start <- Sys.time() -->
-<!-- mod_parallel_longer <- survival_ln_mixture(Surv(y, delta) ~ x, -->
-<!--                                            data = sim_data$data, -->
-<!--                                            iter = 8000, chains = 6, -->
-<!--                                            cores = 6, -->
-<!--                                            starting_seed = 50, -->
-<!--                                            em_iter = 50) -->
-<!-- # Time to run 6000 iterations in 6 chains in parallel: -->
-<!-- print(Sys.time() - start) -->
-<!-- ``` -->
-<!-- Since the seed is fixed, we expect to obtain the same chain on both kind of operations. We can make sure this is happening by look at a small portion of the chains. -->
-<!-- ```{r} -->
-<!-- mcmc_trace(posterior::subset_draws(mod_sequential$posterior, iteration = 10:80, chain = c(1, 4), variable = 'eta_1')) -->
-<!-- mcmc_trace(posterior::subset_draws(mod_parallel$posterior, iteration = 10:80, chain = c(1, 4), variable = 'eta_1')) -->
-<!-- ``` -->
+1 will automatically turn on the parallel mode. If the argument
+<code>chains</code> is bigger than 1 and <code>cores</code> is set to 1
+or not specified, the chains will run sequentially. The package
+<code>RcppParallel</code> is used to run the chains in parallel.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">25</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_data.html">simulate_data</a></span><span class="op">(</span></span>
+<span>  n <span class="op">=</span> <span class="fl">4000</span>, mixture_components <span class="op">=</span> <span class="fl">3</span>, k <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  percentage_censored <span class="op">=</span> <span class="fl">0.2</span></span>
+<span><span class="op">)</span><span class="op">$</span><span class="va">data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">t</span>, x <span class="op">=</span> <span class="va">cat</span><span class="op">)</span></span></code></pre></div>
+<p>This piece of code will run the chains sequentially and save the
+times for the sake of comparison:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">start_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">mod_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">data</span>,</span>
+<span>  iter <span class="op">=</span> <span class="fl">50</span>, chains <span class="op">=</span> <span class="fl">2</span>, show_progress <span class="op">=</span> <span class="cn">T</span>,</span>
+<span>  starting_seed <span class="op">=</span> <span class="fl">5</span>, warmup <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
+<span><span class="co">#&gt; (Chain 1) MCMC Iter: 0/50</span></span>
+<span><span class="co">#&gt; Chain 1 finished sampling.</span></span>
+<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
+<span><span class="co">#&gt; (Chain 2) MCMC Iter: 0/50</span></span>
+<span><span class="co">#&gt; Chain 2 finished sampling.</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">end_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>We can specify the <code>cores</code> argument to run the chains in
+parallel. In this case, since we’re using <code>chains = 2</code>,
+specifying any number of cores above 2 will limit the number of cores to
+2. If the number of cores is between 1 and the number of chains, the
+chains will be fitted in parallel limited to the number of cores.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">start_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">mod_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">data</span>,</span>
+<span>  iter <span class="op">=</span> <span class="fl">50</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  show_progress <span class="op">=</span> <span class="cn">T</span>,</span>
+<span>  starting_seed <span class="op">=</span> <span class="fl">5</span>, warmup <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
+<span><span class="co">#&gt; (Chain 1) MCMC Iter: 0/50</span></span>
+<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
+<span><span class="co">#&gt; Chain 1 finished sampling.</span></span>
+<span><span class="co">#&gt; (Chain 2) MCMC Iter: 0/50</span></span>
+<span><span class="co">#&gt; Chain 2 finished sampling.</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">end_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Since the seed is fixed, the results should be the same. We can check
+that by comparing the posterior samples:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="va">mod_sequential</span><span class="op">$</span><span class="va">posterior</span>, pars <span class="op">=</span> <span class="st">"eta_1"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="parallel_computation_files/figure-html/unnamed-chunk-6-1.png" width="700"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="va">mod_parallel</span><span class="op">$</span><span class="va">posterior</span>, pars <span class="op">=</span> <span class="st">"eta_1"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="parallel_computation_files/figure-html/unnamed-chunk-6-2.png" width="700"></p>
+<p>It’s important to notice that these are the first 50 iterations of
+the Gibbs sampler executed just to show how to run the chains in
+parallel. The number of iterations should be increased to get reliable
+results.</p>
+<p>We expect the parallel algorithm to be faster. The times for the
+sequential and parallel runs are:</p>
+<pre><code><span><span class="co">#&gt; [1] "Sequential"</span></span>
+<span><span class="co">#&gt; Time difference of 1.27318 secs</span></span>
+<span><span class="co">#&gt; [1] "-------------"</span></span>
+<span><span class="co">#&gt; [1] "Parallel"</span></span>
+<span><span class="co">#&gt; Time difference of 1.241694 secs</span></span></code></pre>
+<p>The parallel run should be faster than the sequential run. The
+speedup will depend on the number of cores available and the number of
+chains.</p>
   </main>
 </div>
 

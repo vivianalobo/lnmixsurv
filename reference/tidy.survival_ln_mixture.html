@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.0.0</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,9 +30,8 @@
     <a class="dropdown-item" href="../articles/compare.html">Comparison with other models</a>
     <a class="dropdown-item" href="../articles/expectation_maximization.html">Expectation Maximization</a>
     <a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a>
-    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation</a>
+    <a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation and posterior analysis</a>
     <a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a>
-    <a class="dropdown-item" href="../articles/posterior_analysis.html">Posterior analysis with bayesplot</a>
   </div>
 </li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
@@ -110,7 +109,7 @@ returns one row for each coefficient for each component of the mixture with thre
 <dt>std.error</dt>
 <dd><p>A standard error for the point estimate based on
 <code><a href="https://rdrr.io/r/stats/mad.html" class="external-link">mad</a></code>. See the <em>Uncertainty estimates</em> section in
-<code><a href="https://mc-stan.org/rstanarm/reference/print.stanreg.html" class="external-link">print.stanreg</a></code> for more details.</p></dd>
+<code>print.stanreg</code> for more details.</p></dd>
 
 
 </dl><p>Setting <code>effects="auxiliary"</code> will select the remaining parameters:</p>
@@ -136,29 +135,29 @@ returns one row for each coefficient for each component of the mixture with thre
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   term          estimate std.error</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.65     0.084<span style="text-decoration: underline;">2</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.396    0.121 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    3.35     0.493 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           1.05     0.741 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.41      0.325</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.603     0.425</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    5.38      0.427</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           0.634     0.531</span>
 <span class="r-in"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">mod2</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   term          estimate std.error conf.low conf.high</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.65     0.084<span style="text-decoration: underline;">2</span>    5.55      5.76 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.396    0.121     0.243     0.553</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    3.35     0.493     2.74      4.00 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           1.05     0.741    -<span style="color: #BB0000;">0.121</span>     1.98 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.41      0.325     2.05      5.85</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.603     0.425    -<span style="color: #BB0000;">1.67</span>      3.48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    5.38      0.427     2.03      5.88</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           0.634     0.531    -<span style="color: #BB0000;">1.75</span>      4.30</span>
 <span class="r-in"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">mod2</span>, effects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixed"</span>, <span class="st">"auxiliary"</span><span class="op">)</span>, conf.int <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 7 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   term          estimate std.error conf.low conf.high</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.65     0.084<span style="text-decoration: underline;">2</span>    5.55      5.76 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.396    0.121     0.243     0.553</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    3.35     0.493     2.74      4.00 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           1.05     0.741    -<span style="color: #BB0000;">0.121</span>     1.98 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> phi_1            1.79     0.314     1.43      2.22 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> phi_2            0.659    0.315     0.328     1.19 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> eta_1            0.905    0.036<span style="text-decoration: underline;">3</span>    0.844     0.942</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> (Intercept)_1    5.41      0.325  2.05        5.85 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> sex2_1           0.603     0.425 -<span style="color: #BB0000;">1.67</span>        3.48 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> (Intercept)_2    5.38      0.427  2.03        5.88 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> sex2_2           0.634     0.531 -<span style="color: #BB0000;">1.75</span>        4.30 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> phi_1            0.849     0.773  0.014<span style="text-decoration: underline;">4</span>     16.3  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> phi_2            0.851     0.888  0.032<span style="text-decoration: underline;">9</span>     25.1  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> eta_1            0.702     0.436  0.006<span style="text-decoration: underline;">61</span>     0.991</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
