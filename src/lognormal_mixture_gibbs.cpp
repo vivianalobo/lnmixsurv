@@ -426,10 +426,12 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
   }
   
   // to avoid numerical problems
-  if (quant == 0) {
+  if (quant == 0.0) {
     phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
+  } else {
+    phi(g) = denom / quant;
   }
-  
+
   // to avoid numerical problems
   if(phi(g) > 1e5 || phi.has_nan()) {
     phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
