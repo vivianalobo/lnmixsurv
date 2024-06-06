@@ -36,8 +36,8 @@ survival_ln_mixture_em <- function(
 #' @rdname survival_ln_mixture_em
 survival_ln_mixture_em.default <- function(formula, ...) {
   stop("`survival_ln_mixture_em()` is not defined for a '",
-    class(formula)[1], "'.",
-    call. = FALSE
+       class(formula)[1], "'.",
+       call. = FALSE
   )
 }
 
@@ -47,36 +47,37 @@ survival_ln_mixture_em.default <- function(formula, ...) {
 survival_ln_mixture_em.formula <- function(formula, data, intercept = TRUE, ...) {
   blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
   processed <- hardhat::mold(formula, data, blueprint = blueprint)
-  survival_ln_mixture_em_bridge(processed, ...)
+  survival_ln_mixture_em_bridge(processed, data, ...)
 }
 
 # ---------------- BRIDGE ----------------
-survival_ln_mixture_em_bridge <- function(processed, ...) {
+survival_ln_mixture_em_bridge <- function(processed, data, ...) {
   # Verifications
   outcome <- processed$outcome[[1]]
   if (!survival::is.Surv(outcome)) {
     rlang::abort("Response must be a survival object (created with survival::Surv)")
   }
-
+  
   if (attr(outcome, "type") != "right") {
     rlang::abort("Only right-censored data allowed")
   }
-
+  
   predictors <- as.matrix(processed$predictors)
   outcome_times <- outcome[, 1]
   outcome_status <- outcome[, 2]
-
+  
   fit <- survival_ln_mixture_em_impl(
     outcome_times, outcome_status,
     predictors, ...
   )
-
+  
   new_survival_ln_mixture_em(
     em_iterations = fit$em_iterations,
     nobs = fit$nobs,
     predictors_name = fit$predictors_name,
     mixture_groups = fit$mixture_groups,
-    blueprint = processed$blueprint
+    blueprint = processed$blueprint,
+    data = data
   )
 }
 
@@ -92,9 +93,9 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
   if (any(is.na(predictors))) {
     "There is one or more NA values in the predictors variable."
   }
-
+  
   number_predictors <- ncol(predictors)
-
+  
   if (number_predictors < 1) {
     rlang::abort(
       c("The model must contain at least one predictor.",
@@ -102,63 +103,63 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
       )
     )
   }
-
+  
   if (any(outcome_times == 0)) {
     rlang::abort("One or more events happened at time zero.")
   }
-
+  
   if (any(is.na(outcome_times))) {
     rlang::abort("There is one or more NA values at event times.")
   }
-
+  
   if (any(is.na(outcome_status))) {
     rlang::abort("There is one or more NA values at the status")
   }
-
+  
   if (iter <= 0 | (iter %% 1) != 0) {
     rlang::abort("The parameter iter should be a positive integer.")
   }
-
+  
   if (starting_seed < 1 | starting_seed > 2^28 |
-    (starting_seed %% 1) != 0) {
+      (starting_seed %% 1) != 0) {
     rlang::abort("The starting seed should be a natural number between 1 and 2^28")
   }
-
+  
   if (mixture_components <= 0 | (mixture_components %% 1) != 0) {
     rlang::abort("The parameter mixture_components should be a positive integer.")
   }
-
+  
   if (number_em_search < 0 | (number_em_search %% 1) != 0) {
     rlang::abort("The parameter number_em_search should be a non-negative integer.")
   }
-
+  
   if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
     rlang::abort("The parameter iteration_em_search should be a positive integer.")
   }
-
+  
   if (!is.logical(show_progress)) {
     rlang::abort("The parameter show_progress should be a logical value.")
   }
-
+  
   better_initial_values <- as.logical(number_em_search > 0)
-
+  
   # These next two lines seems to be unecessary but they are essencial to ensure
   # the reproducibility of the EM iterations on the Gibbs sampler. For an user,
   # interested only in using the EM, this is irrelevant.
-
+  
   set.seed(starting_seed)
-
+  
   seed <- sample(1:2^28, 1)
-
+  
   matrix_em_iter <- lognormal_mixture_em_implementation(
     iter, mixture_components, outcome_times,
     outcome_status, predictors, seed, better_initial_values, number_em_search, iteration_em_search, show_progress
   )
-
+  
   predictors_names <- colnames(predictors)
-
+  
   new_names <- NULL
-
+  
   for (g in 1:mixture_components) {
     for (j in 1:3) {
       if (j == 1) {
@@ -181,13 +182,13 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
       }
     }
   }
-
+  
   colnames(matrix_em_iter) <- new_names
   matrix_em_iter <- dplyr::bind_cols(
     matrix_em_iter,
     tibble::tibble(iter = 1:iter)
   )
-
+  
   list(
     em_iterations = matrix_em_iter,
     number_iterations = iter,
