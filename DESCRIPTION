@@ -25,7 +25,8 @@ Imports:
     Rcpp,
     RcppParallel,
     tidyselect,
-    broom
+    broom,
+    readr
 LinkingTo: Rcpp, RcppArmadillo, RcppGSL, RcppParallel
 Depends: 
     parsnip (>= 1.1.0),

@@ -382,10 +382,10 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
   eta = rdirichlet(repl(1.0, G), rng_device);
   
   for (int g = 0; g < G; g++) {
-    phi(g) = rgamma_(0.5, 0.5, rng_device);
+    phi(g) = rgamma_(0.2, 0.2, rng_device);
     
     for (int c = 0; c < k; c++) {
-      beta(g, c) = rnorm_(0.0, 10.0, rng_device);
+      beta(g, c) = rnorm_(0.0, 40.0, rng_device);
     }
   }
   

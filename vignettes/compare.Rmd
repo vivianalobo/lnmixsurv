@@ -7,12 +7,14 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   message = FALSE,
   warning = FALSE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE,
+  include = TRUE
 )
 ```
 
@@ -21,7 +23,7 @@ available through `censored`.
 
 We begin by loading the packages and preparing the data.
 
-```{r setup}
+```{r}
 library(lnmixsurv)
 require(censored)
 require(purrr)
@@ -30,15 +32,43 @@ require(ggplot2)
 
 set.seed(25)
 
-dados <- simulate_data(
-  n = 4000,
-  mixture_components = 3,
-  k = 2,
-  percentage_censored = 0.2
-)$data |>
+data <- simulate_data(n = 4000,
+                      mixture_components = 3,
+                      k = 2,
+                      percentage_censored = 0.2)$data |>
   rename(x = cat, y = t)
 
-new_data <- dados |> distinct(x)
+new_data <- data |> 
+  distinct(x)
+```
+
+```{r eval = TRUE, include = FALSE}
+library(lnmixsurv)
+library(readr)
+require(censored)
+require(purrr)
+require(dplyr)
+require(ggplot2)
+
+set.seed(25)
+
+dir.create(file.path('data', 'compare'), showWarnings = FALSE)
+
+if(!file.exists('data/compare/data.rds')) {
+  data <- simulate_data(n = 4000,
+                       mixture_components = 3,
+                       k = 2,
+                       percentage_censored = 0.2)$data |>
+  rename(x = cat, y = t)
+  
+  write_rds(data, 'data/compare/data.rds')
+}
+
+
+data <- read_rds('data/compare/data.rds')
+
+new_data <- data |>
+  distinct(x)
 
 formula <- Surv(y, delta) ~ x
 ```
@@ -55,9 +85,25 @@ surv_km <- tidy_survfit(km, type = "surv") |>
   tidyr::nest(.pred = c(.eval_time, .pred_survival))
 ```
 
+```{r eval = TRUE, include = FALSE}
+library(ggsurvfit)
+
+if(!file.exists('data/compare/km.rds')) {
+  km <- survfit2(formula, data)
+  
+  write_rds(km, 'data/compare/km.rds')
+}
+
+km <- read_rds('data/compare/km.rds')
+
+surv_km <- tidy_survfit(km, type = "surv") |>
+  select(.eval_time = time, .pred_survival = estimate, id = strata) |>
+  tidyr::nest(.pred = c(.eval_time, .pred_survival))
+```
+
 The we build our `parsnip` specifications and store them in a list.
 
-```{r message=FALSE}
+```{r eval = TRUE}
 ln_survival <- survival_reg(dist = "lognormal") |>
   set_engine("survival")
 
@@ -87,18 +133,42 @@ specs <- list(
 
 Finally, thanks to the great parsnip API, we can fit and predict all models at once.
 
-```{r message=FALSE, warning=FALSE}
+```{r}
 set.seed(1)
+
 models <- map(specs, ~ fit(.x, formula, dados))
+
 pred_sob <- map(models, ~ predict(.x, new_data,
-  type = "survival",
-  eval_time = seq(1000)
+                                  type = "survival",
+                                  eval_time = seq(1000)
 ))
+```
+
+```{r eval = TRUE, include = FALSE}
+set.seed(1)
+
+if(!file.exists('data/compare/models.rds')) {
+  models <- map(specs, ~ fit(.x, formula, data))
+  
+  write_rds(models, 'data/compare/models.rds')
+}
+
+models <- read_rds('data/compare/models.rds')
+
+if(!file.exists('data/compare/pred_sob.rds')) {
+  pred_sob <- map(models, ~ predict(.x, new_data,
+                                    type = 'survival',
+                                    eval_time = seq(1000)))
+  
+  write_rds(pred_sob, 'data/compare/pred_sob.rds')
+}
+
+pred_sob <- read_rds('data/compare/pred_sob.rds')
 ```
 
 The following plot compares each model with the Kaplan-Meier estimates of the survival function.
 
-```{r}
+```{r eval = TRUE, fig.width = 7}
 all_preds <- bind_rows(pred_sob, .id = "modelo") |>
   group_by(modelo) |>
   dplyr::mutate(id = new_data$x) |>

@@ -105,7 +105,11 @@ plot_fit_on_data_em <- function(model, type = 'survival') {
             }
           }
         } else {
-          category <- preds[i, c]
+          if(preds[i, c] == 1) {
+            category <- dict_key$category[dict_key$match == match]
+          } else {
+            category <- dict_key$category[dict_key$match != match]
+          }
         }
         
         phrase <- paste0(phrase, key_c, '=', category)

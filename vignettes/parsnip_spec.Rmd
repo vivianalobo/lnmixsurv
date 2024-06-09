@@ -22,6 +22,7 @@ The package also provide a `parsnip` egine that can be used with the `survival_r
 library(tidymodels)
 library(censored)
 require(lnmixsurv)
+
 tidymodels_prefer()
 
 mod_spec <- survival_reg() |>
@@ -30,10 +31,12 @@ mod_spec <- survival_reg() |>
     starting_seed = 20
   ) |>
   set_mode("censored regression")
+
 dados <- sim_data$data
-set.seed(1)
+
 mod_fit <- mod_spec |>
   fit(Surv(y, delta) ~ x, dados)
+
 mod_fit
 ```
 
@@ -56,6 +59,7 @@ wflw <- workflow() |>
   add_recipe(rec)
 
 set.seed(1)
+
 mod_tidy <- wflw |> fit(dados)
 mod_tidy
 ```
@@ -64,6 +68,7 @@ The predictions work as usual.
 
 ```{r}
 new_data <- dados |> distinct(x)
+
 mod_fit |>
   predict(new_data, type = "survival", eval_time = 100) |>
   tidyr::unnest(cols = .pred)
