@@ -87,6 +87,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// predict_survival_gibbs_cpp
+arma::mat predict_survival_gibbs_cpp(const arma::vec& eval_time, const arma::rowvec& predictors, const arma::field<arma::mat>& beta_start, const arma::mat sigma_start, const arma::mat eta_start, const bool& interval, const double& level);
+RcppExport SEXP _lnmixsurv_predict_survival_gibbs_cpp(SEXP eval_timeSEXP, SEXP predictorsSEXP, SEXP beta_startSEXP, SEXP sigma_startSEXP, SEXP eta_startSEXP, SEXP intervalSEXP, SEXP levelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type eval_time(eval_timeSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type predictors(predictorsSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::mat>& >::type beta_start(beta_startSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type sigma_start(sigma_startSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type eta_start(eta_startSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type interval(intervalSEXP);
+    Rcpp::traits::input_parameter< const double& >::type level(levelSEXP);
+    rcpp_result_gen = Rcpp::wrap(predict_survival_gibbs_cpp(eval_time, predictors, beta_start, sigma_start, eta_start, interval, level));
+    return rcpp_result_gen;
+END_RCPP
+}
+// predict_hazard_gibbs_cpp
+arma::mat predict_hazard_gibbs_cpp(const arma::vec& eval_time, const arma::rowvec& predictors, const arma::field<arma::mat>& beta_start, const arma::mat sigma_start, const arma::mat eta_start, const bool& interval, const double& level);
+RcppExport SEXP _lnmixsurv_predict_hazard_gibbs_cpp(SEXP eval_timeSEXP, SEXP predictorsSEXP, SEXP beta_startSEXP, SEXP sigma_startSEXP, SEXP eta_startSEXP, SEXP intervalSEXP, SEXP levelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type eval_time(eval_timeSEXP);
+    Rcpp::traits::input_parameter< const arma::rowvec& >::type predictors(predictorsSEXP);
+    Rcpp::traits::input_parameter< const arma::field<arma::mat>& >::type beta_start(beta_startSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type sigma_start(sigma_startSEXP);
+    Rcpp::traits::input_parameter< const arma::mat >::type eta_start(eta_startSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type interval(intervalSEXP);
+    Rcpp::traits::input_parameter< const double& >::type level(levelSEXP);
+    rcpp_result_gen = Rcpp::wrap(predict_hazard_gibbs_cpp(eval_time, predictors, beta_start, sigma_start, eta_start, interval, level));
+    return rcpp_result_gen;
+END_RCPP
+}
 // simulate_y
 arma::vec simulate_y(const arma::mat& X, const arma::mat& beta, const arma::vec& phi, const arma::ivec& delta, const arma::ivec& groups, long long int starting_seed);
 RcppExport SEXP _lnmixsurv_simulate_y(SEXP XSEXP, SEXP betaSEXP, SEXP phiSEXP, SEXP deltaSEXP, SEXP groupsSEXP, SEXP starting_seedSEXP) {
@@ -109,6 +143,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_lnmixsurv_lognormal_mixture_em_implementation", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em_implementation, 10},
     {"_lnmixsurv_predict_survival_em_cpp", (DL_FUNC) &_lnmixsurv_predict_survival_em_cpp, 5},
     {"_lnmixsurv_predict_hazard_em_cpp", (DL_FUNC) &_lnmixsurv_predict_hazard_em_cpp, 5},
+    {"_lnmixsurv_predict_survival_gibbs_cpp", (DL_FUNC) &_lnmixsurv_predict_survival_gibbs_cpp, 7},
+    {"_lnmixsurv_predict_hazard_gibbs_cpp", (DL_FUNC) &_lnmixsurv_predict_hazard_gibbs_cpp, 7},
     {"_lnmixsurv_simulate_y", (DL_FUNC) &_lnmixsurv_simulate_y, 6},
     {NULL, NULL, 0}
 };

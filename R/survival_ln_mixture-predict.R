@@ -48,7 +48,7 @@
 predict.survival_ln_mixture <- function(object, new_data, type, eval_time, interval = "none", level = 0.95, ...) {
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_predict_types())
-
+  
   predict_survival_ln_mixture_bridge(type, object, forged$predictors, eval_time, interval, level, ...)
 }
 
@@ -61,20 +61,20 @@ valid_survival_ln_mixture_predict_types <- function() {
 
 predict_survival_ln_mixture_bridge <- function(type, model, predictors, eval_time, interval, level, ...) {
   predictors <- as.matrix(predictors)
-
+  
   predict_function <- get_survival_ln_mixture_predict_function(type)
   predictions <- predict_function(model, predictors, eval_time, interval, level, ...)
-
+  
   hardhat::validate_prediction_size(predictions, predictors)
-
+  
   predictions
 }
 
 get_survival_ln_mixture_predict_function <- function(type) {
   switch(type,
-    time = predict_survival_ln_mixture_time,
-    survival = predict_survival_ln_mixture_survival,
-    hazard = predict_survival_ln_mixture_hazard
+         time = predict_survival_ln_mixture_time,
+         survival = predict_survival_ln_mixture_survival,
+         hazard = predict_survival_ln_mixture_hazard
   )
 }
 
@@ -93,82 +93,117 @@ predict_survival_ln_mixture_hazard <- function(model, predictors, eval_time, int
   extract_surv_haz(model, predictors, eval_time, interval, level, "hazard")
 }
 
-extract_surv_haz <- function(model, predictors, eval_time, interval = "none", level = 0.95, type = "survival") {
+extract_surv_haz <- function(model, predictors, eval_time, interval = "none",
+                             level = 0.95, type = "survival") {
   rlang::arg_match(type, c("survival", "hazard"))
   rlang::arg_match(interval, c("none", "credible"))
-
-  fun <- switch(type,
-    survival = sob_lognormal_mix,
-    hazard = falha_lognormal_mix
-  )
-
+  
   post <- model$posterior
-
+  
   qntd_chains <- posterior::nchains(post)
+  
   if (qntd_chains > 1) {
     post <- posterior::merge_chains(post)
   }
+  
   qntd_iteracoes <- posterior::niterations(post)
-
+  
   beta <- lapply(model$mixture_groups, function(x) {
     names <- paste0(model$predictors_name, "_", x)
     return(posterior::subset_draws(post, names))
   })
-
+  
   phi <- posterior::subset_draws(post, "phi", regex = TRUE)
   eta <- posterior::subset_draws(post, "eta", regex = TRUE)
-  m <- lapply(beta, function(x) x %*% t(predictors))
   sigma <- sqrt(1 / phi)
-
-  surv_haz <- list()
-  for (i in seq_len(nrow(predictors))) {
-    surv_haz[[i]] <- vapply(
-      eval_time, function(t) fun(t, lapply(m, function(x) x[, i]), sigma, eta), numeric(qntd_iteracoes)
-    )
+  
+  if (type == "survival") {
+    out <- list()
+    if (nrow(predictors) > 1) {
+      for (r in 1:nrow(predictors)) {
+        out_r <- tibble::tibble(
+          .eval_time = eval_time
+        )
+        
+        preds <- as.data.frame(predict_survival_gibbs_cpp(eval_time, predictors[r, ], 
+                                                          beta, sigma, eta, 
+                                                          interval == 'credible', level))
+        
+        if(interval == 'credible') {
+          colnames(preds) <- c('.pred_survival', '.pred_lower', '.pred_upper')
+        } else {
+          colnames(preds) <- '.pred_survival'
+        }
+        
+        out_r <- dplyr::bind_cols(out_r, preds)
+        
+        out[[r]] <- out_r |>
+          dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
+      }
+    } else {
+      out_r <- tibble::tibble(
+        .eval_time = eval_time
+      )
+      
+      preds <- as.data.frame(predict_survival_gibbs_cpp(eval_time, predictors[1, ], 
+                                                        beta, sigma, eta, 
+                                                        interval == 'credible', level))
+      
+      if(interval == 'credible') {
+        colnames(preds) <- c('.pred_survival', '.pred_lower', '.pred_upper')
+      } else {
+        colnames(preds) <- '.pred_survival'
+      }
+      
+      out_r <- dplyr::bind_cols(out_r, preds)
+      
+      out[[1]] <- out_r |>
+        dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
+    }
+  } else {
+    out <- list()
+    if (nrow(predictors) > 1) {
+      for (r in 1:nrow(predictors)) {
+        out_r <- tibble::tibble(
+          .eval_time = eval_time
+        )
+        
+        preds <- as.data.frame(predict_hazard_gibbs_cpp(eval_time, predictors[r, ], 
+                                                        beta, sigma, eta, 
+                                                        interval == 'credible', level))
+        
+        if(interval == 'credible') {
+          colnames(preds) <- c('.pred_hazard', '.pred_lower', '.pred_upper')
+        } else {
+          colnames(preds) <- '.pred_hazard'
+        }
+        
+        out_r <- dplyr::bind_cols(out_r, preds)
+        
+        out[[r]] <- out_r |>
+          dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
+      }
+    } else {
+      out_r <- tibble::tibble(
+        .eval_time = eval_time
+      )
+      
+      preds <- as.data.frame(predict_hazard_gibbs_cpp(eval_time, predictors[1, ], 
+                                                      beta, sigma, eta, 
+                                                      interval == 'credible', level))
+      
+      if(interval == 'credible') {
+        colnames(preds) <- c('.pred_hazard', '.pred_lower', '.pred_upper')
+      } else {
+        colnames(preds) <- '.pred_hazard'
+      }
+      
+      out_r <- dplyr::bind_cols(out_r, preds)
+      
+      out[[1]] <- out_r |>
+        dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
+    }
   }
-  predictions <- lapply(surv_haz, function(x) apply(x, 2, stats::median))
-  pred_name <- paste0(".pred_", type) # nolint: object_usage_linter.
-  pred <- purrr::map(predictions, ~ tibble::tibble(.eval_time = eval_time, !!pred_name := .x))
-
-  if (interval == "credible") {
-    lower <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, probs = 1 - level))
-    upper <- lapply(surv_haz, function(x) apply(x, 2, stats::quantile, level))
-    pred <- purrr::pmap(list(pred, lower, upper), function(x, y, z) {
-      x$.pred_lower <- y
-      x$.pred_upper <- z
-      return(x)
-    })
-  }
-
-  tibble::tibble(.pred = pred)
-}
-
-sob_lognormal_mix <- function(t, m, sigma, eta) {
-  componentes <- vapply(seq_len(length(m) - 1), function(x) sob_lognormal(t, m[[x]], sigma[, x]) * eta[, x], numeric(nrow(sigma)))
-  componentes <- cbind(componentes, sob_lognormal(t, m[[length(m)]], sigma[, length(m)]) * (1 - apply(eta, 1, sum)))
-  s <- apply(componentes, 1, sum)
-  return(s)
-}
-
-falha_lognormal_mix <- function(t, m, sigma, eta) {
-  sob_mix <- sob_lognormal_mix(t, m, sigma, eta)
-  componentes <- vapply(
-    seq_len(length(m) - 1),
-    function(x) {
-      stats::dlnorm(t, m[[x]], sigma[, x]) * eta[, x]
-    },
-    numeric(nrow(sigma))
-  )
-  componentes <- cbind(
-    componentes,
-    stats::dlnorm(t, m[[length(m)]], sigma[, length(m)]) *
-      (1 - apply(eta, 1, sum))
-  )
-  dlnorm_mix <- apply(componentes, 1, sum)
-  return(dlnorm_mix / sob_mix)
-}
-
-sob_lognormal <- function(t, m, sigma) {
-  s <- stats::pnorm((-log(t) + m) / sigma)
-  return(s)
+  
+  return(tibble::tibble(.pred = out))
 }
