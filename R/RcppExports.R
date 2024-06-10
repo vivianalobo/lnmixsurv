@@ -12,3 +12,7 @@ lognormal_mixture_em_implementation <- function(Niter, G, t, delta, X, starting_
     .Call(`_lnmixsurv_lognormal_mixture_em_implementation`, Niter, G, t, delta, X, starting_seed, better_initial_values, N_em, Niter_em, show_output)
 }
 
+simulate_y <- function(X, beta, phi, delta, groups, starting_seed) {
+    .Call(`_lnmixsurv_simulate_y`, X, beta, phi, delta, groups, starting_seed)
+}
+

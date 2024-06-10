@@ -30,9 +30,9 @@ library(ggplot2)
 
 set.seed(25)
 
-data <- simulate_data(4000,
+data <- simulate_data(6000,
   mixture_components = 3, k = 2,
-  percentage_censored = 0.2
+  percentage_censored = 0.3
 )$data |>
   rename(x = cat, y = t)
 
@@ -51,14 +51,14 @@ library(dplyr)
 library(ggplot2)
 library(readr)
 
-set.seed(25)
+set.seed(8)
 
 dir.create(file.path('data/', 'expectation_maximization'), showWarnings = FALSE)
 
 if(!file.exists('data/expectation_maximization/data.rds')) {
-  data <- simulate_data(4000,
+  data <- simulate_data(6000,
     mixture_components = 3, k = 2,
-    percentage_censored = 0.2
+    percentage_censored = 0.3
   )$data |>
     rename(x = cat, y = t)
   
@@ -71,7 +71,7 @@ if(!file.exists('data/expectation_maximization/model_em1.rds')){
   model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
     data = data,
     iter = 200,
-    starting_seed = 10,
+    starting_seed = 20,
     number_em_search = 0
   )
   
@@ -111,7 +111,7 @@ As expected, the fitted model isn't that great. Increasing the parameter `number
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
   data = data,
   iter = 200,
-  starting_seed = 10,
+  starting_seed = 20,
   number_em_search = 200,
   show_progress = TRUE
 )

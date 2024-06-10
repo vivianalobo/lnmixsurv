@@ -127,7 +127,7 @@ times_parallel <- read_rds('data/parallel_computation/times_parallel.rds')
 
 Since the seed is fixed, the results should be the same. We can check that by comparing the posterior samples:
 
-```{r}
+```{r eval = TRUE}
 mcmc_trace(mod_sequential$posterior, pars = "eta_1")
 mcmc_trace(mod_parallel$posterior, pars = "eta_1")
 ```

@@ -660,12 +660,12 @@ void avoid_group_with_zero_allocation(arma::ivec& n_groups, arma::ivec& groups, 
 }
 
 double update_phi_g_gibbs(const int& n_groups_g, const arma::vec& linearComb, gsl_rng* rng_device) {
-  return rgamma_(n_groups_g / 2.0 + 0.01, (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.01, rng_device);
+  return rgamma_(n_groups_g / 2.0 + 0.001, (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.001, rng_device);
 }
 
 arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const arma::mat& Xgt, const arma::vec& yg, gsl_rng* rng_device) {
   arma::rowvec out;
-  arma::mat comb = phi_g * Xgt * Xg + arma::diagmat(repl(1.0 / 30.0, Xg.n_cols));
+  arma::mat comb = phi_g * Xgt * Xg + arma::diagmat(repl(1.0 / 50.0, Xg.n_cols));
   arma::mat Sg;
   arma::vec mg;
   
@@ -695,7 +695,7 @@ void update_gibbs_parameters(const int& G, const arma::mat& X, const arma::vec& 
   arma::uvec indexg;
   
   // updating eta
-  eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0, 
+  eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + 0.001, 
                    rng_device);
   
   // For each g, sample new phi[g] and beta[g, _]

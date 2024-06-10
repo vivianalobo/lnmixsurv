@@ -32,10 +32,10 @@ require(ggplot2)
 
 set.seed(25)
 
-data <- simulate_data(n = 4000,
+data <- simulate_data(n = 6000,
                       mixture_components = 3,
                       k = 2,
-                      percentage_censored = 0.2)$data |>
+                      percentage_censored = 0.3)$data |>
   rename(x = cat, y = t)
 
 new_data <- data |> 
@@ -55,10 +55,10 @@ set.seed(25)
 dir.create(file.path('data', 'compare'), showWarnings = FALSE)
 
 if(!file.exists('data/compare/data.rds')) {
-  data <- simulate_data(n = 4000,
+  data <- simulate_data(n = 6000,
                        mixture_components = 3,
                        k = 2,
-                       percentage_censored = 0.2)$data |>
+                       percentage_censored = 0.3)$data |>
   rename(x = cat, y = t)
   
   write_rds(data, 'data/compare/data.rds')
@@ -116,14 +116,13 @@ decision_tree <- decision_tree(cost_complexity = 0) |>
 
 ln_mixture <- survival_reg() |>
   set_engine("survival_ln_mixture",
-    iter = 500, warmup = 0, em_iter = 100, mixture_components = 3,
+    iter = 800, warmup = 0,
     starting_seed = 5
   )
 
 ln_mixture_em <- survival_reg() |>
   set_engine("survival_ln_mixture_em",
-    iter = 100, mixture_components = 3,
-    starting_seed = 5
+    iter = 150, starting_seed = 5
   )
 
 specs <- list(

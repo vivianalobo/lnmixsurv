@@ -57,10 +57,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// simulate_y
+arma::vec simulate_y(const arma::mat& X, const arma::mat& beta, const arma::vec& phi, const arma::ivec& delta, const arma::ivec& groups, long long int starting_seed);
+RcppExport SEXP _lnmixsurv_simulate_y(SEXP XSEXP, SEXP betaSEXP, SEXP phiSEXP, SEXP deltaSEXP, SEXP groupsSEXP, SEXP starting_seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< const arma::ivec& >::type groups(groupsSEXP);
+    Rcpp::traits::input_parameter< long long int >::type starting_seed(starting_seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(simulate_y(X, beta, phi, delta, groups, starting_seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_lnmixsurv_lognormal_mixture_gibbs", (DL_FUNC) &_lnmixsurv_lognormal_mixture_gibbs, 15},
     {"_lnmixsurv_lognormal_mixture_em_implementation", (DL_FUNC) &_lnmixsurv_lognormal_mixture_em_implementation, 10},
+    {"_lnmixsurv_simulate_y", (DL_FUNC) &_lnmixsurv_simulate_y, 6},
     {NULL, NULL, 0}
 };
 

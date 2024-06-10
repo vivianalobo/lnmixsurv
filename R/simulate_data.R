@@ -8,16 +8,22 @@
 #'
 #' @param k number of covariates generated (the total of covariates will be intercept + (k - 1) covariates).
 #'
-#' @param percentage_censored Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation..
+#' @param percentage_censored Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation.
+#' 
+#' @param starting_seed Seed to start the random number generation.
 #'
 #' @export
-simulate_data <- function(n, mixture_components, k, percentage_censored) {
+simulate_data <- function(n = 4000, mixture_components = 2, k = 2, 
+                          percentage_censored = 0.4,
+                          starting_seed = sample(1:2^28, 1)) {
   if (!is.numeric(percentage_censored)) {
     stop("The parameter percentage_censored should be numeric.")
     if (percentage_censored < 0 | percentage_censored > 1) {
       stop("The parameter percentage_censored should be greater or equal than 0 and lower or equal to 1.")
     }
   }
+  
+  set.seed(starting_seed)
 
   betas <- matrix(nrow = mixture_components, ncol = k)
 
@@ -32,15 +38,19 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   }
 
   rownames_beta <- NULL
+  
   for (g in 1:mixture_components) {
     rownames_beta[g] <- paste0("G", g)
   }
+  
   rownames(betas) <- rownames_beta
 
   colnames_beta <- NULL
+  
   for (par in 1:k) {
     colnames_beta[par] <- paste0("beta", (par - 1))
   }
+  
   colnames(betas) <- colnames_beta
 
   phis <- stats::rgamma(mixture_components, 3, 0.8)
@@ -61,19 +71,13 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
   data <- tibble::tibble(
     id = 1:n,
     grupo = sample(1:mixture_components, n, T, etas), # randomly allocating each observating to a group
-    delta = stats::rbinom(n, 1, percentage_censored)
+    delta = stats::rbinom(n, 1, 1 - percentage_censored)
   )
-
+  
   # Creating y variable
-  data$y <- NA
-
-  for (i in 1:nrow(data)) {
-    g <- data$grupo[i]
-
-    data$y[i] <- as.matrix(X[i, ]) %*% matrix(betas[g, ]) +
-      stats::rnorm(1, 0, sqrt(1 / phis[g]))
-  }
-
+  data$y <- as.numeric(simulate_y(as.matrix(X), as.matrix(betas), 
+                       phis, data$delta, data$grupo, starting_seed))
+  
   # Creating time till event ocurrence
   data$t <- exp(data$y)
 
@@ -89,12 +93,14 @@ simulate_data <- function(n, mixture_components, k, percentage_censored) {
       new_params_theta,
       paste0("eta_", g)
     )
+    
     for (c in 1:k) {
       new_params_theta <- c(
         new_params_theta,
         paste0("beta", c - 1, "_", g)
       )
     }
+    
     new_params_theta <- c(
       new_params_theta,
       paste0("phi_", g)
