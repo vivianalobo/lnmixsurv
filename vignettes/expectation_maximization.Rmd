@@ -53,38 +53,38 @@ library(readr)
 
 set.seed(8)
 
-dir.create(file.path('data/', 'expectation_maximization'), showWarnings = FALSE)
+dir.create(file.path("data/", "expectation_maximization"), showWarnings = FALSE)
 
-if(!file.exists('data/expectation_maximization/data.rds')) {
+if (!file.exists("data/expectation_maximization/data.rds")) {
   data <- simulate_data(6000,
     mixture_components = 3, k = 2,
     percentage_censored = 0.3
   )$data |>
     rename(x = cat, y = t)
-  
-  write_rds(data, 'data/expectation_maximization/data.rds')
+
+  write_rds(data, "data/expectation_maximization/data.rds")
 }
 
 data <- read_rds("data/expectation_maximization/data.rds")
 
-if(!file.exists('data/expectation_maximization/model_em1.rds')){
+if (!file.exists("data/expectation_maximization/model_em1.rds")) {
   model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
     data = data,
     iter = 200,
     starting_seed = 20,
     number_em_search = 0
   )
-  
-  write_rds(model_em, 'data/expectation_maximization/model_em1.rds')
+
+  write_rds(model_em, "data/expectation_maximization/model_em1.rds")
 }
 
-model_em <- read_rds('data/expectation_maximization/model_em1.rds')
+model_em <- read_rds("data/expectation_maximization/model_em1.rds")
 
-if(!file.exists('data/expectation_maximization/gg1.rds')){
-  write_rds(plot_fit_on_data_em(model_em), 'data/expectation_maximization/gg1.rds')
+if (!file.exists("data/expectation_maximization/gg1.rds")) {
+  write_rds(plot_fit_on_data_em(model_em), "data/expectation_maximization/gg1.rds")
 }
 
-gg <- read_rds('data/expectation_maximization/gg1.rds')
+gg <- read_rds("data/expectation_maximization/gg1.rds")
 ```
 
 The parameters `number_em_search` is used to find initial values closer to the maximum likelihood, avoid local maximas. Here, we are just disabling it to show it's impact.
@@ -98,7 +98,7 @@ plot(model_em)
 When using the Expectation-Maximization algorithm to fit the model, you can use the function `plot_fit_on_data_em()` to quickly visualize the model's estimated survival (or hazard) on the data used to fit the model.
 
 ```{r}
-plot_fit_on_data(model_em, type = 'survival')
+plot_fit_on_data(model_em, type = "survival")
 ```
 
 ```{r fig.width = 7, echo=FALSE, eval = TRUE}
@@ -118,17 +118,17 @@ model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
 ```
 
 ```{r include=FALSE, eval = TRUE}
-if(!file.exists('data/expectation_maximization/gg2.rds')) {
-  write_rds(plot_fit_on_data_em(model_em), 'data/expectation_maximization/gg2.rds')
+if (!file.exists("data/expectation_maximization/gg2.rds")) {
+  write_rds(plot_fit_on_data_em(model_em), "data/expectation_maximization/gg2.rds")
 }
 
-gg <- read_rds('data/expectation_maximization/gg2.rds')
+gg <- read_rds("data/expectation_maximization/gg2.rds")
 ```
 
 Now, we have a maximum likelihood estimator that tries to avoid local maximas. As before, we can use the function `plot_fit_on_data_em()` to visualize the model's estimated survival on the data used to fit the model.
 
 ```{r}
-plot_fit_on_data_em(model_em, type = 'survival')
+plot_fit_on_data_em(model_em, type = "survival")
 ```
 
 ```{r fig.width = 7, echo = FALSE, eval = TRUE}

@@ -82,6 +82,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
 
   phi <- as.numeric(last_row[startsWith(names(last_row), "phi")])
   eta <- as.numeric(last_row[startsWith(names(last_row), "eta")])
+  
   sigma <- 1 / sqrt(phi)
 
   m <- apply(beta,
@@ -97,13 +98,10 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .eval_time = eval_time,
           .pred_survival = NA
         )
+        
+        out_r$.pred_survival <- as.numeric(predict_survival_em_cpp(eval_time, m, sigma, eta, r))
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
-
-        out[[r]] <- out_r |> 
+        out[[r]] <- out_r |>
           dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
       }
     } else {
@@ -111,13 +109,11 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .eval_time = eval_time,
         .pred_survival = NA
       )
+      
+      out_r$.pred_survival <- as.numeric(
+        predict_survival_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1))
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
-      }
-
-      out[[1]] <- out_r |> 
+      out[[1]] <- out_r |>
         dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
     }
   } else if (type == "hazard") {
@@ -128,13 +124,10 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .eval_time = eval_time,
           .pred_hazard = NA
         )
+        
+        out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, m, sigma, eta, r))
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
-
-        out[[r]] <- out_r |> 
+        out[[r]] <- out_r |>
           dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
       }
     } else {
@@ -142,51 +135,27 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .eval_time = eval_time,
         .pred_hazard = NA
       )
+      
+      out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1))
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta) |> 
-          dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
-      }
-
-      out[[1]] <- out_r
+      out[[1]] <- out_r |> 
+        dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
     }
   }
 
   return(tibble::tibble(.pred = out))
 }
 
-sob_lognormal_em <- function(t, m, sigma) {
-  stats::pnorm((-log(t) + m) / sigma)
-}
-
-sob_lognormal_em_mix <- function(t, m, sigma, eta) {
-  out <- 0
-  for (g in 1:length(m)) {
-    out <- out + eta[g] * sob_lognormal_em(t, m[g], sigma[g])
-  }
-  return(out)
-}
-
-falha_lognormal_em_mix <- function(t, m, sigma, eta) {
-  sob_mix <- sob_lognormal_em_mix(t, m, sigma, eta)
-  dlnorm_mix <- 0
-  for (g in 1:length(m)) {
-    dlnorm_mix <- dlnorm_mix + eta[g] * stats::dlnorm(t, m[g], sigma[g])
-  }
-  return(dlnorm_mix / sob_mix)
-}
-
 multiply_rows <- function(x, n) {
   out <- tibble::as_tibble(as.data.frame(t(x)))
-  
-  if(n > 1) {
-    for(i in 1:(n-1)) {
-      out <- out |> 
-        dplyr::slice(1) |> 
+
+  if (n > 1) {
+    for (i in 1:(n - 1)) {
+      out <- out |>
+        dplyr::slice(1) |>
         dplyr::bind_rows(out)
     }
   }
-  
+
   return(out)
 }
