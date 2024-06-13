@@ -78,13 +78,13 @@ survival_ln_mixture.default <- function(formula, ...) {
 survival_ln_mixture.formula <- function(formula, data, intercept = TRUE, ...) {
   blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
   processed <- hardhat::mold(formula, data, blueprint = blueprint)
-  survival_ln_mixture_bridge(processed, ...)
+  survival_ln_mixture_bridge(processed, data, ...)
 }
 
 # ------------------------------------------------------------------------------
 # Bridge
 
-survival_ln_mixture_bridge <- function(processed, ...) {
+survival_ln_mixture_bridge <- function(processed, data, ...) {
   predictors <- as.matrix(processed$predictors)
   outcome <- processed$outcome[[1]]
 
@@ -103,7 +103,8 @@ survival_ln_mixture_bridge <- function(processed, ...) {
     nobs = fit$nobs,
     predictors_name = fit$predictors_name,
     mixture_groups = fit$mixture_groups,
-    blueprint = processed$blueprint
+    blueprint = processed$blueprint,
+    data = data
   )
 }
 

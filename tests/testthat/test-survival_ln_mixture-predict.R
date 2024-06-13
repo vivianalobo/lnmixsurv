@@ -2,7 +2,7 @@
 #   mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
 #   new_data <- data.frame(x = c("0", "1"))
 #   pred <- predict(mod, new_data, type = "survival", eval_time = c(20, 100), interval = "credible")
-# 
+#
 #   expected <- structure(
 #     list(.pred = list(structure(list(
 #       .eval_time = c(
@@ -30,15 +30,15 @@
 #     )))),
 #     class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, -2L)
 #   )
-# 
+#
 #   expect_equal(pred, expected, tolerance = 10^-1)
 # })
-# 
+#
 # test_that("hazard prediction works", {
 #   mod <- readRDS(test_path("fixtures", "ln_fit_with_covariates.rds"))
 #   new_data <- data.frame(x = c("0", "1"))
 #   pred <- predict(mod, new_data = new_data, type = "hazard", eval_time = c(20, 100), interval = "credible")
-# 
+#
 #   expected <- structure(list(.pred = list(structure(list(
 #     .eval_time = c(
 #       20,
@@ -64,6 +64,6 @@
 #     "tbl_df",
 #     "tbl", "data.frame"
 #   ), row.names = c(NA, -2L))
-# 
+#
 #   expect_equal(pred, expected, tolerance = 10^-1)
 # })

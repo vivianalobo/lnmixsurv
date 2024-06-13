@@ -81,7 +81,7 @@ if (!file.exists("data/expectation_maximization/model_em1.rds")) {
 model_em <- read_rds("data/expectation_maximization/model_em1.rds")
 
 if (!file.exists("data/expectation_maximization/gg1.rds")) {
-  write_rds(plot_fit_on_data_em(model_em), "data/expectation_maximization/gg1.rds")
+  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg1.rds")
 }
 
 gg <- read_rds("data/expectation_maximization/gg1.rds")
@@ -95,7 +95,7 @@ Unlike the Bayesian approach, which samples from the posteriori via Gibbs sample
 plot(model_em)
 ```
 
-When using the Expectation-Maximization algorithm to fit the model, you can use the function `plot_fit_on_data_em()` to quickly visualize the model's estimated survival (or hazard) on the data used to fit the model.
+When using the Expectation-Maximization algorithm to fit the model, you can use the function `plot_fit_on_data()` to quickly visualize the model's estimated survival (or hazard) on the data used to fit the model.
 
 ```{r}
 plot_fit_on_data(model_em, type = "survival")
@@ -119,16 +119,16 @@ model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
 
 ```{r include=FALSE, eval = TRUE}
 if (!file.exists("data/expectation_maximization/gg2.rds")) {
-  write_rds(plot_fit_on_data_em(model_em), "data/expectation_maximization/gg2.rds")
+  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg2.rds")
 }
 
 gg <- read_rds("data/expectation_maximization/gg2.rds")
 ```
 
-Now, we have a maximum likelihood estimator that tries to avoid local maximas. As before, we can use the function `plot_fit_on_data_em()` to visualize the model's estimated survival on the data used to fit the model.
+Now, we have a maximum likelihood estimator that tries to avoid local maximas. As before, we can use the function `plot_fit_on_data()` to visualize the model's estimated survival on the data used to fit the model.
 
 ```{r}
-plot_fit_on_data_em(model_em, type = "survival")
+plot_fit_on_data(model_em, type = "survival")
 ```
 
 ```{r fig.width = 7, echo = FALSE, eval = TRUE}
