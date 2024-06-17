@@ -12,7 +12,7 @@
 #' 
 #' @export
 plot_fit_on_data <- function(model, type = "survival", interval = 'none', 
-                                level = 0.95) {
+                             level = 0.95) {
   # Checks
   if (!inherits(model, "survival_ln_mixture_em") &
       !inherits(model, "survival_ln_mixture")) {
@@ -109,7 +109,50 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
           labs(x = "Time", y = "Survival")
       }
     } else {
-      # yet to be implemented hazard
+      if (all(vars != "NULL")) {
+        km$strata <- factor(km$strata)
+        preds$strata <- factor(preds$strata)
+        km_hazard <- NULL
+        preds_hazard <- NULL
+        for(i in levels(km$strata)) {
+          km_hazard <- bind_rows(km_hazard,
+                                 tibble(time = km$time[km$strata == i],
+                                        strata = i,
+                                        hazard = tx.emp(km$time[km$strata == i], km$estimate[km$strata == i])))
+          
+          preds_hazard <- bind_rows(preds_hazard,
+                                    tibble(.eval_time = preds$.eval_time[preds$strata == i],
+                                           strata = i,
+                                           .pred_hazard = tx.emp(preds$.eval_time[preds$strata == i], preds$.pred_survival[preds$strata == i])))
+        }
+        
+        gg <- ggplot() +
+          geom_step(aes(x = time, y = hazard, color = strata),
+                    data = km_hazard, alpha = 0.5
+          ) +
+          geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata),
+                    data = preds_hazard
+          ) +
+          theme_bw() +
+          labs(x = "Time", y = "Hazard")
+      } else {
+        km_hazard <- tibble(time = km$time,
+                            hazard = tx.emp(km$time, 
+                                            km$estimate))
+        preds_hazard <- tibble(time = preds$time,
+                               hazard = tx.emp(preds$time, 
+                                               preds$estimate))
+        
+        gg <- ggplot() +
+          geom_step(aes(x = time, y = hazard),
+                    data = km_hazard, alpha = 0.5
+          ) +
+          geom_line(aes(x = .eval_time, y = .pred_hazard),
+                    data = preds_hazard
+          ) +
+          theme_bw() +
+          labs(x = "Time", y = "Hazard")
+      }
     }
   } else {
     if (all(vars != "NULL")) {
@@ -183,7 +226,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
       gg <- ggplot() +
         step_layer + line_layer + credible_ribbon + labs_gg + theme_bw() + guides_gg + facet_chain
     } else {
-      # yet to be implemented hazard
+      stop('Hazard not implemented for survival_ln_mixture yet.')
     }
   }
   
@@ -191,4 +234,18 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
     preds = preds,
     ggplot = gg
   ))
+}
+
+tx.emp <- function(t, s) {
+  seq_time <- 1:length(t)
+  
+  aux <- NULL
+  
+  for (i in 2:length(seq_time)) {
+    aux <- c(aux, 
+             (s[seq_time[i - 1]] - s[seq_time[i]]) /
+               ((t[seq_time[i]] - t[seq_time[i - 1]]) * s[seq_time[i - 1]]))
+  }
+  
+  return(c(aux, 0))
 }
