@@ -7,11 +7,14 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
   
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   message = FALSE,
-  comment = "#>"
+  warning = FALSE,
+  comment = "#>",
+  eval = FALSE,
+  include = TRUE
 )
 ```
   
@@ -27,80 +30,109 @@ library(ggplot2)
 
 set.seed(25)
 
-data <- simulate_data(4000,
+data <- simulate_data(6000,
   mixture_components = 3, k = 2,
-  percentage_censored = 0.2
+  percentage_censored = 0.3
 )$data |>
   rename(x = cat, y = t)
 
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
   data = data,
-  iter = 100,
+  iter = 200,
   starting_seed = 5,
   number_em_search = 0
 )
+```
+
+```{r eval=TRUE, include=FALSE}
+library(lnmixsurv)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+set.seed(8)
+
+dir.create(file.path("data/", "expectation_maximization"), showWarnings = FALSE)
+
+if (!file.exists("data/expectation_maximization/data.rds")) {
+  data <- simulate_data(6000,
+    mixture_components = 3, k = 2,
+    percentage_censored = 0.3
+  )$data |>
+    rename(x = cat, y = t)
+
+  write_rds(data, "data/expectation_maximization/data.rds")
+}
+
+data <- read_rds("data/expectation_maximization/data.rds")
+
+if (!file.exists("data/expectation_maximization/model_em1.rds")) {
+  model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
+    data = data,
+    iter = 200,
+    starting_seed = 20,
+    number_em_search = 0
+  )
+
+  write_rds(model_em, "data/expectation_maximization/model_em1.rds")
+}
+
+model_em <- read_rds("data/expectation_maximization/model_em1.rds")
+
+if (!file.exists("data/expectation_maximization/gg1.rds")) {
+  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg1.rds")
+}
+
+gg <- read_rds("data/expectation_maximization/gg1.rds")
 ```
 
 The parameters `number_em_search` is used to find initial values closer to the maximum likelihood, avoid local maximas. Here, we are just disabling it to show it's impact.
 
 Unlike the Bayesian approach, which samples from the posteriori via Gibbs sampler, the EM algorithm is a maximum likelihood method, moving, in each iteration, closer the parameters values closer to the model's maximum likelihood. The function `plot` can be used to visualize the iterations of the algorithm, assessing for convergence.
 
-```{r fig.width=7}
+```{r fig.width=7, eval = TRUE}
 plot(model_em)
 ```
 
-The predict of survival and hazard curves proceeds just like with the Bayesian approach, noting that using the EM method we don't have credible or confidence intervals.
+When using the Expectation-Maximization algorithm to fit the model, you can use the function `plot_fit_on_data()` to quickly visualize the model's estimated survival (or hazard) on the data used to fit the model.
 
 ```{r}
-new_data <- data |> distinct(x)
-predictions <- model_em |>
-  predict(new_data, type = "survival", eval_time = seq(1500)) |>
-  mutate(x = new_data$x) |>
-  unnest(cols = c(.pred))
+plot_fit_on_data(model_em, type = "survival")
 ```
 
-One can use `ggplot` functions to visualize the predicted values.
-
-```{r fig.width=7}
-km_surv <- ggsurvfit::survfit2(Surv(y, delta) ~ x, data) |>
-  ggsurvfit::tidy_survfit()
-
-ggplot() +
-  geom_path(aes(x = time, y = estimate, color = strata),
-    data = km_surv,
-    alpha = 0.6
-  ) +
-  geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
-  theme_light()
+```{r fig.width = 7, echo=FALSE, eval = TRUE}
+gg
 ```
 
-As expected, the fitted model isn't very great. One can find that increasing the parameter `number_em_search` helps to find better initial values, and thus, better fits, in exchange of computational time. We can see how the initials values likelihood change setting the parameter `show_progress = TRUE`.
+As expected, the fitted model isn't that great. Increasing the parameter `number_em_search` helps to find better initial values, and thus, better fits, in exchange of computational time. We can see how the initials values likelihood change setting the parameter `show_progress = TRUE`.
 
-```{r}
+```{r eval = TRUE}
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
   data = data,
-  iter = 100,
-  starting_seed = 5,
+  iter = 200,
+  starting_seed = 20,
   number_em_search = 200,
   show_progress = TRUE
 )
 ```
 
-Now, we have a maximum likelihood estimator that avoids local maximas. The model can be used to predict new data, as before.
+```{r include=FALSE, eval = TRUE}
+if (!file.exists("data/expectation_maximization/gg2.rds")) {
+  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg2.rds")
+}
 
-```{r fig.width = 7}
-predictions <- model_em |>
-  predict(new_data, type = "survival", eval_time = seq(1500)) |>
-  mutate(x = new_data$x) |>
-  unnest(cols = c(.pred))
-
-ggplot() +
-  geom_path(aes(x = time, y = estimate, color = strata),
-    data = km_surv,
-    alpha = 0.6
-  ) +
-  geom_line(aes(x = .eval_time, y = .pred_survival, color = x), data = predictions) +
-  theme_light()
+gg <- read_rds("data/expectation_maximization/gg2.rds")
 ```
 
-In fact, the model is now much better. The EM algorithm is a good alternative to the Bayesian approach when dealing with big data, but it's important to note that it's a maximum likelihood method, and thus, it doesn't provide credible or confidence intervals.
+Now, we have a maximum likelihood estimator that tries to avoid local maximas. As before, we can use the function `plot_fit_on_data()` to visualize the model's estimated survival on the data used to fit the model.
+
+```{r}
+plot_fit_on_data(model_em, type = "survival")
+```
+
+```{r fig.width = 7, echo = FALSE, eval = TRUE}
+gg
+```
+
+In fact, the model is now much better. The EM algorithm is a good alternative to the Bayesian approach when dealing with big data, but it's important to note that it's a maximum likelihood method, and thus, it doesn't provide credible nor confidence intervals.

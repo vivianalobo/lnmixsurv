@@ -82,6 +82,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
 
   phi <- as.numeric(last_row[startsWith(names(last_row), "phi")])
   eta <- as.numeric(last_row[startsWith(names(last_row), "eta")])
+
   sigma <- 1 / sqrt(phi)
 
   m <- apply(beta,
@@ -98,12 +99,10 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .pred_survival = NA
         )
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
+        out_r$.pred_survival <- as.numeric(predict_survival_em_cpp(eval_time, m, sigma, eta, r))
 
-        out[[r]] <- out_r
+        out[[r]] <- out_r |>
+          dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
       }
     } else {
       out_r <- tibble::tibble(
@@ -111,12 +110,12 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .pred_survival = NA
       )
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
-      }
+      out_r$.pred_survival <- as.numeric(
+        predict_survival_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1)
+      )
 
-      out[[1]] <- out_r
+      out[[1]] <- out_r |>
+        dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
     }
   } else if (type == "hazard") {
     out <- list()
@@ -127,12 +126,10 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .pred_hazard = NA
         )
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
+        out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, m, sigma, eta, r))
 
-        out[[r]] <- out_r
+        out[[r]] <- out_r |>
+          dplyr::bind_cols(multiply_rows(predictors[r, ], length(eval_time)))
       }
     } else {
       out_r <- tibble::tibble(
@@ -140,35 +137,221 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .pred_hazard = NA
       )
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
-      }
+      out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1))
 
-      out[[1]] <- out_r
+      out[[1]] <- out_r |>
+        dplyr::bind_cols(multiply_rows(predictors[1, ], length(eval_time)))
     }
   }
 
-  return(tibble::tibble(.pred = out))
-}
+  tibble_out <- tibble::tibble(.pred = out)
 
-sob_lognormal_em <- function(t, m, sigma) {
-  stats::pnorm((-log(t) + m) / sigma)
-}
+  form <- model$blueprint$formula
+  form <- stats::as.formula(paste0(paste(form)[[2]], " ~ ", paste(form)[[3]]))
+  vars <- strsplit(paste(form)[[3]], " \\+ ")[[1]]
 
-sob_lognormal_em_mix <- function(t, m, sigma, eta) {
-  out <- 0
-  for (g in 1:length(m)) {
-    out <- out + eta[g] * sob_lognormal_em(t, m[g], sigma[g])
+  if (!model$blueprint$intercept) {
+    vars <- vars[vars != "0"]
   }
+
+  for (k in 1:length(tibble_out$.pred)) {
+    preds <- tibble_out$.pred[[k]]
+
+    if (all(vars != "NULL")) {
+      data <- model$data
+
+      dict <- tibble::tibble(
+        key = NA,
+        match = NA,
+        category = NA
+      )
+
+      predictors_data <- data |>
+        dplyr::select(dplyr::all_of(vars))
+
+      if (length(vars) == 1) {
+        predictors_check_levels <- predictors_data
+        names(predictors_check_levels) <- "x"
+        if (length(levels(droplevels(predictors_check_levels$x))) == 1) {
+          return(preds)
+        }
+      }
+
+      time <- NA
+      estimate <- NA
+      .eval_time <- NA
+      .pred_survival <- NA
+      .pred_hazard <- NA
+
+      for (c in 1:ncol(predictors_data)) {
+        if (is.factor(predictors_data |>
+          dplyr::select(dplyr::all_of(c)) |>
+          dplyr::pull())) {
+          key <- names(predictors_data)[c]
+          var <- predictors_data |>
+            dplyr::select(dplyr::all_of(c)) |>
+            dplyr::pull()
+
+          for (i in levels(var)) {
+            match <- paste0(key, i)
+            category <- i
+            dict <- dplyr::bind_rows(dict, tibble::tibble(
+              key = key,
+              match = match,
+              category = category
+            ))
+          }
+        }
+      }
+
+      dict <- dict |>
+        dplyr::slice(-1)
+
+      strata_preds <- rep(NA, nrow(preds))
+
+      for (i in 1:nrow(preds)) {
+        if (model$blueprint$intercept) {
+          phrase <- NULL
+          next_index <- 0
+
+          for (c in 4:ncol(preds)) {
+            if (c >= next_index) {
+              match <- names(preds)[c]
+              key_c <- dict$key[dict$match == match]
+              if (match %in% dict$match) {
+                dict_key_c <- dict |>
+                  dplyr::filter(key == key_c)
+
+                preds_key_c <- preds |>
+                  dplyr::select(dplyr::starts_with(key_c)) |>
+                  dplyr::slice(i)
+
+                index_1 <- which(preds_key_c == 1)
+                if (identical(index_1, integer(0))) {
+                  category <- dict_key_c$category[which(!(dict_key_c$match %in% names(preds_key_c)))]
+                } else {
+                  category <- dict_key_c$category[which(dict_key_c$match == names(preds_key_c)[index_1])]
+                }
+
+                if (is.null(phrase)) {
+                  phrase <- paste0(phrase, key_c, "=", category)
+                } else {
+                  phrase <- paste0(phrase, ", ", key_c, "=", category)
+                }
+
+                for (m in c:ncol(preds)) {
+                  if (m == ncol(preds) & names(preds)[m] %in% dict_key_c$match) {
+                    next_index <- ncol(preds) + 1
+                  } else {
+                    if (names(preds)[m] %in% dict_key_c$match) {
+                      next
+                    } else {
+                      next_index <- m
+                      break
+                    }
+                  }
+                }
+              } else {
+                if (is.null(phrase)) {
+                  phrase <- paste0(phrase, match, "=", preds[i, c])
+                } else {
+                  phrase <- paste0(phrase, ", ", match, "=", preds[i, c])
+                }
+              }
+            }
+          }
+          strata_preds[i] <- phrase
+        } else {
+          phrase <- NULL
+          next_index <- 0
+          if (length(unique(dict$key)) == 1) {
+            cols_remove <- dict |>
+              dplyr::group_by(key) |>
+              dplyr::slice(-dplyr::n()) |>
+              dplyr::pull(match)
+          } else {
+            cols_remove <- NULL
+            for (ky in unique(dict$key)) {
+              if (sum(startsWith(names(preds), ky)) ==
+                nrow(dict |> dplyr::filter(key == ky))) {
+                cols_remove <- c(cols_remove, dict$match[dict$key == ky][1])
+              }
+            }
+          }
+
+          preds_modified <- preds |>
+            dplyr::select(-dplyr::all_of(cols_remove))
+
+          for (c in 3:ncol(preds_modified)) {
+            if (c >= next_index) {
+              match <- names(preds_modified)[c]
+              key_c <- dict$key[dict$match == match]
+              if (match %in% dict$match) {
+                dict_key_c <- dict |>
+                  dplyr::filter(key == key_c)
+
+                preds_key_c <- preds_modified |>
+                  dplyr::select(dplyr::starts_with(key_c)) |>
+                  dplyr::slice(i)
+
+                index_1 <- which(preds_key_c == 1)
+                if (identical(index_1, integer(0))) {
+                  category <- dict_key_c$category[which(!(dict_key_c$match %in% names(preds_key_c)))]
+                } else {
+                  category <- dict_key_c$category[which(dict_key_c$match == names(preds_key_c)[index_1])]
+                }
+
+                if (is.null(phrase)) {
+                  phrase <- paste0(phrase, key_c, "=", category)
+                } else {
+                  phrase <- paste0(phrase, ", ", key_c, "=", category)
+                }
+
+                for (m in c:ncol(preds_modified)) {
+                  if (m == ncol(preds_modified) & names(preds_modified)[m] %in% dict_key_c$match) {
+                    next_index <- ncol(preds_modified) + 1
+                  } else {
+                    if (names(preds_modified)[m] %in% dict_key_c$match) {
+                      next
+                    } else {
+                      next_index <- m
+                      break
+                    }
+                  }
+                }
+              } else {
+                if (is.null(phrase)) {
+                  phrase <- paste0(phrase, match, "=", preds_modified[i, c])
+                } else {
+                  phrase <- paste0(phrase, ", ", match, "=", preds_modified[i, c])
+                }
+              }
+            }
+          }
+
+          strata_preds[i] <- phrase
+        }
+      }
+
+      preds$strata <- strata_preds
+    }
+
+    tibble_out$.pred[[k]] <- preds
+  }
+
+  return(tibble_out)
+}
+
+multiply_rows <- function(x, n) {
+  out <- tibble::as_tibble(as.data.frame(t(x)))
+
+  if (n > 1) {
+    for (i in 1:(n - 1)) {
+      out <- out |>
+        dplyr::slice(1) |>
+        dplyr::bind_rows(out)
+    }
+  }
+
   return(out)
-}
-
-falha_lognormal_em_mix <- function(t, m, sigma, eta) {
-  sob_mix <- sob_lognormal_em_mix(t, m, sigma, eta)
-  dlnorm_mix <- 0
-  for (g in 1:length(m)) {
-    dlnorm_mix <- dlnorm_mix + eta[g] * stats::dlnorm(t, m[g], sigma[g])
-  }
-  return(dlnorm_mix / sob_mix)
 }

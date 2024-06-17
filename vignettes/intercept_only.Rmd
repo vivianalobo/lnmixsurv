@@ -7,34 +7,133 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   message = FALSE,
   warning = FALSE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE,
+  include = TRUE
 )
 ```
 
 Intercept only fits should be done setting `intercept = TRUE` and using `NULL` for the left side of the formula.
 
-```{r setup}
+```{r}
 library(lnmixsurv)
-set.seed(2)
+library(dplyr)
+library(tidyr)
+
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL,
   sim_data$data,
   intercept = TRUE,
-  starting_seed = 20
+  starting_seed = 10
 )
 ```
 
-The predictions can be made with a "empty" data.frame with one row.
+```{r eval = TRUE, include = FALSE}
+library(lnmixsurv)
+library(dplyr)
+library(tidyr)
+library(readr)
+
+dir.create(file.path("data/", "intercept_only"), showWarnings = FALSE)
+
+if (!file.exists("data/intercept_only/model.rds")) {
+  model <- survival_ln_mixture(Surv(y, delta) ~ NULL,
+    sim_data$data,
+    intercept = TRUE,
+    starting_seed = 10
+  )
+
+  readr::write_rds(model, "data/intercept_only/model.rds")
+}
+
+mod1 <- readr::read_rds("data/intercept_only/model.rds")
+
+if (!file.exists("data/intercept_only/chains.rds")) {
+  write_rds(bayesplot::mcmc_trace(mod1$posterior), "data/intercept_only/chains.rds")
+}
+
+chains <- read_rds("data/intercept_only/chains.rds")
+```
+
+We can easily see the chains with the `mcmc_trace()` function from `bayesplot` package. Since it's just an example, we don't expect that the chains have already converged.
 
 ```{r}
-predict(mod1,
+bayesplot::mcmc_trace(mod1$posterior)
+```
+
+```{r eval  = TRUE, echo = FALSE, fig.width = 7}
+chains
+```
+
+Furthermore, we can use the `ggplot2` package to visualize the Kaplan-Meier survival estimates, created with the `survfit()` function from the `survival` package and the `tidy()` function from the `broom` package.
+
+```{r eval = TRUE, fig.width=7}
+km <- survival::survfit(
+  Surv(y, delta) ~ NULL,
+  sim_data$data
+) |>
+  broom::tidy() # Kaplan-Meier estimate
+
+ggplot(km) +
+  geom_step(aes(x = time, y = estimate),
+    color = "darkslategrey"
+  ) +
+  labs(
+    title = "Kaplan-Meier estimate",
+    x = "t",
+    y = "S(t)"
+  ) +
+  theme_bw()
+```
+
+The predictions can be easily made with a "empty" data.frame with one row.
+
+```{r}
+predictions <- predict(mod1,
   new_data = data.frame(val = NA),
   type = "survival",
-  eval_time = 100
+  eval_time = seq(0, 300)
 ) |>
   tidyr::unnest(cols = .pred)
 ```
+
+```{r eval = TRUE, include = FALSE}
+if (!file.exists("data/intercept_only/predictions.rds")) {
+  predictions <- predict(mod1,
+    new_data = data.frame(val = NA),
+    type = "survival",
+    eval_time = seq(0, 300)
+  ) |>
+    tidyr::unnest(cols = .pred)
+
+  write_rds(predictions, "data/intercept_only/predictions.rds")
+}
+
+predictions <- read_rds("data/intercept_only/predictions.rds")
+```
+
+`ggplot2` can be used to visualize the model's fitted survival estimates for the data.
+
+```{r fig.width=7, eval = TRUE}
+ggplot() +
+  geom_step(aes(x = time, y = estimate, linetype = "Kaplan-Meier"),
+    color = "darkslategrey", data = km
+  ) +
+  geom_line(aes(x = .eval_time, y = .pred_survival, linetype = "Fitted"),
+    color = "darkslategrey",
+    data = predictions, alpha = 0.7
+  ) +
+  labs(
+    title = "Fitted survival estimates",
+    x = "t",
+    y = "S(t)",
+    linetype = "Type"
+  ) +
+  theme_bw()
+```
+
+
