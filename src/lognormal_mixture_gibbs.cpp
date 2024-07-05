@@ -120,7 +120,7 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
   arma::uvec indexg;
   arma::mat Vg0 = arma::diagmat(repl(30.0, p));
   arma::mat identity_p = arma::eye(p, p);
-  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::refine);
+  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::allow_ugly);
   arma::vec xi;
   arma::rowvec xit;
   arma::mat Xg;
@@ -159,7 +159,7 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
       S_inv = Vg0;
     } else {
       S_inv = arma::solve(S, identity_p, 
-                          arma::solve_opts::refine);
+                          arma::solve_opts::allow_ugly);
     }
     
     Mg = X * S_inv * Xgt_yg;
@@ -222,19 +222,20 @@ void sample_groups_fast(const int& G, const arma::vec& y, const arma::vec& eta,
 
 // Function used to sample the latent groups for each observation.
 arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& sd, const arma::mat& beta,
+                         const arma::vec& phi, const arma::mat& beta,
                          const arma::mat& X, gsl_rng* rng_device,
                          const arma::ivec& groups_old, const bool& fast_groups) {
   
   arma::ivec vec_groups = groups_old;
-  
+  arma::vec sd = 1.0 / sqrt(phi);
+
   if(fast_groups) {
     sample_groups_fast(G, y, eta, sd, beta, X, rng_device, vec_groups);
   } else {
     sample_groups_advanced(G, y, eta, sd, beta, X, rng_device, vec_groups);
   }
   
-  return(vec_groups);
+  return vec_groups;
 }
 
 // Function used to sample random groups for each observation proportional to the eta parameter
@@ -396,7 +397,7 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
                    arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
-  beta.row(g) = arma::solve(X.t() * Wg * X, X.t() * Wg * z, arma::solve_opts::refine).t();
+  beta.row(g) = arma::solve(X.t() * Wg * X, X.t() * Wg * z, arma::solve_opts::allow_ugly).t();
 }
 
 // Update the parameter phi(g)
@@ -617,12 +618,12 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
 void update_groups_gibbs(const int& iter, const bool& use_W, const arma::field<arma::mat>& em_params, const int& G, const arma::vec& y_aug, 
                          const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& X, arma::ivec& groups, gsl_rng* rng_device,
                          const bool& fast_groups) {
-  if (iter > 0) {
-    if(use_W) {
-      groups = sample_groups_from_W(em_params(3), y_aug.n_rows);
-    } else {
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups, fast_groups);
-    }
+
+  arma::ivec groups_old = groups;
+  if(use_W) {
+    groups = sample_groups_from_W(em_params(3), y_aug.n_rows);
+  } else {
+    groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups_old, fast_groups);
   }
 }
 
@@ -662,7 +663,9 @@ arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const
   arma::vec mg;
   
   if(arma::det(comb) != 0) {
-    Sg = arma::inv(comb);
+    Sg = arma::solve(comb,
+                         arma::eye(Xg.n_cols, Xg.n_cols),
+                         arma::solve_opts::allow_ugly);
     mg = phi_g * (Sg * Xgt * yg);
     out = rmvnorm(mg, Sg, rng_device).t();
   }
