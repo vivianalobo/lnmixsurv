@@ -16,12 +16,14 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Viviana das Graçcas Ribeiro Lobo \email{viviana@dme.ufrj.br}
+\strong{Maintainer}: Victor Ney \email{victor.s.ney@gmail.com}
 
 Authors:
 \itemize{
+  \item Viviana das Graças Ribeiro Lobo \email{viviana@dme.ufrj.br}
   \item Thaís Cristina Oliveira da Fonseca
   \item Mariane Branco Alves
+  \item Vitor Capdeville
 }
 
 }

@@ -4,9 +4,11 @@ Title: Bayesian Mixture Log-Normal Survival Model
 Version: 3.1.0
 Date: 2024-06-06
 Authors@R: c(
-    person("Viviana das Gra\u00e7cas Ribeiro Lobo", email = "viviana@dme.ufrj.br", role = c("cre", "aut")),
+    person("Viviana das Gra\u00e7as Ribeiro Lobo", email = "viviana@dme.ufrj.br", role = "aut"),
     person("Tha\u00eds Cristina Oliveira da Fonseca", role = "aut"),
-    person("Mariane Branco Alves", role = "aut"))
+    person("Mariane Branco Alves", role = "aut"),
+    person("Vitor Capdeville", role = "aut"),
+    person("Victor Ney", email = "victor.s.ney@gmail.com", role = "cre"))
 Description: Bayesian Survival models via the mixture of Log-Normal distribution extends the well-known survival models
     and accommodates different behaviour over time and considers higher censored survival times. 
     The proposal combines mixture distributions Fruhwirth-Schnatter(2006) <doi:10.1007/s11336-009-9121-4>, 
@@ -47,7 +49,6 @@ Suggests:
     pec
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
 SystemRequirements:
 	C++,
 	GNU,
@@ -57,3 +58,4 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 LazyData: true
 URL: https://vivianalobo.github.io/lnmixsurv/
+RoxygenNote: 7.3.2
