@@ -222,11 +222,12 @@ void sample_groups_fast(const int& G, const arma::vec& y, const arma::vec& eta,
 
 // Function used to sample the latent groups for each observation.
 arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta, 
-                         const arma::vec& sd, const arma::mat& beta,
+                         const arma::vec& phi, const arma::mat& beta,
                          const arma::mat& X, gsl_rng* rng_device,
                          const arma::ivec& groups_old, const bool& fast_groups) {
   
   arma::ivec vec_groups = groups_old;
+  arma::vec sd = 1.0 / sqrt(phi);
   
   if(fast_groups) {
     sample_groups_fast(G, y, eta, sd, beta, X, rng_device, vec_groups);
