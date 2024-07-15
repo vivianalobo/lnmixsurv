@@ -28,11 +28,6 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
     stop("The type should be either 'survival' or 'hazard'.")
   }
   
-  # error hazard not implemented
-  if (type == "hazard") {
-    stop("The hazard plot is not implemented yet.")
-  }
-  
   # Check level numeric
   if(!is.numeric(level)) {
     stop("The level should be a numeric value.")
@@ -109,46 +104,25 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
           labs(x = "Time", y = "Survival")
       }
     } else {
+      km <- join_empirical_hazard(km)
+      
       if (all(vars != "NULL")) {
-        km$strata <- factor(km$strata)
-        preds$strata <- factor(preds$strata)
-        km_hazard <- NULL
-        preds_hazard <- NULL
-        for(i in levels(km$strata)) {
-          km_hazard <- bind_rows(km_hazard,
-                                 tibble(time = km$time[km$strata == i],
-                                        strata = i,
-                                        hazard = tx.emp(km$time[km$strata == i], km$estimate[km$strata == i])))
-          
-          preds_hazard <- bind_rows(preds_hazard,
-                                    tibble(.eval_time = preds$.eval_time[preds$strata == i],
-                                           strata = i,
-                                           .pred_hazard = tx.emp(preds$.eval_time[preds$strata == i], preds$.pred_survival[preds$strata == i])))
-        }
-        
         gg <- ggplot() +
-          geom_step(aes(x = time, y = hazard, color = strata),
-                    data = km_hazard, alpha = 0.5
+          geom_step(aes(x = time, y = hazard_estimate, color = strata),
+                    data = km, alpha = 0.5
           ) +
           geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata),
-                    data = preds_hazard
+                    data = preds
           ) +
           theme_bw() +
           labs(x = "Time", y = "Hazard")
       } else {
-        km_hazard <- tibble(time = km$time,
-                            hazard = tx.emp(km$time, 
-                                            km$estimate))
-        preds_hazard <- tibble(time = preds$time,
-                               hazard = tx.emp(preds$time, 
-                                               preds$estimate))
-        
         gg <- ggplot() +
-          geom_step(aes(x = time, y = hazard),
-                    data = km_hazard, alpha = 0.5
+          geom_step(aes(x = time, y = hazard_estimate),
+                    data = km, alpha = 0.5
           ) +
           geom_line(aes(x = .eval_time, y = .pred_hazard),
-                    data = preds_hazard
+                    data = preds
           ) +
           theme_bw() +
           labs(x = "Time", y = "Hazard")
@@ -226,7 +200,58 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
       gg <- ggplot() +
         step_layer + line_layer + credible_ribbon + labs_gg + theme_bw() + guides_gg + facet_chain
     } else {
-      stop('Hazard not implemented for survival_ln_mixture yet.')
+      km <- join_empirical_hazard(km)
+      labs_gg <- labs(x = "Time", y = "Hazard")
+      
+      if(posterior::nchains(model$posterior) > 1) {
+        facet_chain <- facet_wrap(~chain)
+        guides_gg <- guides(linetype = 'none')
+        if(all(vars != "NULL")) {
+          step_layer <- geom_step(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
+          line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata, linetype = chain), data = preds)
+          
+          if(interval == 'credible') {
+            credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper, fill = strata, linetype = chain), data = preds, alpha = 0.3)
+          } else {
+            credible_ribbon <- NULL
+          }
+          
+        } else {
+          step_layer <- geom_step(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
+          line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, linetype = chain), data = preds)
+          
+          if(interval == 'credible') {
+            credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper, linetype = chain), data = preds, alpha = 0.3)
+          } else {
+            credible_ribbon <- NULL
+          }
+        }
+      } else {
+        guides_gg <- NULL
+        facet_chain <- NULL
+        if (all(vars != "NULL")) {
+          line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata), data = preds)
+          step_layer <- geom_step(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
+          
+          if(interval == 'credible') {
+            credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper, fill = strata), data = preds, alpha = 0.3)
+          } else {
+            credible_ribbon <- NULL
+          }
+        } else {
+          line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard), data = preds)
+          step_layer <- geom_step(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
+          
+          if(interval == 'credible') {
+            credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper), data = preds, alpha = 0.3)
+          } else {
+            credible_ribbon <- NULL
+          }
+        }
+      }
+      
+      gg <- ggplot() +
+        step_layer + line_layer + credible_ribbon + labs_gg + theme_bw() + guides_gg + facet_chain
     }
   }
   
@@ -234,18 +259,4 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
     preds = preds,
     ggplot = gg
   ))
-}
-
-tx.emp <- function(t, s) {
-  seq_time <- 1:length(t)
-  
-  aux <- NULL
-  
-  for (i in 2:length(seq_time)) {
-    aux <- c(aux, 
-             (s[seq_time[i - 1]] - s[seq_time[i]]) /
-               ((t[seq_time[i]] - t[seq_time[i - 1]]) * s[seq_time[i - 1]]))
-  }
-  
-  return(c(aux, 0))
 }
