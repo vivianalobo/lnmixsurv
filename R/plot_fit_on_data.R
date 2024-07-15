@@ -108,7 +108,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
       
       if (all(vars != "NULL")) {
         gg <- ggplot() +
-          geom_step(aes(x = time, y = hazard_estimate, color = strata),
+          geom_line(aes(x = time, y = hazard_estimate, color = strata),
                     data = km, alpha = 0.5
           ) +
           geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata),
@@ -118,7 +118,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
           labs(x = "Time", y = "Hazard")
       } else {
         gg <- ggplot() +
-          geom_step(aes(x = time, y = hazard_estimate),
+          geom_line(aes(x = time, y = hazard_estimate),
                     data = km, alpha = 0.5
           ) +
           geom_line(aes(x = .eval_time, y = .pred_hazard),
@@ -207,7 +207,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
         facet_chain <- facet_wrap(~chain)
         guides_gg <- guides(linetype = 'none')
         if(all(vars != "NULL")) {
-          step_layer <- geom_step(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
+          step_layer <- geom_line(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
           line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata, linetype = chain), data = preds)
           
           if(interval == 'credible') {
@@ -217,7 +217,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
           }
           
         } else {
-          step_layer <- geom_step(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
+          step_layer <- geom_line(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
           line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, linetype = chain), data = preds)
           
           if(interval == 'credible') {
@@ -231,7 +231,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
         facet_chain <- NULL
         if (all(vars != "NULL")) {
           line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard, color = strata), data = preds)
-          step_layer <- geom_step(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
+          step_layer <- geom_line(aes(x = time, y = hazard_estimate, color = strata), data = km, alpha = 0.5)
           
           if(interval == 'credible') {
             credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper, fill = strata), data = preds, alpha = 0.3)
@@ -240,7 +240,7 @@ plot_fit_on_data <- function(model, type = "survival", interval = 'none',
           }
         } else {
           line_layer <- geom_line(aes(x = .eval_time, y = .pred_hazard), data = preds)
-          step_layer <- geom_step(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
+          step_layer <- geom_line(aes(x = time, y = hazard_estimate), data = km, alpha = 0.5)
           
           if(interval == 'credible') {
             credible_ribbon <- geom_ribbon(aes(x = .eval_time, ymin = .pred_lower, ymax = .pred_upper), data = preds, alpha = 0.3)
