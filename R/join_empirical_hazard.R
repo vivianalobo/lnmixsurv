@@ -8,7 +8,7 @@
 join_empirical_hazard <- function(km) {
   # check if the only class is a survfit object
   if (length(class(km)) == 1) {
-    if (is(km, "survfit")) {
+    if (inherits(km, "survfit")) {
       km <- broom::tidy(km)
     }
   }
@@ -25,11 +25,14 @@ join_empirical_hazard <- function(km) {
         )
       )
     }
+
+    output <- dplyr::left_join(km, output, by = c("strata", "time"))
   } else {
     output <- empirical_hazard_function(km$time, km$estimate)
+    output <- dplyr::left_join(km, output, by = "time")
   }
 
-  return(dplyr::left_join(km, output, by = c("strata", "time")))
+  return(output)
 }
 
 empirical_hazard_function <- function(time, empirical_survival, strata = NULL) {

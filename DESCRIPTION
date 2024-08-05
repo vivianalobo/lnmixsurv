@@ -19,6 +19,7 @@ Imports:
     generics,
     dplyr,
     readr,
+    purrr,
     tidyr,
     tibble,
     Rcpp,
