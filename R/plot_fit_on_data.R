@@ -4,7 +4,7 @@
 #'
 #' @param model A `survival_ln_mixture` or `survival_ln_mixture_em` object.
 #'
-#' @param data A `data.frame()` or `tibble()` containing the data used to fit the model.
+#' @param data A `data.frame()` or `tibble()` containing the data used to fit the model. For appropriate behavior, should be the same object used to generate survival_ln_mixture/survival_ln_mixture_em objects.
 #'
 #' @param type A character string specifying the type of plot. The default is "survival", but can be "hazard".
 #'
@@ -43,7 +43,7 @@ plot_fit_on_data <- function(model, data, type = "survival", interval = "none",
   # -----
   # Predictions
   # -----
-
+  
   form <- model$blueprint$formula
   form <- stats::as.formula(paste0(paste(form)[[2]], " ~ ", paste(form)[[3]]))
   vars <- strsplit(paste(form)[[3]], " \\+ ")[[1]]

@@ -18,6 +18,7 @@ Imports:
     rlang,
     generics,
     dplyr,
+    readr,
     tidyr,
     tibble,
     Rcpp,

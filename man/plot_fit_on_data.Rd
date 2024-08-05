@@ -15,7 +15,7 @@ plot_fit_on_data(
 \arguments{
 \item{model}{A \code{survival_ln_mixture} or \code{survival_ln_mixture_em} object.}
 
-\item{data}{A \code{data.frame()} or \code{tibble()} containing the data used to fit the model.}
+\item{data}{A \code{data.frame()} or \code{tibble()} containing the data used to fit the model. For appropriate behavior, should be the same object used to generate survival_ln_mixture/survival_ln_mixture_em objects.}
 
 \item{type}{A character string specifying the type of plot. The default is "survival", but can be "hazard".}
 
