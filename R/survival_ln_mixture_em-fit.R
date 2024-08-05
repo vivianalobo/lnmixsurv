@@ -47,11 +47,11 @@ survival_ln_mixture_em.default <- function(formula, ...) {
 survival_ln_mixture_em.formula <- function(formula, data, intercept = TRUE, ...) {
   blueprint <- hardhat::default_formula_blueprint(intercept = intercept)
   processed <- hardhat::mold(formula, data, blueprint = blueprint)
-  survival_ln_mixture_em_bridge(processed, data, ...)
+  survival_ln_mixture_em_bridge(processed, ...)
 }
 
 # ---------------- BRIDGE ----------------
-survival_ln_mixture_em_bridge <- function(processed, data, ...) {
+survival_ln_mixture_em_bridge <- function(processed, ...) {
   # Verifications
   outcome <- processed$outcome[[1]]
   if (!survival::is.Surv(outcome)) {
@@ -76,8 +76,7 @@ survival_ln_mixture_em_bridge <- function(processed, data, ...) {
     nobs = fit$nobs,
     predictors_name = fit$predictors_name,
     mixture_groups = fit$mixture_groups,
-    blueprint = processed$blueprint,
-    data = data
+    blueprint = processed$blueprint
   )
 }
 

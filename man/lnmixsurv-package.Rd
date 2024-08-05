@@ -16,7 +16,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Victor Ney \email{victor.s.ney@gmail.com}
+\strong{Maintainer}: Victor Hugo Soares Ney \email{victor.s.ney@gmail.com}
 
 Authors:
 \itemize{

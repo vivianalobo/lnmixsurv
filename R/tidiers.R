@@ -6,7 +6,7 @@ globalVariables(".pred")
 #'
 #' @param x Fitted model object.
 #' @param effects A character vector including one or more of `"fixed"` and `"auxiliary`.
-#' @param conf.int If `TRUE` columns for lower (`conf.low`) and upper (`conf.high`) bounds
+#' @param conf.int If `TRUE` columns for lower (`cred.low`) and upper (`cred.high`) bounds
 #' of the posterior uncertainty intervals are included.
 #' @param conf.level A number between 0 and 1 indicating the desired probability mass to include in the
 #' intervals. Only used if `conf.int = TRUE`.
@@ -85,7 +85,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
 #' @noRd
 credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
   ret <- unname(stats::quantile(x, probs = c(1 - conf.level, conf.level)))
-  return(c("conf.low" = ret[1], "conf.high" = ret[2]))
+  return(c("cred.low" = ret[1], "cred.high" = ret[2]))
 }
 
 #' Augment data with information from a survival_ln_mixture object
@@ -112,6 +112,10 @@ augment.survival_ln_mixture <- function(x, newdata, eval_time, ...) {
   return(dplyr::bind_cols(tibble::as_tibble(newdata), .hazard = haz, .survival = surv))
 }
 
+#' Augment data with information from a survival_ln_mixture_em object
+#'
+#' Include information about hazard and survival distribution for each individual
+#' in a dataset.
 #' @param x A `survival_ln_mixture_em` object.
 #' @param newdata A `base::data.frame()` or `tibble::tiblle()` containing all
 #' the original predictors used to create x.
@@ -130,4 +134,3 @@ augment.survival_ln_mixture_em <- function(x, newdata, eval_time, ...) {
   surv <- dplyr::rename(surv, .survival = .pred)
   return(dplyr::bind_cols(tibble::as_tibble(newdata), .hazard = haz, .survival = surv))
 }
-

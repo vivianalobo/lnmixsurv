@@ -15,7 +15,7 @@ using namespace Rcpp;
 //' @importFrom RcppParallel RcppParallelLibs
  
  // ------ RNG Framework ------
- 
+
  // Function to initialize the GSL random number generator
  void initializeRNG(const long long int& seed, gsl_rng* rng_device) {
    gsl_rng_set(rng_device, seed);
@@ -79,6 +79,11 @@ arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance, gsl_rng* r
 
 /* AUXILIARY FUNCTIONS */
 
+// Function to make a square matrix symmetric
+arma::mat makeSymmetric(const arma::mat& A) {
+  return (0.5 * (A + A.t()));
+}
+
 // Creates a sequence from start to end with 1 step
 arma::ivec seq(const int& start, const int& end) {
   arma::vec out_vec = arma::linspace<arma::vec>(start, end, end - start + 1);
@@ -120,7 +125,7 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
   arma::uvec indexg;
   arma::mat Vg0 = arma::diagmat(repl(30.0, p));
   arma::mat identity_p = arma::eye(p, p);
-  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::allow_ugly);
+  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::likely_sympd);
   arma::vec xi;
   arma::rowvec xit;
   arma::mat Xg;
@@ -158,8 +163,8 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
     if(arma::det(S) == 0) {
       S_inv = Vg0;
     } else {
-      S_inv = arma::solve(S, identity_p, 
-                          arma::solve_opts::allow_ugly);
+      S_inv = arma::solve(makeSymmetric(S), identity_p, 
+                          arma::solve_opts::likely_sympd);
     }
     
     Mg = X * S_inv * Xgt_yg;
@@ -338,7 +343,7 @@ double compute_expected_value_truncnorm(const double& alpha, const double& mean,
       (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)));
   } else {
     out = mean + sigma *
-      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999));
+      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.99999));
   }
   
   return out;
@@ -380,13 +385,13 @@ arma::ivec sample_groups_from_W(const arma::mat& W, const int& N) {
 
 // Sample initial values for the EM parameters
 void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::vec& sd, const int& G, const int& k, gsl_rng* rng_device) {
-  eta = rdirichlet(repl(0.01, G), rng_device);
+  eta = rdirichlet(repl(0.1, G), rng_device);
   
   for (int g = 0; g < G; g++) {
-    phi(g) = rgamma_(0.01, 0.01, rng_device);
+    phi(g) = rgamma_(0.1, 0.1, rng_device);
     
     for (int c = 0; c < k; c++) {
-      beta(g, c) = rnorm_(0.0, 60.0, rng_device);
+      beta(g, c) = rnorm_(0.0, 25.0, rng_device);
     }
   }
   
@@ -397,7 +402,10 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
                    arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
-  beta.row(g) = arma::solve(X.t() * Wg * X, X.t() * Wg * z, arma::solve_opts::allow_ugly).t();
+  arma::mat comb = makeSymmetric(X.t() * Wg * X);
+  if(arma::det(comb) != 0) {
+     beta.row(g) = arma::solve(comb, X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
+  }
 }
 
 // Update the parameter phi(g)
@@ -429,7 +437,7 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
   }
 
   // to avoid numerical problems
-  if(phi(g) > 1e5 || phi.has_nan()) {
+  if(phi(g) > 1e8 || phi.has_nan()) {
     phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
   }
 }
@@ -663,9 +671,9 @@ arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const
   arma::vec mg;
   
   if(arma::det(comb) != 0) {
-    Sg = arma::solve(comb,
+    Sg = arma::solve(makeSymmetric(comb),
                          arma::eye(Xg.n_cols, Xg.n_cols),
-                         arma::solve_opts::allow_ugly);
+                         arma::solve_opts::likely_sympd);
     mg = phi_g * (Sg * Xgt * yg);
     out = rmvnorm(mg, Sg, rng_device).t();
   }

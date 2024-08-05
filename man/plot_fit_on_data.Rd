@@ -4,10 +4,18 @@
 \alias{plot_fit_on_data}
 \title{Function used to quick visualize the fitted values (survival estimate) on the data used to fit the model (via EM algorithm or Gibbs).}
 \usage{
-plot_fit_on_data(model, type = "survival", interval = "none", level = 0.95)
+plot_fit_on_data(
+  model,
+  data,
+  type = "survival",
+  interval = "none",
+  level = 0.95
+)
 }
 \arguments{
 \item{model}{A \code{survival_ln_mixture} or \code{survival_ln_mixture_em} object.}
+
+\item{data}{A \code{data.frame()} or \code{tibble()} containing the data used to fit the model.}
 
 \item{type}{A character string specifying the type of plot. The default is "survival", but can be "hazard".}
 

@@ -10,7 +10,6 @@ new_survival_ln_mixture_em <- function(em_iterations,
     predictors_name = predictors_name,
     mixture_groups = mixture_groups,
     blueprint = blueprint,
-    data = data,
     class = "survival_ln_mixture_em"
   )
 }

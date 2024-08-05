@@ -18,7 +18,7 @@
 
 \item{effects}{A character vector including one or more of \code{"fixed"} and \verb{"auxiliary}.}
 
-\item{conf.int}{If \code{TRUE} columns for lower (\code{conf.low}) and upper (\code{conf.high}) bounds
+\item{conf.int}{If \code{TRUE} columns for lower (\code{cred.low}) and upper (\code{cred.high}) bounds
 of the posterior uncertainty intervals are included.}
 
 \item{conf.level}{A number between 0 and 1 indicating the desired probability mass to include in the
