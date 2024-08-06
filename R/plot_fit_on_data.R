@@ -43,7 +43,7 @@ plot_fit_on_data <- function(model, data, type = "survival", interval = "none",
   # -----
   # Predictions
   # -----
-
+  data <- tibble::tibble(data)
   form <- model$blueprint$formula
   form <- stats::as.formula(paste0(paste(form)[[2]], " ~ ", paste(form)[[3]]))
   vars <- strsplit(paste(form)[[3]], " \\+ ")[[1]]

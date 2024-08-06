@@ -20,3 +20,8 @@ test_that("niterations works", {
   expect_equal(niterations(mod1), 150)
   expect_equal(niterations(mod2), 150)
 })
+
+test_that("plot function works when applied to model via EM algorithm", {
+  expect_snapshot(plot(mod1))
+  expect_snapshot(plot(mod2))
+})
