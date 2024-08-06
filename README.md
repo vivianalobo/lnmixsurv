@@ -61,6 +61,14 @@ You can install the latest development version of `lnmixsurv` from
 devtools::install_github("vivianalobo/lnmixsurv")
 ```
 
+Alternatively, to install the latest development version of `lnmixsurv`,
+you can use the following code:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("vivianalobo/lnmixsurv", "devel")
+```
+
 ## parsnip and censored extension
 
 An extension to the models defined by
@@ -72,7 +80,7 @@ also provided, adding the `survival_ln_mixture` engine to the
 The following models, engines, and prediction type are
 available/extended through `persistencia`:
 
-| model        | engine                 | time | survival | linear_pred | raw | quantile | hazard |
-|:-------------|:-----------------------|:-----|:---------|:------------|:----|:---------|:-------|
-| survival_reg | survival_ln_mixture    | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
-| survival_reg | survival_ln_mixture_em | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
+| model | engine | time | survival | linear_pred | raw | quantile | hazard |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| survival_reg | survival_ln_mixture | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
+| survival_reg | survival_ln_mixture_em | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
