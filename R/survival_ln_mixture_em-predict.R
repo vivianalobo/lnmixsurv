@@ -91,7 +91,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival",
     as.numeric(last_row[
       !startsWith(names(last_row), "eta") & !(startsWith(names(last_row), "phi"))
     ]),
-    ncol = model$mixture_groups
+    ncol = length(model$mixture_groups)
   )
 
   phi <- as.numeric(last_row[startsWith(names(last_row), "phi")])

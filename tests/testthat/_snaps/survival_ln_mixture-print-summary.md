@@ -4,10 +4,11 @@
       mod
     Output
       survival_ln_mixture
-       formula:      survival::Surv(y, delta) ~ x
+       formula: survival::Surv(y, delta) ~ x
        observations: 10000
-       predictors:   2
-      ------
+       predictors: 2
+       mixture groups: 2
+      ------------------
                      estimate   std.error  cred.low cred.high
       (Intercept)_1 3.5340990 0.013925815 3.5158592 3.5519913
       x1_1          0.6849315 0.017822534 0.6611903 0.7086563
