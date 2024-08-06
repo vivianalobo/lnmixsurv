@@ -1,11 +1,13 @@
 #' @export
-print.survival_ln_mixture <- function(x, digits = NULL, ...) {
+print.survival_ln_mixture_em <- function(x, digits = NULL, ...) {
   if (is.null(digits)) digits <- getOption("digits")
-  fixed <- tidy.survival_ln_mixture(x, effects = "fixed", conf.int = TRUE)
-  auxiliary <- tidy.survival_ln_mixture(x, effects = "auxiliary", conf.int = TRUE)
-  cat("survival_ln_mixture")
+  fixed <- tidy.survival_ln_mixture_em(x, effects = "fixed")
+  auxiliary <- tidy.survival_ln_mixture_em(x, effects = "auxiliary")
+  
+  cat("survival_ln_mixture_em")
   cat("\n formula:", extract_formula(x))
   cat("\n observations:", nobs(x))
+  cat("\n iterations:", niterations(x))
   cat("\n predictors:", npredictors(x))
   cat("\n mixture groups:", length(x$mixture_groups))
   cat("\n------------------\n")

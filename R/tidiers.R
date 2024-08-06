@@ -4,7 +4,7 @@ globalVariables(".pred")
 #'
 #' These method tidy the estimates from `survival_ln_mixture` fits into a summary.
 #'
-#' @param x Fitted model object.
+#' @param x Fitted model object (survival_ln_mixture).
 #' @param effects A character vector including one or more of `"fixed"` and `"auxiliary`.
 #' @param conf.int If `TRUE` columns for lower (`cred.low`) and upper (`cred.high`) bounds
 #' of the posterior uncertainty intervals are included.
@@ -23,18 +23,14 @@ globalVariables(".pred")
 #' \code{\link[stats]{mad}}. See the \emph{Uncertainty estimates} section in
 #' \code{\link[rstanarm]{print.stanreg}} for more details.}
 #'
-#' Setting \code{effects="auxiliary"} will select the remaining parameters:
-#'
-#' \item{phi_a}{Dispersion parameter for the first componente of the mixture.}
-#' \item{phi_b}{Dispersion parameter for the second componente of the mixture.}
-#' \item{theta_a}{The weigth of the first component of the mixture.}
-#'
+#' Setting \code{effects="auxiliary"} will select the precision and proportion of mixture components parameters.
+#' 
 #' @examples
 #'
 #' require(survival)
 #' lung$sex <- factor(lung$sex)
 #' set.seed(1)
-#' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+#' mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung)
 #' tidy(mod2)
 #' tidy(mod2, conf.int = TRUE)
 #' tidy(mod2, effects = c("fixed", "auxiliary"), conf.int = TRUE)
@@ -79,6 +75,67 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
   ret <- posterior::summarise_draws(post, measures)
   names(ret)[1] <- "term"
   ret
+}
+
+#' Tidying method for a Lognormal Mixture model (fitted via Expectation-Maximization algorithm).
+#'
+#' These method tidy the estimates from `survival_ln_mixture` fits into a short summary. It doesn't contain uncertainty estimates since it's a likelihood maximization algorithm.
+#'
+#' @param x Fitted model object (survival_ln_mixture_em).
+#' @param effects A character vector including one or more of `"fixed"` and `"auxiliary`.
+#' @param digits How many significant digits should be displayed?
+#' @param ... Not used.
+#'
+#' @return
+#'
+#' A `data.frame` without rownames. When `effects="fixed"` (the default), tidy.survival_ln_mixutre
+#' returns one row for each coefficient for each component of the mixture with two columns:
+#' \item{term}{The name of the corresponding term in the model.}
+#' \item{estimate}{A point estimate of the coefficient (last iteration value).}
+#'
+#' Setting \code{effects="auxiliary"} will select the precision and proportion of mixture components parameters.
+#' 
+#' @examples
+#'
+#' require(survival)
+#' lung$sex <- factor(lung$sex)
+#' set.seed(1)
+#' mod2 <- survival_ln_mixture_em(Surv(time, status == 2) ~ sex, lung)
+#' tidy(mod2)
+#' tidy(mod2, conf.int = TRUE)
+#' tidy(mod2, effects = c("fixed", "auxiliary"), conf.int = TRUE)
+#'
+#' @export
+tidy.survival_ln_mixture_em <- function(x, # nolint: object_name_linter.
+                                     effects = "fixed",
+                                     digits = NULL,
+                                     ...) {
+  rlang::arg_match(effects, c("fixed", "auxiliary"))
+  rlang::check_dots_empty(...)
+  all_vars <- colnames(x$em_iterations)
+  vars <- c()
+  
+  if ("fixed" %in% effects) {
+    for (i in x$mixture_groups) {
+      vars <- c(vars, paste0(x$predictors_name, "_", i))
+    }
+  }
+  
+  if ("auxiliary" %in% effects) {
+    auxiliary_vars <- all_vars[startsWith(all_vars, "phi")]
+    auxiliary_vars <- c(
+      auxiliary_vars,
+      all_vars[startsWith(all_vars, "eta")]
+    )
+    vars <- c(vars, auxiliary_vars)
+  }
+  
+  estimate <- dplyr::select(x$em_iterations, dplyr::all_of(vars)) |> 
+    dplyr::slice(nrow(x$em_iterations)) |> 
+    as.numeric()
+  
+  return(tibble::tibble(term = vars,
+                        estimate = estimate))
 }
 
 #' Funcao auxiliar para calcular intervalo de credibilidade usando quantis.
