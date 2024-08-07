@@ -49,3 +49,22 @@ plot.survival_ln_mixture_em <- function(x, ...) {
       plotly::ggplotly()
   }
 }
+
+extract_formula <- function(model) {
+  # Trocar NULL por 1 para caso onde so tem intercepto
+  formula <- gsub("NULL", "1", deparse(model$blueprint$formula))
+  return(formula)
+}
+
+npredictors <- function(model) {
+  return(ncol(model$blueprint$ptypes$predictors) + model$blueprint$intercept)
+}
+
+nobs.survival_ln_mixture_em <- function(object, ...) { # nolint: object_name_linter.
+  rlang::check_dots_empty(...)
+  return(object$nobs)
+}
+
+niterations <- function(model) {
+  return(nrow(model$em_iterations))
+}

@@ -18,7 +18,7 @@ will be evaluated.}
 \item{...}{Not used.}
 }
 \value{
-A \code{tibble::tibble()} with the original covarates and ther survvial and hazard
+A \code{tibble::tibble()} with the original covariates and ther survvial and hazard
 distributions.
 }
 \description{

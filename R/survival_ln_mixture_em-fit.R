@@ -192,7 +192,7 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     em_iterations = matrix_em_iter,
     number_iterations = iter,
     nobs = length(outcome_times),
-    mixture_groups = mixture_components,
+    mixture_groups = seq_len(mixture_components),
     predictors_name = colnames(predictors)
   )
 }

@@ -16,7 +16,6 @@ survival_ln_mixture(
   chains = 1,
   cores = 1,
   mixture_components = 2,
-  proposal_variance = 2,
   show_progress = FALSE,
   em_iter = 0,
   starting_seed = sample(1:2^28, 1),
@@ -52,8 +51,6 @@ The number of warmup iterations should be smaller than iter.}
 \item{cores}{A positive integer specifying the maximum number of cores to run the chains. Setting this to a value bigger than 1 will automatically trigger the parallel mode}
 
 \item{mixture_components}{number of mixture componentes >= 2.}
-
-\item{proposal_variance}{The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17\% and 25\%, which seems to be optimal on our tests.}
 
 \item{show_progress}{Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.}
 

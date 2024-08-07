@@ -24,12 +24,16 @@
 #' @export
 predict.survival_ln_mixture_em <- function(object, new_data, type,
                                            eval_time, ...) {
+  if (as.character(object$blueprint$formula)[3] != "NULL") {
+    new_data <- append_strata_column(new_data)
+  }
+
   forged <- hardhat::forge(new_data, object$blueprint)
   rlang::arg_match(type, valid_survival_ln_mixture_em_predict_types())
 
   predict_survival_ln_mixture_em_bridge(
     type, object, forged$predictors,
-    eval_time, ...
+    eval_time, new_data, ...
   )
 }
 
@@ -40,10 +44,14 @@ valid_survival_ln_mixture_em_predict_types <- function() {
 # ------------------------------------------------------------------------------
 # Bridge
 predict_survival_ln_mixture_em_bridge <- function(type, model, predictors,
-                                                  eval_time, ...) {
+                                                  eval_time, new_data, ...) {
   predictors <- as.matrix(predictors)
+
   predict_function <- get_survival_ln_mixture_em_predict_function(type)
-  predictions <- predict_function(model, predictors, eval_time, ...)
+  predictions <- predict_function(model, predictors, eval_time, new_data, ...)
+
+  hardhat::validate_prediction_size(predictions, predictors)
+
   predictions
 }
 
@@ -56,20 +64,26 @@ get_survival_ln_mixture_em_predict_function <- function(type) {
 
 # ------------------------------------------------------------------------------
 # Implementation
-predict_survival_ln_mixture_em_time <- function(model, predictors, eval_time) {
+predict_survival_ln_mixture_em_time <- function(model, predictors, eval_time, new_data) {
   rlang::abort("Not implemented")
 }
 
-predict_survival_ln_mixture_em_survival <- function(model, predictors, eval_time) {
-  extract_surv_haz_em(model, predictors, eval_time, "survival")
+predict_survival_ln_mixture_em_survival <- function(model, predictors, eval_time, new_data) {
+  extract_surv_haz_em(model, predictors, eval_time, "survival", new_data)
 }
 
-predict_survival_ln_mixture_em_hazard <- function(model, predictors, eval_time) {
-  extract_surv_haz_em(model, predictors, eval_time, "hazard")
+predict_survival_ln_mixture_em_hazard <- function(model, predictors, eval_time, new_data) {
+  extract_surv_haz_em(model, predictors, eval_time, "hazard", new_data)
 }
 
-extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival") {
+extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival", new_data) {
   rlang::arg_match(type, c("survival", "hazard"))
+
+  strata <- NULL
+
+  if (as.character(model$blueprint$formula)[3] != "NULL") {
+    strata <- new_data$strata
+  }
 
   last_row <- model$em_iterations[nrow(model$em_iterations), -ncol(model$em_iterations)]
 
@@ -77,11 +91,12 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
     as.numeric(last_row[
       !startsWith(names(last_row), "eta") & !(startsWith(names(last_row), "phi"))
     ]),
-    ncol = model$mixture_groups
+    ncol = length(model$mixture_groups)
   )
 
   phi <- as.numeric(last_row[startsWith(names(last_row), "phi")])
   eta <- as.numeric(last_row[startsWith(names(last_row), "eta")])
+
   sigma <- 1 / sqrt(phi)
 
   m <- apply(beta,
@@ -98,10 +113,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .pred_survival = NA
         )
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
+        out_r$.pred_survival <- as.numeric(predict_survival_em_cpp(eval_time, m, sigma, eta, r))
 
         out[[r]] <- out_r
       }
@@ -111,10 +123,9 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .pred_survival = NA
       )
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_survival[i] <- sob_lognormal_em_mix(t, m, sigma, eta)
-      }
+      out_r$.pred_survival <- as.numeric(
+        predict_survival_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1)
+      )
 
       out[[1]] <- out_r
     }
@@ -127,10 +138,7 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
           .pred_hazard = NA
         )
 
-        for (i in 1:length(eval_time)) {
-          t <- eval_time[i]
-          out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m[r, ], sigma, eta)
-        }
+        out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, m, sigma, eta, r))
 
         out[[r]] <- out_r
       }
@@ -140,35 +148,25 @@ extract_surv_haz_em <- function(model, predictors, eval_time, type = "survival")
         .pred_hazard = NA
       )
 
-      for (i in 1:length(eval_time)) {
-        t <- eval_time[i]
-        out_r$.pred_hazard[i] <- falha_lognormal_em_mix(t, m, sigma, eta)
-      }
+      out_r$.pred_hazard <- as.numeric(predict_hazard_em_cpp(eval_time, t(as.matrix(m)), sigma, eta, 1))
 
       out[[1]] <- out_r
     }
   }
 
-  return(tibble::tibble(.pred = out))
-}
-
-sob_lognormal_em <- function(t, m, sigma) {
-  stats::pnorm((-log(t) + m) / sigma)
-}
-
-sob_lognormal_em_mix <- function(t, m, sigma, eta) {
-  out <- 0
-  for (g in 1:length(m)) {
-    out <- out + eta[g] * sob_lognormal_em(t, m[g], sigma[g])
+  if (!is.null(strata)) {
+    tibble_out <- tibble::tibble(
+      .pred = out,
+      strata = strata
+    )
+  } else {
+    tibble_out <- tibble::tibble(.pred = out)
   }
-  return(out)
+
+  return(tibble_out)
 }
 
-falha_lognormal_em_mix <- function(t, m, sigma, eta) {
-  sob_mix <- sob_lognormal_em_mix(t, m, sigma, eta)
-  dlnorm_mix <- 0
-  for (g in 1:length(m)) {
-    dlnorm_mix <- dlnorm_mix + eta[g] * stats::dlnorm(t, m[g], sigma[g])
-  }
-  return(dlnorm_mix / sob_mix)
+append_strata_column <- function(new_data) {
+  new_data$strata <- survival::strata(new_data)
+  return(new_data)
 }

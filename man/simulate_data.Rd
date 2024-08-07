@@ -4,7 +4,13 @@
 \alias{simulate_data}
 \title{Function to simulate survival data from a mixture of normal distribution.}
 \usage{
-simulate_data(n, mixture_components, k, percentage_censored)
+simulate_data(
+  n = 4000,
+  mixture_components = 2,
+  k = 2,
+  percentage_censored = 0.4,
+  starting_seed = sample(1:2^28, 1)
+)
 }
 \arguments{
 \item{n}{Number of observations desired.}
@@ -13,7 +19,9 @@ simulate_data(n, mixture_components, k, percentage_censored)
 
 \item{k}{number of covariates generated (the total of covariates will be intercept + (k - 1) covariates).}
 
-\item{percentage_censored}{Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation..}
+\item{percentage_censored}{Percentage of censored observations (defined as decimal value between 0 and 1). This will generate a delta vector in which 1 is an event that ocurred and 0 is a censored observation.}
+
+\item{starting_seed}{Seed to start the random number generation.}
 }
 \description{
 \code{simulate_data()} simulates data from a mixture model.

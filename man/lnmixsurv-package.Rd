@@ -4,9 +4,9 @@
 \name{lnmixsurv-package}
 \alias{lnmixsurv}
 \alias{lnmixsurv-package}
-\title{lnmixsurv: Bayesian Mixture Log-Normal survival model}
+\title{lnmixsurv: Bayesian Mixture Log-Normal Survival Model}
 \description{
-Bayesian Survival models via the mixture of Log-Normal distribution extends the well-known survival models and accommodates different behaviour over time and considers higher censored survival times. The proposal combines mixture distributions Fruhwirth-Schnatter(2006) \url{https://doi.org/10.1007/s11336-009-9121-4}, and data augmentation techniques Tanner and Wong (1987) \url{https://doi/abs/10.1080/01621459.1987.10478458}.
+Bayesian Survival models via the mixture of Log-Normal distribution extends the well-known survival models and accommodates different behaviour over time and considers higher censored survival times. The proposal combines mixture distributions Fruhwirth-Schnatter(2006) \doi{10.1007/s11336-009-9121-4}, and data augmentation techniques Tanner and Wong (1987) \doi{10.1080/01621459.1987.10478458}.
 }
 \seealso{
 Useful links:
@@ -16,12 +16,14 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Viviana das Graçcas Ribeiro Lobo \email{viviana@dme.ufrj.br}
+\strong{Maintainer}: Victor Hugo Soares Ney \email{victor.s.ney@gmail.com}
 
 Authors:
 \itemize{
+  \item Viviana das Graças Ribeiro Lobo \email{viviana@dme.ufrj.br}
   \item Thaís Cristina Oliveira da Fonseca
   \item Mariane Branco Alves
+  \item Vitor Capdeville
 }
 
 }
