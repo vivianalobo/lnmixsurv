@@ -18,7 +18,15 @@ using namespace Rcpp;
 
  // Function to initialize the GSL random number generator
  void initializeRNG(const long long int& seed, gsl_rng* rng_device) {
-   gsl_rng_set(rng_device, seed);
+  const gsl_rng_type* T;
+  gsl_rng_env_setup();
+    
+  // Set the RNG type to taus
+  T = gsl_rng_taus;
+  rng_device = gsl_rng_alloc(T);
+    
+  // Set the seed
+  gsl_rng_set(rng_device, seed);
  }
 
 // Function used to set a seed
