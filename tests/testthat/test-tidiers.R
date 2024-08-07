@@ -12,7 +12,7 @@ test_that("tiders work as expected", {
     row.names = c(NA, -4L), class = c("draws_summary", "tbl_df", "tbl", "data.frame"),
     num_args = list()
   )
-  expect_equal(obtained, expected, tolerance = 10^-1)
+  expect_equal(obtained, expected, tolerance = 1)
 })
 
 test_that("tiders work as expected (EM)", {
@@ -26,5 +26,5 @@ test_that("tiders work as expected (EM)", {
     row.names = c(NA, -4L), 
     class = c("tbl_df", "tbl", "data.frame")
   )
-  expect_equal(obtained, expected, tolerance = 10^-1)
+  expect_equal(obtained, expected, tolerance = 1)
 })

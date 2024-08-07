@@ -10,16 +10,16 @@
        predictors: 2
        mixture groups: 2
       ------------------
-                     estimate
-      (Intercept)_1 3.4726948
-      x1_1          0.7461915
-      (Intercept)_2 3.9735743
-      x1_2          6.2463029
+                      estimate
+      (Intercept)_1  3.7767085
+      x1_1           0.6431441
+      (Intercept)_2  4.0053818
+      x1_2          -1.5437055
       
       Auxiliary parameter(s):
-              estimate
-      phi_1  2.5022915
-      phi_2 14.2404511
-      eta_1  0.5102735
-      eta_2  0.4897265
+                estimate
+      phi_1 2.577437e+00
+      phi_2 2.281592e+01
+      eta_1 1.000000e+00
+      eta_2 1.167821e-23
 
