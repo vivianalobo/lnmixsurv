@@ -33,7 +33,6 @@ lung$sex <- factor(lung$sex)
 set.seed(1)
 mod2 <- survival_ln_mixture_em(Surv(time, status == 2) ~ sex, lung)
 tidy(mod2)
-tidy(mod2, conf.int = TRUE)
-tidy(mod2, effects = c("fixed", "auxiliary"), conf.int = TRUE)
+tidy(mod2, effects = c("fixed", "auxiliary"))
 
 }
