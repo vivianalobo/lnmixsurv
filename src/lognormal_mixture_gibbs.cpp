@@ -14,16 +14,21 @@ using namespace Rcpp;
 // Importing the RcppParallelLibs Function from RcppParallel Package to NAMESPACE
 //' @importFrom RcppParallel RcppParallelLibs
  
- // ------ RNG Framework ------
- 
- // Function to initialize the GSL random number generator
- void initializeRNG(const long long int& seed, gsl_rng* rng_device) {
-   gsl_rng_set(rng_device, seed);
- }
+// ------ RNG Framework ------
+
+// Function to initialize the GSL random number generator with MT19937
+void initializeRNG(const long long int& seed, gsl_rng*& rng_device) {
+    rng_device = gsl_rng_alloc(gsl_rng_mt19937);  // Allocate MT19937 RNG
+    gsl_rng_set(rng_device, seed);  // Set the seed
+}
 
 // Function used to set a seed
-void setSeed(const long long int& seed, gsl_rng* rng_device) {
-  initializeRNG(seed, rng_device);
+void setSeed(const long long int& seed, gsl_rng*& rng_device) {
+    if (rng_device == nullptr) {
+        initializeRNG(seed, rng_device);  // Initialize if not already done
+    } else {
+        gsl_rng_set(rng_device, seed);  // Reset the seed if already initialized
+    }
 }
 
 // Squares a double
@@ -79,6 +84,11 @@ arma::vec rmvnorm(const arma::vec& mean, const arma::mat& covariance, gsl_rng* r
 
 /* AUXILIARY FUNCTIONS */
 
+// Function to make a square matrix symmetric
+arma::mat makeSymmetric(const arma::mat& A) {
+  return (0.5 * (A + A.t()));
+}
+
 // Creates a sequence from start to end with 1 step
 arma::ivec seq(const int& start, const int& end) {
   arma::vec out_vec = arma::linspace<arma::vec>(start, end, end - start + 1);
@@ -120,7 +130,7 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
   arma::uvec indexg;
   arma::mat Vg0 = arma::diagmat(repl(30.0, p));
   arma::mat identity_p = arma::eye(p, p);
-  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::allow_ugly);
+  arma::mat Vg0_inv = arma::solve(Vg0, identity_p, arma::solve_opts::likely_sympd);
   arma::vec xi;
   arma::rowvec xit;
   arma::mat Xg;
@@ -158,8 +168,8 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
     if(arma::det(S) == 0) {
       S_inv = Vg0;
     } else {
-      S_inv = arma::solve(S, identity_p, 
-                          arma::solve_opts::allow_ugly);
+      S_inv = arma::solve(makeSymmetric(S), identity_p, 
+                          arma::solve_opts::likely_sympd);
     }
     
     Mg = X * S_inv * Xgt_yg;
@@ -235,7 +245,7 @@ arma::ivec sample_groups(const int& G, const arma::vec& y, const arma::vec& eta,
     sample_groups_advanced(G, y, eta, sd, beta, X, rng_device, vec_groups);
   }
   
-  return(vec_groups);
+  return vec_groups;
 }
 
 // Function used to sample random groups for each observation proportional to the eta parameter
@@ -335,10 +345,10 @@ double compute_expected_value_truncnorm(const double& alpha, const double& mean,
   
   if (R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
     out = mean + sigma *
-      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)));
+      (R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false)));
   } else {
     out = mean + sigma *
-      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999));
+      (R::dnorm(alpha, 0.0, 1.0, false)/0.0001);
   }
   
   return out;
@@ -360,7 +370,7 @@ arma::vec augment_em(const arma::vec& y, const arma::uvec& censored_indexes,
     out(i) = 0.0;
     
     for (int g = 0; g < G; g++) {
-      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));;
+      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));
     }
   }
   
@@ -380,13 +390,13 @@ arma::ivec sample_groups_from_W(const arma::mat& W, const int& N) {
 
 // Sample initial values for the EM parameters
 void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::vec& sd, const int& G, const int& k, gsl_rng* rng_device) {
-  eta = rdirichlet(repl(1.0, G), rng_device);
+  eta = rdirichlet(repl(0.01, G), rng_device);
   
   for (int g = 0; g < G; g++) {
-    phi(g) = rgamma_(0.5, 0.5, rng_device);
+    phi(g) = rgamma_(0.01, 0.01, rng_device);
     
     for (int c = 0; c < k; c++) {
-      beta(g, c) = rnorm_(0.0, 10.0, rng_device);
+      beta(g, c) = rnorm_(0.0, 60.0, rng_device);
     }
   }
   
@@ -397,12 +407,7 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
                    arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
-  
-  if(arma::det(X.t() * Wg * X) != 0.0) {
-    beta.row(g) = arma::solve(X.t() * Wg * X,
-             X.t() * Wg * z,
-             arma::solve_opts::allow_ugly).t();
-  }
+  beta.row(g) = arma::solve(makeSymmetric(X.t() * Wg * X), X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
 }
 
 // Update the parameter phi(g)
@@ -416,13 +421,9 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
     alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
     
     if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-      quant += colg(i) * var(g) * (1.0 - 
-        (- alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)) -
-        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
+      quant += colg(i) * var(g) * (1.0 + alpha * R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false)) - square(R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false))));
     } else {
-      quant += colg(i) * var(g) * (1.0 - 
-        (-alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - 0.999) -
-        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
+      quant += colg(i) * var(g) * (1.0 + alpha * R::dnorm(alpha, 0.0, 1.0, false)/0.0001 - square(R::dnorm(alpha, 0.0, 1.0, false)/0.0001));
     }
   }
   
@@ -449,6 +450,11 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
     colg = W.col(g);
     
     eta(g) = arma::sum(colg) / n; // updating eta(g)
+    
+    if (arma::any(eta == 0.0)) { // if there's a group with no observations
+      eta = rdirichlet(repl(0.01, G), rng_device);
+    }
+
     update_beta_g(colg, X, g, z, beta, Wg); // updating beta for the group g
     update_phi_g(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device, alpha, quant);
   }
@@ -587,7 +593,7 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
 
 // Setting parameter's values for the first Gibbs iteration
 void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, arma::mat& beta, arma::vec& phi, const int& em_iter, const int& G, const arma::vec& y,
-                      double& e0, arma::vec& sd, arma::ivec& groups, const arma::mat& X, const bool& use_W, const arma::ivec& delta, gsl_rng* rng_device, const bool& fast_groups) {
+                      arma::vec& sd, arma::ivec& groups, const arma::mat& X, const bool& use_W, const arma::ivec& delta, gsl_rng* rng_device, const bool& fast_groups) {
   arma::ivec groups_start(y.n_rows);
   int p = X.n_cols;
   if (em_iter != 0) {
@@ -603,7 +609,7 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
     for (int g = 0; g < G; g++) {
       phi(g) = rgamma_(0.5, 0.5, rng_device);
       beta.row(g) = rmvnorm(repl(0.0, p),
-               arma::diagmat(repl(15.0 * 15.0, p)),
+               arma::diagmat(repl(20.0 * 20.0, p)),
                rng_device).t();
     }
     
@@ -611,9 +617,6 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
     // Sampling classes for the observations
     groups_start = sample_groups_start(G, y, eta, rng_device);
   }
-  
-  // sampling value for e0
-  e0 = rgamma_(1.0, 1.0, rng_device);
   
   if(use_W == false) {
     groups = sample_groups(G, augment(G, y, groups_start, delta, sd, beta, X, rng_device), eta, sd, beta, X, rng_device, groups_start, fast_groups);
@@ -626,12 +629,12 @@ void first_iter_gibbs(const arma::field<arma::mat>& em_params, arma::vec& eta, a
 void update_groups_gibbs(const int& iter, const bool& use_W, const arma::field<arma::mat>& em_params, const int& G, const arma::vec& y_aug, 
                          const arma::vec& eta, const arma::mat& beta, const arma::vec& phi, const arma::mat& X, arma::ivec& groups, gsl_rng* rng_device,
                          const bool& fast_groups) {
-  if (iter > 0) {
-    if(use_W) {
-      groups = sample_groups_from_W(em_params(3), y_aug.n_rows);
-    } else {
-      groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups, fast_groups);
-    }
+
+  arma::ivec groups_old = groups;
+  if(use_W) {
+    groups = sample_groups_from_W(em_params(3), y_aug.n_rows);
+  } else {
+    groups = sample_groups(G, y_aug, eta, phi, beta, X, rng_device, groups_old, fast_groups);
   }
 }
 
@@ -661,24 +664,20 @@ void avoid_group_with_zero_allocation(arma::ivec& n_groups, arma::ivec& groups, 
 }
 
 double update_phi_g_gibbs(const int& n_groups_g, const arma::vec& linearComb, gsl_rng* rng_device) {
-  return rgamma_(n_groups_g / 2.0 + 0.01, (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.01, rng_device);
+  return rgamma_(static_cast<double>(n_groups_g)  / 2.0 + 0.01, (1.0 / 2.0) * arma::as_scalar(linearComb.t() * linearComb) + 0.01, rng_device);
 }
 
 arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const arma::mat& Xgt, const arma::vec& yg, gsl_rng* rng_device) {
   arma::rowvec out;
-  arma::mat comb = phi_g * Xgt * Xg + arma::diagmat(repl(1.0 / 30.0, Xg.n_cols));
+  arma::mat comb = phi_g * Xgt * Xg + arma::diagmat(repl(1.0 / 1000.0, Xg.n_cols));
   arma::mat Sg;
   arma::vec mg;
   
   if(arma::det(comb) != 0) {
-    Sg = arma::solve(comb,
-                     arma::eye(Xg.n_cols, Xg.n_cols),
-                     arma::solve_opts::allow_ugly);
-    
-    mg = arma::solve(comb,
-                     phi_g * Xgt * yg,
-                     arma::solve_opts::allow_ugly);
-    
+    Sg = arma::solve(makeSymmetric(comb),
+                         arma::eye(Xg.n_cols, Xg.n_cols),
+                         arma::solve_opts::likely_sympd);
+    mg = phi_g * (Sg * Xgt * yg);
     out = rmvnorm(mg, Sg, rng_device).t();
   }
   
@@ -687,7 +686,7 @@ arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const
 
 // update all the Gibbs parameters
 void update_gibbs_parameters(const int& G, const arma::mat& X, const arma::vec& y_aug, const arma::ivec& n_groups, const arma::ivec& groups, 
-                             arma::vec& eta, arma::mat& beta, arma::vec& phi, double& e0, gsl_rng* rng_device) {
+                             arma::vec& eta, arma::mat& beta, arma::vec& phi, gsl_rng* rng_device) {
   
   arma::mat Xg;
   arma::mat Xgt;
@@ -696,7 +695,7 @@ void update_gibbs_parameters(const int& G, const arma::mat& X, const arma::vec& 
   arma::uvec indexg;
   
   // updating eta
-  eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + e0, 
+  eta = rdirichlet(arma::conv_to<arma::Col<double>>::from(n_groups) + 150.0, 
                    rng_device);
   
   // For each g, sample new phi[g] and beta[g, _]
@@ -704,66 +703,23 @@ void update_gibbs_parameters(const int& G, const arma::mat& X, const arma::vec& 
     indexg = arma::find(groups == g);
     Xg = X.rows(indexg);
     Xgt = Xg.t();
-    yg = y_aug.rows(indexg);
+    yg = y_aug(indexg);
     linearComb = yg - Xg * beta.row(g).t();
     
     // updating phi(g)
     // the priori used was Gamma(0.01, 0.01)
     phi(g) = update_phi_g_gibbs(n_groups(g), linearComb, rng_device);
-    
+   
     // updating beta.row(g)
     // the priori used was MNV(vec 0, diag 1000)
     beta.row(g) = update_beta_g_gibbs(phi(g), Xg, Xgt, yg, rng_device);
   }
 }
 
-// update e0, hyperparameter of the eta's dirichlet prior
-void update_e0(const int& G, const int& iter, double& prop_aceite, int& n_aceite, double& cte, const double& a, const arma::vec& eta, double& e0, double& count, gsl_rng* rng_device) {  
-  arma::vec log_eta_new = log(eta);
-  
-  // atualizando o valor da constante de sintonização
-  // cte a cada 200 iterações
-  if ((iter % 200) == 0) {
-    prop_aceite = n_aceite/200.0;
-    
-    if (prop_aceite > 0.25) {
-      cte = cte/((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-    } else if (prop_aceite < 0.17) {
-      cte = cte*((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1);
-    }
-    // ((2*sqrt(3)-2)/(1+exp(0.04*count)) + 1) é um valor
-    // de correção que converge para 1 quando count -> Inf e,
-    // quando count = 0, o resultado é sqrt(3).
-    
-    // o valor 0.04 representa a velocidade da convergência
-    // para 1 e sqrt(3), o valor em count = 0, foi definido
-    // arbitrariamente.
-    
-    n_aceite = 0;
-    count = count + 1.0;
-  }
-  
-  double b = cte * a;
-  
-  // updating the value of e0 (eta's dirichlet hyperparameter)
-  double e0_prop = rgamma_(b*e0, b, rng_device);
-  
-  double log_alpha = arma::sum(log_eta_new) * (e0_prop - e0) + 9.0 * log(e0_prop/e0) -
-    10.0*  G * (e0_prop - e0) + b * (e0_prop - e0) + (b * e0_prop - 1.0) *
-    log(e0) - (b*e0 - 1.0) * log(e0_prop);
-  
-  double u = runif_0_1(rng_device);
-  
-  e0 = (log(u) < log_alpha) * e0_prop +
-    (log(u) >= log_alpha) * e0;
-  
-  n_aceite += (log(u) < log_alpha);
-}
-
 // Internal implementation of the lognormal mixture model via Gibbs sampler
 arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em_iter, const int& G, 
                                                  const arma::vec& t, const arma::ivec& delta, 
-                                                 const arma::mat& X, const double& a, 
+                                                 const arma::mat& X,
                                                  long long int starting_seed,
                                                  const bool& show_output, const int& chain_num,
                                                  const bool& use_W, const bool& better_initial_values,
@@ -805,12 +761,6 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   arma::ivec groups(N);
   arma::vec log_eta_new(G);
   
-  double e0;
-  double prop_aceite;
-  int n_aceite;
-  double count = 0.0;
-  double cte;
-  
   arma::rowvec newRow;
   arma::field<arma::mat> em_params(6);
   
@@ -824,12 +774,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
   for (int iter = 0; iter < Niter; iter++) {
     // Starting empty objects for Gibbs Sampler
     if (iter == 0) {
-      first_iter_gibbs(em_params, eta, beta, phi, em_iter, G, y, e0, sd, groups, X, use_W, delta, global_rng, fast_groups);
-      
-      // defining values for sintonizing the variance
-      // of e0 proposal
-      cte = 1.0;
-      n_aceite = 0;
+      first_iter_gibbs(em_params, eta, beta, phi, em_iter, G, y, sd, groups, X, use_W, delta, global_rng, fast_groups);
     }
     
     sd = 1.0 / sqrt(phi);
@@ -845,10 +790,7 @@ arma::mat lognormal_mixture_gibbs_implementation(const int& Niter, const int& em
     avoid_group_with_zero_allocation(n_groups, groups, G, N, global_rng);
     
     // updating all parameters
-    update_gibbs_parameters(G, X, y_aug, n_groups, groups, eta, beta, phi, e0, global_rng);
-    
-    // this one is done separated from Gibbs because it's done via Metropolis-Hastings
-    update_e0(G, iter, prop_aceite, n_aceite, cte, a, eta, e0, count, global_rng);
+    update_gibbs_parameters(G, X, y_aug, n_groups, groups, eta, beta, phi, global_rng);
     
     // filling the ith iteration row of the output matrix
     // the order of filling will always be the following:
@@ -897,7 +839,6 @@ struct GibbsWorker : public RcppParallel::Worker {
   const arma::vec& t;
   const arma::ivec& delta;
   const arma::mat& X;
-  const double& a;
   const bool& show_output;
   const bool& use_W;
   const bool& better_initial_values;
@@ -907,14 +848,14 @@ struct GibbsWorker : public RcppParallel::Worker {
   
   // Creating Worker
   GibbsWorker(const arma::vec& seeds, arma::cube& out, const int& Niter, const int& em_iter, const int& G, const arma::vec& t,
-              const arma::ivec& delta, const arma::mat& X, const double& a, const bool& show_output, const bool& use_W, const bool& better_initial_values,
+              const arma::ivec& delta, const arma::mat& X, const bool& show_output, const bool& use_W, const bool& better_initial_values,
               const int& N_em, const int& Niter_em, const bool& fast_groups) :
-    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), a(a), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em), fast_groups(fast_groups) {}
+    seeds(seeds), out(out), Niter(Niter), em_iter(em_iter), G(G), t(t), delta(delta), X(X), show_output(show_output), use_W(use_W), better_initial_values(better_initial_values), N_em(N_em), Niter_em(Niter_em), fast_groups(fast_groups) {}
   
   void operator()(std::size_t begin, std::size_t end) {
     for (std::size_t i = begin; i < end; ++i) {
       usleep(5000 * i); // avoid racing conditions
-      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, t, delta, X, a, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em, fast_groups);
+      out.slice(i) = lognormal_mixture_gibbs_implementation(Niter, em_iter, G, t, delta, X, seeds(i), show_output, i + 1, use_W, better_initial_values, Niter_em, N_em, fast_groups);
     }
   }
 };
@@ -923,14 +864,14 @@ struct GibbsWorker : public RcppParallel::Worker {
 // [[Rcpp::export]]
 arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const int& G,
                                    const arma::vec& t, const arma::ivec& delta, 
-                                   const arma::mat& X, const double& a, 
+                                   const arma::mat& X,
                                    const arma::vec& starting_seed, const bool& show_output,
                                    const int& n_chains, const bool& use_W,
                                    const bool& better_initial_values, const int& N_em, const int& Niter_em, const bool& fast_groups) {
   arma::cube out(Niter, (X.n_cols + 2) * G, n_chains); // initializing output object
   
   // Fitting in parallel
-  GibbsWorker worker(starting_seed, out, Niter, em_iter, G, t, delta, X, a, show_output, use_W, better_initial_values, N_em, Niter_em, fast_groups);
+  GibbsWorker worker(starting_seed, out, Niter, em_iter, G, t, delta, X, show_output, use_W, better_initial_values, N_em, Niter_em, fast_groups);
   RcppParallel::parallelFor(0, n_chains, worker);
   
   return out;

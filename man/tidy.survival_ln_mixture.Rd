@@ -14,11 +14,11 @@
 )
 }
 \arguments{
-\item{x}{Fitted model object.}
+\item{x}{Fitted model object (survival_ln_mixture).}
 
 \item{effects}{A character vector including one or more of \code{"fixed"} and \verb{"auxiliary}.}
 
-\item{conf.int}{If \code{TRUE} columns for lower (\code{conf.low}) and upper (\code{conf.high}) bounds
+\item{conf.int}{If \code{TRUE} columns for lower (\code{cred.low}) and upper (\code{cred.high}) bounds
 of the posterior uncertainty intervals are included.}
 
 \item{conf.level}{A number between 0 and 1 indicating the desired probability mass to include in the
@@ -37,11 +37,7 @@ returns one row for each coefficient for each component of the mixture with thre
 \code{\link[stats]{mad}}. See the \emph{Uncertainty estimates} section in
 \code{\link[rstanarm]{print.stanreg}} for more details.}
 
-Setting \code{effects="auxiliary"} will select the remaining parameters:
-
-\item{phi_a}{Dispersion parameter for the first componente of the mixture.}
-\item{phi_b}{Dispersion parameter for the second componente of the mixture.}
-\item{theta_a}{The weigth of the first component of the mixture.}
+Setting \code{effects="auxiliary"} will select the precision and proportion of mixture components parameters.
 }
 \description{
 These method tidy the estimates from \code{survival_ln_mixture} fits into a summary.
@@ -51,7 +47,7 @@ These method tidy the estimates from \code{survival_ln_mixture} fits into a summ
 require(survival)
 lung$sex <- factor(lung$sex)
 set.seed(1)
-mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
+mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung)
 tidy(mod2)
 tidy(mod2, conf.int = TRUE)
 tidy(mod2, effects = c("fixed", "auxiliary"), conf.int = TRUE)

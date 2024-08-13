@@ -7,25 +7,25 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
   
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
+  message = FALSE,
   warning = FALSE,
-  message = FALSE
+  comment = "#>",
+  eval = FALSE,
+  include = TRUE
 )
 ```
+
+It's possible to run multiple chains in parallel, where each chain will run on one core, by specifying the cores argument. Any value above 1 will automatically turn on the parallel mode. If the argument `chains` is bigger than 1 and `cores` is set to 1 or not specified, the chains will run sequentially. The package `RcppParallel` is used to run the chains in parallel.
 
 ```{r}
 library(lnmixsurv)
 library(bayesplot)
 
 color_scheme_set("viridis")
-```
 
-It's possible to run multiple chains in parallel, where each chain will run on one core, by specifying the cores argument. Any value above 1 will automatically turn on the parallel mode. If the argument `chains` is bigger than 1 and `cores` is set to 1 or not specified, the chains will run sequentially. The package `RcppParallel` is used to run the chains in parallel.
-
-```{r}
 set.seed(25)
 
 data <- simulate_data(
@@ -33,6 +33,30 @@ data <- simulate_data(
   percentage_censored = 0.2
 )$data |>
   dplyr::rename(y = t, x = cat)
+```
+
+```{r eval = TRUE, include = FALSE}
+library(lnmixsurv)
+library(readr)
+library(bayesplot)
+
+color_scheme_set("viridis")
+
+set.seed(25)
+
+dir.create(file.path("data/", "parallel_computation"), showWarnings = FALSE)
+
+if (!file.exists("data/parallel_computation/data.rds")) {
+  data <- simulate_data(
+    n = 4000, mixture_components = 3, k = 2,
+    percentage_censored = 0.2
+  )$data |>
+    dplyr::rename(y = t, x = cat)
+
+  write_rds(data, "data/parallel_computation/data.rds")
+}
+
+data <- read_rds("data/parallel_computation/data.rds")
 ```
 
 This piece of code will run the chains sequentially and save the times for the sake of comparison:
@@ -44,6 +68,29 @@ mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, data,
   starting_seed = 5, warmup = 0
 )
 end_sequential <- Sys.time()
+```
+
+```{r eval = TRUE, include = FALSE}
+if (!file.exists("data/parallel_computation/model_sequential.rds")) {
+  start_sequential <- Sys.time()
+  mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, data,
+    iter = 50, chains = 2, show_progress = T,
+    starting_seed = 5, warmup = 0
+  )
+  end_sequential <- Sys.time()
+
+  write_rds(mod_sequential, "data/parallel_computation/model_sequential.rds")
+  write_rds(
+    tibble::tibble(
+      start_sequential = as.character(start_sequential),
+      end_sequential = as.character(end_sequential)
+    ),
+    "data/parallel_computation/times_sequential.rds"
+  )
+}
+
+mod_sequential <- read_rds("data/parallel_computation/model_sequential.rds")
+times_sequential <- read_rds("data/parallel_computation/times_sequential.rds")
 ```
 
 We can specify the `cores` argument to run the chains in parallel. In this case, since we're using `chains = 2`, specifying any number of cores above 2 will limit the number of cores to 2. If the number of cores is between 1 and the number of chains, the chains will be fitted in parallel limited to the number of cores.
@@ -58,9 +105,33 @@ mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, data,
 end_parallel <- Sys.time()
 ```
 
+```{r eval = TRUE, include = FALSE}
+if (!file.exists("data/parallel_computation/model_parallel.rds")) {
+  start_parallel <- Sys.time()
+  mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, data,
+    iter = 50, chains = 2, cores = 2,
+    show_progress = T,
+    starting_seed = 5, warmup = 0
+  )
+  end_parallel <- Sys.time()
+
+  write_rds(mod_parallel, "data/parallel_computation/model_parallel.rds")
+  write_rds(
+    tibble::tibble(
+      start_parallel = as.character(start_parallel),
+      end_parallel = as.character(end_parallel)
+    ),
+    "data/parallel_computation/times_parallel.rds"
+  )
+}
+
+mod_parallel <- read_rds("data/parallel_computation/model_parallel.rds")
+times_parallel <- read_rds("data/parallel_computation/times_parallel.rds")
+```
+
 Since the seed is fixed, the results should be the same. We can check that by comparing the posterior samples:
 
-```{r}
+```{r eval = TRUE}
 mcmc_trace(mod_sequential$posterior, pars = "eta_1")
 mcmc_trace(mod_parallel$posterior, pars = "eta_1")
 ```
@@ -69,7 +140,15 @@ It's important to notice that these are the first 50 iterations of the Gibbs sam
 
 We expect the parallel algorithm to be faster. The times for the sequential and parallel runs are:
 
-```{r echo=FALSE}
+```{r include=FALSE, eval = TRUE}
+start_parallel <- as.POSIXct(times_parallel$start_parallel)
+end_parallel <- as.POSIXct(times_parallel$end_parallel)
+
+start_sequential <- as.POSIXct(times_sequential$start_sequential)
+end_sequential <- as.POSIXct(times_sequential$end_sequential)
+```
+
+```{r echo=FALSE, eval = TRUE} 
 print("Sequential")
 print(end_sequential - start_sequential)
 print("-------------")
@@ -78,6 +157,3 @@ print(end_parallel - start_parallel)
 ``` 
 
 The parallel run should be faster than the sequential run. The speedup will depend on the number of cores available and the number of chains.
-
-
-

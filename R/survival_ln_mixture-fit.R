@@ -25,8 +25,6 @@
 #'
 #' @param mixture_components number of mixture componentes >= 2.
 #'
-#' @param proposal_variance The value used at the distribution for e0, hyperparameter of the Dirichlet prior, has the form of Gamma(proposal_variance, proposal_variance*G). It affects how distant the proposal values will be from the actual value. Large values of the proposal_variance may be problematic, since the hyperparameter e0 is sampled using a Metropolis-Hasting algorithm and may take long to converge. The code is implemented so the initial value of proposal_variance does not affect the convergence too much, since it's changed through the iterations to sintonize the variance, ensuring an acceptance ratio of proposal values between 17% and 25%, which seems to be optimal on our tests.
-#'
 #' @param show_progress Indicates if the code shows the progress of the EM algorithm and the Gibbs Sampler.
 #'
 #' @param starting_seed Starting seed for the sampler. If not specified by the user, uses a random integer between 1 and 2^28 This way we ensure, when the user sets a seed in R, that this is passed into the C++ code.
@@ -61,7 +59,7 @@
 #' mod <- survival_ln_mixture(Surv(time, status == 2) ~ NULL, lung, intercept = TRUE)
 #'
 #' @export
-survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, proposal_variance = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), use_W = FALSE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
+survival_ln_mixture <- function(formula, data, intercept = TRUE, iter = 1000, warmup = floor(iter / 10), thin = 1, chains = 1, cores = 1, mixture_components = 2, show_progress = FALSE, em_iter = 0, starting_seed = sample(1:2^28, 1), use_W = FALSE, number_em_search = 200, iteration_em_search = 1, fast_groups = TRUE, ...) {
   rlang::check_dots_empty(...)
   UseMethod("survival_ln_mixture")
 }
@@ -116,7 +114,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
                                      thin = 1,
                                      chains = 1, cores = 1,
                                      mixture_components = 2,
-                                     proposal_variance = 1,
                                      show_progress = FALSE,
                                      em_iter = 0,
                                      starting_seed = sample(1:2^28, 1),
@@ -141,10 +138,6 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
 
   if (any(outcome_times == 0)) {
     rlang::abort("One or more events happened at time zero.")
-  }
-
-  if (proposal_variance <= 0) {
-    rlang::abort("The parameter proposal_variance should be a positive real number.")
   }
 
   if (any(is.na(outcome_times))) {
@@ -214,7 +207,7 @@ survival_ln_mixture_impl <- function(predictors, outcome_times,
 
   better_initial_values <- as.logical((em_iter > 0) & (number_em_search > 0))
 
-  posterior_dist <- run_posterior_samples(iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, proposal_variance, starting_seed, show_progress, warmup, thin, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups)
+  posterior_dist <- run_posterior_samples(iter, em_iter, chains, cores, mixture_components, outcome_times, outcome_status, predictors, starting_seed, show_progress, warmup, thin, use_W, better_initial_values, number_em_search, iteration_em_search, fast_groups)
 
   # returning the function output
   list(
@@ -370,8 +363,6 @@ permute_columns <- function(posterior) {
 #'
 #' @param predictors matriz de preditores
 #'
-#' @param proposal_variance valor de "a" usado dentro do C++
-#'
 #' @param starting_seed semente inicial do algoritmo
 #'
 #' @param show_progress indica se o algoritmo deve mostrar iterações realizadas
@@ -389,8 +380,7 @@ permute_columns <- function(posterior) {
 
 run_posterior_samples <- function(iter, em_iter, chains, cores,
                                   mixture_components, outcome_times,
-                                  outcome_status, predictors,
-                                  proposal_variance, starting_seed,
+                                  outcome_status, predictors, starting_seed,
                                   show_progress, warmup, thin, use_W,
                                   better_initial_values, number_em_search,
                                   iterations_em_search, fast_groups) {
@@ -404,7 +394,7 @@ run_posterior_samples <- function(iter, em_iter, chains, cores,
   posterior <- lognormal_mixture_gibbs(
     iter, em_iter, mixture_components,
     outcome_times, outcome_status,
-    predictors, proposal_variance,
+    predictors,
     seeds, show_progress,
     chains, use_W,
     better_initial_values, number_em_search, iterations_em_search,

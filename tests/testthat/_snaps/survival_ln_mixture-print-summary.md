@@ -4,19 +4,20 @@
       mod
     Output
       survival_ln_mixture
-       formula:      survival::Surv(y, delta) ~ x
+       formula: survival::Surv(y, delta) ~ x
        observations: 10000
-       predictors:   2
-      ------
-                     estimate   std.error  conf.low conf.high
-      (Intercept)_1 4.0454719 0.005770805 4.0380584 4.0534575
-      x1_1          0.8060473 0.009030251 0.7947023 0.8176975
-      (Intercept)_2 3.4203686 0.021000882 3.3940826 3.4480849
-      x1_2          0.4880618 0.021694714 0.4601262 0.5162373
+       predictors: 2
+       mixture groups: 2
+      ------------------
+                     estimate   std.error  cred.low cred.high
+      (Intercept)_1 4.0445030 0.006522968 4.0353768 4.0527129
+      x1_1          0.8087692 0.010299547 0.7970843 0.8217099
+      (Intercept)_2 3.4282184 0.019235326 3.4060934 3.4539586
+      x1_2          0.4877074 0.021489632 0.4575755 0.5158396
       
       Auxiliary parameter(s):
-              estimate  std.error   conf.low  conf.high
-      phi_1 26.2318351 1.38610133 24.3733834 27.9517155
-      phi_2  3.2016939 0.11635714  3.0615756  3.3523516
-      eta_1  0.5105744 0.01318735  0.4933958  0.5263495
+              estimate  std.error   cred.low  cred.high
+      phi_1 26.7509482 1.38834169 25.1388200 28.7978371
+      phi_2  3.1690732 0.11384819  3.0266862  3.3031788
+      eta_1  0.5047119 0.01205289  0.4889579  0.5208052
 

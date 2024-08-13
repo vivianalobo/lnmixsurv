@@ -1,74 +1,79 @@
----
-title: "Using survival_ln_mixture with parsnip"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Using survival_ln_mixture with parsnip}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
+<!-- --- -->
+<!-- title: "Using survival_ln_mixture with parsnip" -->
+<!-- output: rmarkdown::html_vignette -->
+<!-- vignette: > -->
+<!--   %\VignetteIndexEntry{Using survival_ln_mixture with parsnip} -->
+<!--   %\VignetteEngine{knitr::rmarkdown} -->
+<!--   %\VignetteEncoding{UTF-8} -->
+<!-- --- -->
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  message = FALSE,
-  warning = FALSE,
-  comment = "#>"
-)
-```
+<!-- ```{r, include = FALSE} -->
+<!-- knitr::opts_chunk$set( -->
+<!--   collapse = TRUE, -->
+<!--   message = FALSE, -->
+<!--   warning = FALSE, -->
+<!--   comment = "#>" -->
+<!-- ) -->
+<!-- ``` -->
 
-The package also provide a `parsnip` egine that can be used with the `survival_reg` model fron `censored` package.
+<!-- The package also provide a `parsnip` egine that can be used with the `survival_reg` model fron `censored` package. -->
 
-```{r example_tidymodels}
-library(tidymodels)
-library(censored)
-require(lnmixsurv)
-tidymodels_prefer()
+<!-- ```{r example_tidymodels} -->
+<!-- library(tidymodels) -->
+<!-- library(censored) -->
+<!-- require(lnmixsurv) -->
 
-mod_spec <- survival_reg() |>
-  set_engine("survival_ln_mixture",
-    intercept = FALSE,
-    starting_seed = 20
-  ) |>
-  set_mode("censored regression")
-dados <- sim_data$data
-set.seed(1)
-mod_fit <- mod_spec |>
-  fit(Surv(y, delta) ~ x, dados)
-mod_fit
-```
+<!-- tidymodels_prefer() -->
 
-When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions (like `survival::Surv`).
-A possible way to use them is to set both the time and event indicator as outcomes (or predictors) and then construct the `Surv` object
-in a `step_mutate`, with the role seted to `"outcome"`. 
+<!-- mod_spec <- survival_reg() |> -->
+<!--   set_engine("survival_ln_mixture", -->
+<!--     intercept = FALSE, -->
+<!--     starting_seed = 20 -->
+<!--   ) |> -->
+<!--   set_mode("censored regression") -->
 
-In order to make predictions in the usual way, is then necessary to remove the original time and event indicator, and set 
-both steps with `skip = TRUE`, to prevent them from being baked when predicting, and thus, not needing to set these variables in
-`new_data`.
+<!-- dados <- sim_data$data -->
 
-```{r}
-rec <- recipe(y + delta ~ x, dados) |>
-  step_mutate(z = x) |>
-  step_mutate(outcome = Surv(y, delta), role = "outcome", skip = TRUE) |>
-  step_rm(y, delta, x, skip = TRUE)
+<!-- mod_fit <- mod_spec |> -->
+<!--   fit(Surv(y, delta) ~ x, dados) -->
 
-wflw <- workflow() |>
-  add_model(mod_spec) |>
-  add_recipe(rec)
+<!-- mod_fit -->
+<!-- ``` -->
 
-set.seed(1)
-mod_tidy <- wflw |> fit(dados)
-mod_tidy
-```
+<!-- When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions (like `survival::Surv`). -->
+<!-- A possible way to use them is to set both the time and event indicator as outcomes (or predictors) and then construct the `Surv` object -->
+<!-- in a `step_mutate`, with the role seted to `"outcome"`.  -->
 
-The predictions work as usual.
+<!-- In order to make predictions in the usual way, is then necessary to remove the original time and event indicator, and set  -->
+<!-- both steps with `skip = TRUE`, to prevent them from being baked when predicting, and thus, not needing to set these variables in -->
+<!-- `new_data`. -->
 
-```{r}
-new_data <- dados |> distinct(x)
-mod_fit |>
-  predict(new_data, type = "survival", eval_time = 100) |>
-  tidyr::unnest(cols = .pred)
+<!-- ```{r} -->
+<!-- rec <- recipe(y + delta ~ x, dados) |> -->
+<!--   step_mutate(z = x) |> -->
+<!--   step_mutate(outcome = Surv(y, delta), role = "outcome", skip = TRUE) |> -->
+<!--   step_rm(y, delta, x, skip = TRUE) -->
 
-mod_tidy |>
-  predict(new_data, type = "survival", eval_time = 100) |>
-  tidyr::unnest(cols = .pred)
-```
+<!-- wflw <- workflow() |> -->
+<!--   add_model(mod_spec) |> -->
+<!--   add_recipe(rec) -->
+
+<!-- set.seed(1) -->
+
+<!-- mod_tidy <- wflw |> fit(dados) -->
+<!-- mod_tidy -->
+<!-- ``` -->
+
+<!-- The predictions work as usual. -->
+
+<!-- ```{r} -->
+<!-- new_data <- dados |> distinct(x) -->
+
+<!-- mod_fit |> -->
+<!--   predict(new_data, type = "survival", eval_time = 100) |> -->
+<!--   tidyr::unnest(cols = .pred) -->
+
+<!-- mod_tidy |> -->
+<!--   predict(new_data, type = "survival", eval_time = 100) |> -->
+<!--   tidyr::unnest(cols = .pred) -->
+<!-- ``` -->

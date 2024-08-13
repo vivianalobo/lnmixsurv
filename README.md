@@ -6,11 +6,9 @@
 <!-- badges: start -->
 
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![Codecov test
-coverage](https://codecov.io/gh/vitorcapdeville/persistencia/branch/master/graph/badge.svg)](https://app.codecov.io/gh/vitorcapdeville/persistencia?branch=master)
+stable](https://lifecycle.r-lib.org/articles/figures/lifecycle-stable.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![R-CMD-check](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml)
-
+[![codecov](https://codecov.io/gitlab/victorsney/lnmixsurv/branch/master/graph/badge.svg?token=HU74ZZQ7MD)](https://codecov.io/gitlab/victorsney/lnmixsurv)
 <!-- badges: end -->
 
 The `lnmixsurv` package provides an easy interface to the Bayesian
@@ -42,16 +40,22 @@ and ready to go).
 
 ### Mac OS
 
-`brew install gsl` on the console/terminal should be enough for GSL.
+Run `brew install gsl` at the console/terminal should be enough for
+installing GSL.
 
 ### Linux
 
 The installation of GSL on Linux is distro-specific. For the main
 distros out-there:
 
-- Debian/Ubuntu: `sudo apt-get install libgsl-dev`
 - Arch: `sudo pacman -S gsl`
+- CentOS/RHEL: `sudo yum install gsl-devel` or
+  `sudo dnf install gsl-devel` (make sure the EPEL – Extra Packages for
+  Enterprise Linux – repository is enabled)
+- Debian/Ubuntu: `sudo apt-get install libgsl-dev`
 - Fedora: `sudo dnf install gsl-devel`
+- Gentoo: `sudo emerge sci-libs/gsl`
+- openSUSE: `sudo zypper install gsl-devel`
 
 ## Installation
 
@@ -61,6 +65,14 @@ You can install the latest development version of `lnmixsurv` from
 ``` r
 # install.packages("devtools")
 devtools::install_github("vivianalobo/lnmixsurv")
+```
+
+Alternatively, to install the latest development version of `lnmixsurv`,
+you can use the following code:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("vivianalobo/lnmixsurv", "devel")
 ```
 
 ## parsnip and censored extension

@@ -1,4 +1,4 @@
-new_survival_ln_mixture <- function(posterior, nobs, predictors_name, mixture_groups, blueprint) {
+new_survival_ln_mixture <- function(posterior, nobs, predictors_name, mixture_groups, blueprint, data) {
   hardhat::new_model(
     posterior = posterior,
     nobs = nobs,
