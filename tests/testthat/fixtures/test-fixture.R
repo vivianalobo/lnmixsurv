@@ -26,4 +26,3 @@ em_fit_with_intercept_only <- survival_ln_mixture_em(survival::Surv(y, delta) ~ 
 )
 
 saveRDS(em_fit_with_intercept_only, paste0(path, "em_fit_with_intercept_only.rds"))
-

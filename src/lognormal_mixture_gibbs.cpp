@@ -14,24 +14,21 @@ using namespace Rcpp;
 // Importing the RcppParallelLibs Function from RcppParallel Package to NAMESPACE
 //' @importFrom RcppParallel RcppParallelLibs
  
- // ------ RNG Framework ------
+// ------ RNG Framework ------
 
- // Function to initialize the GSL random number generator
- void initializeRNG(const long long int& seed, gsl_rng* rng_device) {
-  const gsl_rng_type* T;
-  gsl_rng_env_setup();
-    
-  // Set the RNG type to taus
-  T = gsl_rng_taus;
-  rng_device = gsl_rng_alloc(T);
-    
-  // Set the seed
-  gsl_rng_set(rng_device, seed);
- }
+// Function to initialize the GSL random number generator with MT19937
+void initializeRNG(const long long int& seed, gsl_rng*& rng_device) {
+    rng_device = gsl_rng_alloc(gsl_rng_mt19937);  // Allocate MT19937 RNG
+    gsl_rng_set(rng_device, seed);  // Set the seed
+}
 
 // Function used to set a seed
-void setSeed(const long long int& seed, gsl_rng* rng_device) {
-  initializeRNG(seed, rng_device);
+void setSeed(const long long int& seed, gsl_rng*& rng_device) {
+    if (rng_device == nullptr) {
+        initializeRNG(seed, rng_device);  // Initialize if not already done
+    } else {
+        gsl_rng_set(rng_device, seed);  // Reset the seed if already initialized
+    }
 }
 
 // Squares a double
@@ -348,10 +345,10 @@ double compute_expected_value_truncnorm(const double& alpha, const double& mean,
   
   if (R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
     out = mean + sigma *
-      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)));
+      (R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false)));
   } else {
     out = mean + sigma *
-      (R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.99999));
+      (R::dnorm(alpha, 0.0, 1.0, false)/0.0001);
   }
   
   return out;
@@ -373,7 +370,7 @@ arma::vec augment_em(const arma::vec& y, const arma::uvec& censored_indexes,
     out(i) = 0.0;
     
     for (int g = 0; g < G; g++) {
-      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));;
+      out(i) += W(i, g) * compute_expected_value_truncnorm(arma::as_scalar(alpha_mat(i, g)), arma::as_scalar(mean(i, g)), sigma(g));
     }
   }
   
@@ -393,13 +390,13 @@ arma::ivec sample_groups_from_W(const arma::mat& W, const int& N) {
 
 // Sample initial values for the EM parameters
 void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::vec& sd, const int& G, const int& k, gsl_rng* rng_device) {
-  eta = rdirichlet(repl(0.1, G), rng_device);
+  eta = rdirichlet(repl(0.01, G), rng_device);
   
   for (int g = 0; g < G; g++) {
-    phi(g) = rgamma_(0.1, 0.1, rng_device);
+    phi(g) = rgamma_(0.01, 0.01, rng_device);
     
     for (int c = 0; c < k; c++) {
-      beta(g, c) = rnorm_(0.0, 25.0, rng_device);
+      beta(g, c) = rnorm_(0.0, 60.0, rng_device);
     }
   }
   
@@ -410,10 +407,7 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
                    arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
-  arma::mat comb = makeSymmetric(X.t() * Wg * X);
-  if(arma::det(comb) != 0) {
-     beta.row(g) = arma::solve(comb, X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
-  }
+  beta.row(g) = arma::solve(makeSymmetric(X.t() * Wg * X), X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
 }
 
 // Update the parameter phi(g)
@@ -427,13 +421,9 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
     alpha = (y(i) - arma::as_scalar(X.row(i) * beta.row(g).t())) / sd(g);
     
     if(R::pnorm(alpha, 0.0, 1.0, true, false) < 1.0) {
-      quant += colg(i) * var(g) * (1.0 - 
-        (- alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false)) -
-        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - R::pnorm(alpha, 0.0, 1.0, true, false))));
+      quant += colg(i) * var(g) * (1.0 + alpha * R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false)) - square(R::dnorm(alpha, 0.0, 1.0, false)/(R::pnorm(alpha, 0.0, 1.0, false, false))));
     } else {
-      quant += colg(i) * var(g) * (1.0 - 
-        (-alpha * R::dnorm(alpha, 0.0, 1.0, false))/(1.0 - 0.999) -
-        square(R::dnorm(alpha, 0.0, 1.0, false)/(1.0 - 0.999)));
+      quant += colg(i) * var(g) * (1.0 + alpha * R::dnorm(alpha, 0.0, 1.0, false)/0.0001 - square(R::dnorm(alpha, 0.0, 1.0, false)/0.0001));
     }
   }
   
@@ -445,7 +435,7 @@ void update_phi_g(const double& denom, const arma::uvec& censored_indexes, const
   }
 
   // to avoid numerical problems
-  if(phi(g) > 1e8 || phi.has_nan()) {
+  if(phi(g) > 1e5 || phi.has_nan()) {
     phi(g) = rgamma_(0.5, 0.5, rng_device); // resample phi
   }
 }
@@ -460,6 +450,11 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
     colg = W.col(g);
     
     eta(g) = arma::sum(colg) / n; // updating eta(g)
+    
+    if (arma::any(eta == 0.0)) { // if there's a group with no observations
+      eta = rdirichlet(repl(0.01, G), rng_device);
+    }
+
     update_beta_g(colg, X, g, z, beta, Wg); // updating beta for the group g
     update_phi_g(arma::sum(colg), censored_indexes, X, colg, y, z, sd, beta, var, g, n, phi, rng_device, alpha, quant);
   }
