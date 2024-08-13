@@ -75,6 +75,7 @@ survival_ln_mixture_em_bridge <- function(processed, ...) {
     em_iterations = fit$em_iterations,
     nobs = fit$nobs,
     predictors_name = fit$predictors_name,
+    logLik = fit$logLik,
     mixture_groups = fit$mixture_groups,
     blueprint = processed$blueprint
   )
@@ -133,7 +134,11 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
   }
 
   if (iteration_em_search <= 0 | (iteration_em_search %% 1) != 0) {
-    rlang::abort("The parameter iteration_em_search should be a positive integer.")
+    if (number_em_search < 0 | (number_em_search %% 1) != 0) { # just applies if we are currently searching for the maximum likelihood, otherwise can be ignored
+      rlang::abort("The parameter iteration_em_search should be a positive integer.")
+    } else {
+      iteration_em_search <- 1 # parse anything because we are not searching for the maximum likelihood
+    }
   }
 
   if (!is.logical(show_progress)) {
@@ -153,7 +158,7 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
   matrix_em_iter <- lognormal_mixture_em_implementation(
     iter, mixture_components, outcome_times,
     outcome_status, predictors, seed, better_initial_values, number_em_search, iteration_em_search, show_progress
-  )
+  )[[1]]
 
   predictors_names <- colnames(predictors)
 
@@ -192,6 +197,7 @@ survival_ln_mixture_em_impl <- function(outcome_times, outcome_status,
     em_iterations = matrix_em_iter,
     number_iterations = iter,
     nobs = length(outcome_times),
+    logLik = round(matrix_em_iter[[2]][length(matrix_em_iter[[2]])], 2),
     mixture_groups = seq_len(mixture_components),
     predictors_name = colnames(predictors)
   )

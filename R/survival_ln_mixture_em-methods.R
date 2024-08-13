@@ -68,3 +68,40 @@ nobs.survival_ln_mixture_em <- function(object, ...) { # nolint: object_name_lin
 niterations <- function(model) {
   return(nrow(model$em_iterations))
 }
+
+#' Return log-likelihood of a fitted `survival_ln_mixture_em` object
+#' @param model A fitted `survival_ln_mixture_em` object.
+#' @param ... Not used.
+#'
+#' @export
+logLik.survival_ln_mixture_em <- function(model, ...) {
+  rlang::check_dots_empty(...)
+  
+  return(model$logLik)
+}
+
+#' Return AIC of a fitted `survival_ln_mixture_em` object
+#' @param model A fitted `survival_ln_mixture_em` object.
+#' @param ... Not used.
+#'
+#' @export
+AIC.survival_ln_mixture_em <- function(model, ...) {
+  rlang::check_dots_empty(...)
+  logLik <- logLik(model)
+  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  
+  return(round(-2 * logLik + 2 * nparam, 2))
+}
+
+#' Return BIC of a fitted `survival_ln_mixture_em` object
+#' @param model A fitted `survival_ln_mixture_em` object.
+#' @param ... Not used.
+#'
+#' @export
+BIC.survival_ln_mixture_em <- function(model, ...) {
+  rlang::check_dots_empty(...)
+  logLik <- logLik(model)
+  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  
+  return(round(-2 * logLik + log(nobs(model)) * nparam, 2))
+}
