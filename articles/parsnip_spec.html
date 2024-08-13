@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Using survival_ln_mixture with parsnip • lnmixsurv</title>
+<title> • lnmixsurv</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Using survival_ln_mixture with parsnip">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@
     <li><a class="dropdown-item" href="../articles/expectation_maximization.html">Expectation Maximization</a></li>
     <li><a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a></li>
     <li><a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation and posterior analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a></li>
+    <li><a class="dropdown-item" href="../articles/parsnip_spec.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
       </ul>
@@ -59,7 +59,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Using survival_ln_mixture with parsnip</h1>
+      <h1></h1>
             
       
 
@@ -68,116 +68,67 @@
 
     
     
-<p>The package also provide a <code>parsnip</code> egine that can be
-used with the <code>survival_reg</code> model fron <code>censored</code>
-package.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidymodels.tidymodels.org" class="external-link">tidymodels</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/censored" class="external-link">censored</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://tidymodels.tidymodels.org/reference/tidymodels_prefer.html" class="external-link">tidymodels_prefer</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mod_spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://parsnip.tidymodels.org/reference/survival_reg.html" class="external-link">survival_reg</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_engine.html" class="external-link">set_engine</a></span><span class="op">(</span><span class="st">"survival_ln_mixture"</span>,</span>
-<span>    intercept <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    starting_seed <span class="op">=</span> <span class="fl">20</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_args.html" class="external-link">set_mode</a></span><span class="op">(</span><span class="st">"censored regression"</span><span class="op">)</span></span>
-<span><span class="va">dados</span> <span class="op">&lt;-</span> <span class="va">sim_data</span><span class="op">$</span><span class="va">data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">mod_fit</span> <span class="op">&lt;-</span> <span class="va">mod_spec</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">dados</span><span class="op">)</span></span>
-<span><span class="va">mod_fit</span></span>
-<span><span class="co">#&gt; parsnip model object</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; survival_ln_mixture</span></span>
-<span><span class="co">#&gt;  formula:      Surv(y, delta) ~ x + 0</span></span>
-<span><span class="co">#&gt;  observations: 10000</span></span>
-<span><span class="co">#&gt;  predictors:   1</span></span>
-<span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;      estimate  std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; x0_1 3.639316 0.01310024 3.620278  3.657374</span></span>
-<span><span class="co">#&gt; x1_1 4.674169 0.01706678 4.651150  4.696104</span></span>
-<span><span class="co">#&gt; x0_2 4.079056 0.01422397 4.060621  4.096565</span></span>
-<span><span class="co">#&gt; x1_2 3.401503 0.02475422 3.364982  3.431719</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;         estimate  std.error   conf.low conf.high</span></span>
-<span><span class="co">#&gt; phi_1  3.4584526 0.08967301  3.3398627  3.575241</span></span>
-<span><span class="co">#&gt; phi_2 10.9731414 0.77486892 10.0646470 12.132132</span></span>
-<span><span class="co">#&gt; eta_1  0.7827314 0.01331543  0.7653866  0.798170</span></span></code></pre></div>
-<p>When using <code>recipes</code>, some caution must be taken due to
-the fact that recipes do not support inline functions (like
-<code><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">survival::Surv</a></code>). A possible way to use them is to set both
-the time and event indicator as outcomes (or predictors) and then
-construct the <code>Surv</code> object in a <code>step_mutate</code>,
-with the role seted to <code>"outcome"</code>.</p>
-<p>In order to make predictions in the usual way, is then necessary to
-remove the original time and event indicator, and set both steps with
-<code>skip = TRUE</code>, to prevent them from being baked when
-predicting, and thus, not needing to set these variables in
-<code>new_data</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rec</span> <span class="op">&lt;-</span> <span class="fu">recipe</span><span class="op">(</span><span class="va">y</span> <span class="op">+</span> <span class="va">delta</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">dados</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">step_mutate</span><span class="op">(</span>z <span class="op">=</span> <span class="va">x</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">step_mutate</span><span class="op">(</span>outcome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span>, role <span class="op">=</span> <span class="st">"outcome"</span>, skip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">step_rm</span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span>, <span class="va">x</span>, skip <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">wflw</span> <span class="op">&lt;-</span> <span class="fu">workflow</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">add_model</span><span class="op">(</span><span class="va">mod_spec</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">add_recipe</span><span class="op">(</span><span class="va">rec</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">mod_tidy</span> <span class="op">&lt;-</span> <span class="va">wflw</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span><span class="va">dados</span><span class="op">)</span></span>
-<span><span class="va">mod_tidy</span></span>
-<span><span class="co">#&gt; ══ Workflow [trained] ══════════════════════════════════════════════════════════</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Preprocessor:</span> Recipe</span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">Model:</span> survival_reg()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Preprocessor ────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; 3 Recipe Steps</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; • step_mutate()</span></span>
-<span><span class="co">#&gt; • step_mutate()</span></span>
-<span><span class="co">#&gt; • step_rm()</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Model ───────────────────────────────────────────────────────────────────────</span></span>
-<span><span class="co">#&gt; survival_ln_mixture</span></span>
-<span><span class="co">#&gt;  formula:      x ~ . + 0</span></span>
-<span><span class="co">#&gt;  observations: 10000</span></span>
-<span><span class="co">#&gt;  predictors:   1</span></span>
-<span><span class="co">#&gt; ------</span></span>
-<span><span class="co">#&gt;      estimate  std.error conf.low conf.high</span></span>
-<span><span class="co">#&gt; z0_1 3.639316 0.01310024 3.620278  3.657374</span></span>
-<span><span class="co">#&gt; z1_1 4.674169 0.01706678 4.651150  4.696104</span></span>
-<span><span class="co">#&gt; z0_2 4.079056 0.01422397 4.060621  4.096565</span></span>
-<span><span class="co">#&gt; z1_2 3.401503 0.02475422 3.364982  3.431719</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Auxiliary parameter(s):</span></span>
-<span><span class="co">#&gt;         estimate  std.error   conf.low conf.high</span></span>
-<span><span class="co">#&gt; phi_1  3.4584526 0.08967301  3.3398627  3.575241</span></span>
-<span><span class="co">#&gt; phi_2 10.9731414 0.77486892 10.0646470 12.132132</span></span>
-<span><span class="co">#&gt; eta_1  0.7827314 0.01331543  0.7653866  0.798170</span></span></code></pre></div>
-<p>The predictions work as usual.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">new_data</span> <span class="op">&lt;-</span> <span class="va">dados</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
-<span><span class="va">mod_fit</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">new_data</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/unnest.html" class="external-link">unnest</a></span><span class="op">(</span>cols <span class="op">=</span> <span class="va">.pred</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
-<span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.037<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.431</span></span>
-<span></span>
-<span><span class="va">mod_tidy</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">new_data</span>, type <span class="op">=</span> <span class="st">"survival"</span>, eval_time <span class="op">=</span> <span class="fl">100</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">tidyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyr.tidyverse.org/reference/unnest.html" class="external-link">unnest</a></span><span class="op">(</span>cols <span class="op">=</span> <span class="va">.pred</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 2</span></span></span>
-<span><span class="co">#&gt;   .eval_time .pred_survival</span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>        100         0.037<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>        100         0.431</span></span></code></pre></div>
+<!-- --- -->
+<!-- title: "Using survival_ln_mixture with parsnip" -->
+<!-- output: rmarkdown::html_vignette -->
+<!-- vignette: > -->
+<!--   %\VignetteIndexEntry{Using survival_ln_mixture with parsnip} -->
+<!--   %\VignetteEngine{knitr::rmarkdown} -->
+<!--   %\VignetteEncoding{UTF-8} -->
+<!-- --- -->
+<!-- ```{r, include = FALSE} -->
+<!-- knitr::opts_chunk$set( -->
+<!--   collapse = TRUE, -->
+<!--   message = FALSE, -->
+<!--   warning = FALSE, -->
+<!--   comment = "#>" -->
+<!-- ) -->
+<!-- ``` -->
+<!-- The package also provide a `parsnip` egine that can be used with the `survival_reg` model fron `censored` package. -->
+<!-- ```{r example_tidymodels} -->
+<!-- library(tidymodels) -->
+<!-- library(censored) -->
+<!-- require(lnmixsurv) -->
+<!-- tidymodels_prefer() -->
+<!-- mod_spec <- survival_reg() |> -->
+<!--   set_engine("survival_ln_mixture", -->
+<!--     intercept = FALSE, -->
+<!--     starting_seed = 20 -->
+<!--   ) |> -->
+<!--   set_mode("censored regression") -->
+<!-- dados <- sim_data$data -->
+<!-- mod_fit <- mod_spec |> -->
+<!--   fit(Surv(y, delta) ~ x, dados) -->
+<!-- mod_fit -->
+<!-- ``` -->
+<!-- When using `recipes`, some caution must be taken due to the fact that recipes do not support inline functions (like `survival::Surv`). -->
+<!-- A possible way to use them is to set both the time and event indicator as outcomes (or predictors) and then construct the `Surv` object -->
+<!-- in a `step_mutate`, with the role seted to `"outcome"`.  -->
+<!-- In order to make predictions in the usual way, is then necessary to remove the original time and event indicator, and set  -->
+<!-- both steps with `skip = TRUE`, to prevent them from being baked when predicting, and thus, not needing to set these variables in -->
+<!-- `new_data`. -->
+<!-- ```{r} -->
+<!-- rec <- recipe(y + delta ~ x, dados) |> -->
+<!--   step_mutate(z = x) |> -->
+<!--   step_mutate(outcome = Surv(y, delta), role = "outcome", skip = TRUE) |> -->
+<!--   step_rm(y, delta, x, skip = TRUE) -->
+<!-- wflw <- workflow() |> -->
+<!--   add_model(mod_spec) |> -->
+<!--   add_recipe(rec) -->
+<!-- set.seed(1) -->
+<!-- mod_tidy <- wflw |> fit(dados) -->
+<!-- mod_tidy -->
+<!-- ``` -->
+<!-- The predictions work as usual. -->
+<!-- ```{r} -->
+<!-- new_data <- dados |> distinct(x) -->
+<!-- mod_fit |> -->
+<!--   predict(new_data, type = "survival", eval_time = 100) |> -->
+<!--   tidyr::unnest(cols = .pred) -->
+<!-- mod_tidy |> -->
+<!--   predict(new_data, type = "survival", eval_time = 100) |> -->
+<!--   tidyr::unnest(cols = .pred) -->
+<!-- ``` -->
   </main>
 </div>
 

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@
     <li><a class="dropdown-item" href="../articles/expectation_maximization.html">Expectation Maximization</a></li>
     <li><a class="dropdown-item" href="../articles/intercept_only.html">Intercept only fits</a></li>
     <li><a class="dropdown-item" href="../articles/parallel_computation.html">Parallel computation and posterior analysis</a></li>
-    <li><a class="dropdown-item" href="../articles/parsnip_spec.html">Using survival_ln_mixture with parsnip</a></li>
+    <li><a class="dropdown-item" href="../articles/parsnip_spec.html">UNKNOWN TITLE</a></li>
   </ul>
 </li>
       </ul>
@@ -68,19 +68,19 @@
 
     
     
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot-colors.html" class="external-link">color_scheme_set</a></span><span class="op">(</span><span class="st">"viridis"</span><span class="op">)</span></span></code></pre></div>
 <p>It’s possible to run multiple chains in parallel, where each chain
 will run on one core, by specifying the cores argument. Any value above
 1 will automatically turn on the parallel mode. If the argument
 <code>chains</code> is bigger than 1 and <code>cores</code> is set to 1
 or not specified, the chains will run sequentially. The package
 <code>RcppParallel</code> is used to run the chains in parallel.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">25</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vivianalobo.github.io/lnmixsurv/">lnmixsurv</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot-colors.html" class="external-link">color_scheme_set</a></span><span class="op">(</span><span class="st">"viridis"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">25</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_data.html">simulate_data</a></span><span class="op">(</span></span>
 <span>  n <span class="op">=</span> <span class="fl">4000</span>, mixture_components <span class="op">=</span> <span class="fl">3</span>, k <span class="op">=</span> <span class="fl">2</span>,</span>
@@ -89,46 +89,34 @@ or not specified, the chains will run sequentially. The package
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">t</span>, x <span class="op">=</span> <span class="va">cat</span><span class="op">)</span></span></code></pre></div>
 <p>This piece of code will run the chains sequentially and save the
 times for the sake of comparison:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">start_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">data</span>,</span>
 <span>  iter <span class="op">=</span> <span class="fl">50</span>, chains <span class="op">=</span> <span class="fl">2</span>, show_progress <span class="op">=</span> <span class="cn">T</span>,</span>
 <span>  starting_seed <span class="op">=</span> <span class="fl">5</span>, warmup <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
-<span><span class="co">#&gt; (Chain 1) MCMC Iter: 0/50</span></span>
-<span><span class="co">#&gt; Chain 1 finished sampling.</span></span>
-<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
-<span><span class="co">#&gt; (Chain 2) MCMC Iter: 0/50</span></span>
-<span><span class="co">#&gt; Chain 2 finished sampling.</span></span>
 <span><span class="va">end_sequential</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>We can specify the <code>cores</code> argument to run the chains in
 parallel. In this case, since we’re using <code>chains = 2</code>,
 specifying any number of cores above 2 will limit the number of cores to
 2. If the number of cores is between 1 and the number of chains, the
 chains will be fitted in parallel limited to the number of cores.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">start_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">mod_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/survival_ln_mixture.html">survival_ln_mixture</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">delta</span><span class="op">)</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">data</span>,</span>
 <span>  iter <span class="op">=</span> <span class="fl">50</span>, chains <span class="op">=</span> <span class="fl">2</span>, cores <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  show_progress <span class="op">=</span> <span class="cn">T</span>,</span>
 <span>  starting_seed <span class="op">=</span> <span class="fl">5</span>, warmup <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
-<span><span class="co">#&gt; Skipping EM Algorithm</span></span>
-<span><span class="co">#&gt; (Chain 1) MCMC Iter: 0/50</span></span>
-<span><span class="co">#&gt; Chain 1 finished sampling.</span></span>
-<span><span class="co">#&gt; (Chain 2) MCMC Iter: 0/50</span></span>
-<span><span class="co">#&gt; Chain 2 finished sampling.</span></span>
 <span><span class="va">end_parallel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Since the seed is fixed, the results should be the same. We can check
 that by comparing the posterior samples:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="va">mod_sequential</span><span class="op">$</span><span class="va">posterior</span>, pars <span class="op">=</span> <span class="st">"eta_1"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="parallel_computation_files/figure-html/unnamed-chunk-6-1.png" width="700"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p><img src="parallel_computation_files/figure-html/unnamed-chunk-7-1.png" width="700"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-traces.html" class="external-link">mcmc_trace</a></span><span class="op">(</span><span class="va">mod_parallel</span><span class="op">$</span><span class="va">posterior</span>, pars <span class="op">=</span> <span class="st">"eta_1"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="parallel_computation_files/figure-html/unnamed-chunk-6-2.png" width="700"></p>
+<p><img src="parallel_computation_files/figure-html/unnamed-chunk-7-2.png" width="700"></p>
 <p>It’s important to notice that these are the first 50 iterations of
 the Gibbs sampler executed just to show how to run the chains in
 parallel. The number of iterations should be increased to get reliable
@@ -136,10 +124,10 @@ results.</p>
 <p>We expect the parallel algorithm to be faster. The times for the
 sequential and parallel runs are:</p>
 <pre><code><span><span class="co">#&gt; [1] "Sequential"</span></span>
-<span><span class="co">#&gt; Time difference of 2.047643 secs</span></span>
+<span><span class="co">#&gt; Time difference of 0.902225 secs</span></span>
 <span><span class="co">#&gt; [1] "-------------"</span></span>
 <span><span class="co">#&gt; [1] "Parallel"</span></span>
-<span><span class="co">#&gt; Time difference of 1.815909 secs</span></span></code></pre>
+<span><span class="co">#&gt; Time difference of 0.757122 secs</span></span></code></pre>
 <p>The parallel run should be faster than the sequential run. The
 speedup will depend on the number of cores available and the number of
 chains.</p>
