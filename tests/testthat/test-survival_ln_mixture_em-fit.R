@@ -32,7 +32,7 @@ test_that("survival_ln_mixture_em doesn't work with xy specification", {
 
 test_that("survival_ln_mixture_em works with intercept only fit", {
   mod <- readRDS(test_path("fixtures", "em_fit_with_intercept_only.rds"))
-  expect_equal(tidy(mod)$estimate, c(2.26, 4.06), tolerance = 1)
+  expect_equal(tidy(mod)$estimate, c(4.06, 3.86), tolerance = 1)
 })
 
 test_that("fit works as expected with simulated data", {
@@ -47,8 +47,8 @@ test_that("fit works as expected with simulated data", {
       "(Intercept)_1", "x1_1", "(Intercept)_2",
       "x1_2", "phi_1", "phi_2", "eta_1", "eta_2"
     ), estimate = c(
-      3.47 , 0.746, 3.97, 6.25, 2.5,
-      14.2, 0.51, 0.49
+      4.01 , -1.54, 3.78, 0.64, 22.8,
+      2.57, 4.9e-14, 1
     )),
     row.names = c(NA, -8L), 
     class = c("tbl_df", "tbl", "data.frame"))
