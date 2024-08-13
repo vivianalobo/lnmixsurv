@@ -1,0 +1,16 @@
+stages:
+  - sync
+
+sync_with_github:
+  stage: sync
+  script:
+    - git config --global user.name "GitLab CI"
+    - git config --global user.email "victor.s.ney@gmail.com"
+    - git clone https://github.com/vivianalobo/lnmixsurv.git
+    - cd lnmixsurv
+    - git remote set-url origin https://victorsney:glpat-$TOKEN@gitlab.com/victorsney/lnmixsurv.git
+    - git push origin master --force
+    - git checkout devel
+    - git push origin devel --force
+  only:
+    - schedules
