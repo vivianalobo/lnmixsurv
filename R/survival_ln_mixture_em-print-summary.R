@@ -16,6 +16,6 @@ print.survival_ln_mixture_em <- function(x, digits = NULL, ...) {
   cat("\nAuxiliary parameter(s):\n")
   print(data.frame(auxiliary[, -1], row.names = auxiliary$term), digits = digits)
   cat("\n------------------\n")
-  cat("\n AIC:", AIC(x))
-  cat("\n BIC:", BIC(x))
+  cat("\n AIC:", stats::AIC(x))
+  cat("\n BIC:", stats::BIC(x))
 }
