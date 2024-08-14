@@ -358,9 +358,10 @@ double compute_expected_value_truncnorm(const double& alpha, const double& mean,
 arma::vec augment_em(const arma::vec& y, const arma::uvec& censored_indexes,
                      const arma::mat& X, const arma::mat& beta,
                      const arma::vec& sigma, const arma::mat& W,
-                     const int& G, const arma::mat& mean, arma::mat& alpha_mat,
+                     const int& G, const arma::mat& mean,
                      const int& n) {
   arma::vec out = y;
+  arma::mat alpha_mat(n, G);
   
   for(int g = 0; g < G; g++) {
     alpha_mat.col(g) = (y - mean.col(g))/sigma(g);
@@ -495,7 +496,6 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
   arma::mat mean(n, k);
   arma::mat out(Niter, G * k + (G * 2));
   arma::uvec censored_indexes = arma::find(delta == 0); // finding which observations are censored
-  arma::mat alpha_mat(n, G);
   arma::vec colg(n);
   arma::sp_mat Wg;
   arma::field<arma::mat> out_internal_true(6);
@@ -542,7 +542,7 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
     } else {
       mean = X * beta.t();
       sd = 1.0 / sqrt(phi);
-      z = augment_em(y, censored_indexes, X, beta, sd, W, G, mean, alpha_mat, n);
+      z = augment_em(y, censored_indexes, X, beta, sd, W, G, mean, n);
       W = compute_W(z, X, eta, beta, sd, G, n, denom, mat_denom, repl_vec);
       update_em_parameters(n, G, eta, beta, phi, W, X, y, z, censored_indexes, sd, rng_device, quant, denom, alpha, Wg, colg);
 
@@ -577,13 +577,13 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
     out_internal_true(1) = beta;
     out_internal_true(2) = phi;
     out_internal_true(3) = W;
-    out_internal_true(4) = augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, alpha_mat, n);
+    out_internal_true(4) = augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, n);
     out_internal_true(5) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, out_internal_true(4), G, X, n, mean);
     
     return out_internal_true;
   } else {
     out_internal_false(0) = out;
-    out_internal_false(1) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, alpha_mat, n), G, X, n, X * beta.t());
+    out_internal_false(1) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, n), G, X, n, X * beta.t());
     
     return out_internal_false;
   }
@@ -878,7 +878,7 @@ arma::cube lognormal_mixture_gibbs(const int& Niter, const int& em_iter, const i
 }
 
 //[[Rcpp::export]]
-arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, const arma::vec& t,
+arma::field<arma::mat> lognormal_mixture_em_implementation(const int& Niter, const int& G, const arma::vec& t,
                                               const arma::ivec& delta, const arma::mat& X, 
                                               long long int starting_seed,
                                               const bool& better_initial_values, const int& N_em,
@@ -891,5 +891,5 @@ arma::mat lognormal_mixture_em_implementation(const int& Niter, const int& G, co
   
   arma::field<arma::mat> out = lognormal_mixture_em(Niter, G, t, delta, X, better_initial_values, N_em, Niter_em, false, show_output, global_rng);
   
-  return out(0);
+  return out;
 }
