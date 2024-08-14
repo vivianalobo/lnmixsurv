@@ -391,13 +391,13 @@ arma::ivec sample_groups_from_W(const arma::mat& W, const int& N) {
 
 // Sample initial values for the EM parameters
 void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, arma::vec& sd, const int& G, const int& k, gsl_rng* rng_device) {
-  eta = rdirichlet(repl(0.01, G), rng_device);
+  eta = rdirichlet(repl(rgamma_(1.0, 1.0, rng_device), G), rng_device);
   
   for (int g = 0; g < G; g++) {
-    phi(g) = rgamma_(0.01, 0.01, rng_device);
+    phi(g) = rgamma_(0.1, 0.1, rng_device);
     
     for (int c = 0; c < k; c++) {
-      beta(g, c) = rnorm_(0.0, 60.0, rng_device);
+      beta(g, c) = rnorm_(0.0, 20.0, rng_device);
     }
   }
   
@@ -453,7 +453,7 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
     eta(g) = arma::sum(colg) / n; // updating eta(g)
     
     if (arma::any(eta == 0.0)) { // if there's a group with no observations
-      eta = rdirichlet(repl(0.01, G), rng_device);
+      eta = rdirichlet(repl(1.0, G), rng_device);
     }
 
     update_beta_g(colg, X, g, z, beta, Wg); // updating beta for the group g
@@ -462,14 +462,18 @@ void update_em_parameters(const int& n, const int& G, arma::vec& eta, arma::mat&
 }
 
 // Compute model's log-likelihood to select the EM initial values
-double loglik_em(const arma::vec& eta, const arma::mat& beta, const arma::vec& sd, const arma::mat& W, const arma::vec& z, const int& G,
-                 const arma::mat& X, const int& N, const arma::mat& mean) {
+double loglik_em(const arma::vec& eta, const arma::vec& sd, const arma::mat& W, const arma::vec& z, const int& G, const int& N, const arma::mat& mean, const arma::uvec& censored_indexes) {
   double loglik = 0.0;
   
   for(int i = 0; i < N; i++) {
-    for(int g = 0; g < G; g++) {
-      loglik += W(i, g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)),
-                  sd(g), true);
+    if(arma::any(censored_indexes == i)) {
+      for (int g = 0; g < G; g++) {
+        loglik += W(i, g) * log(eta(g) * R::pnorm((z(i) - mean(i, g))/sd(g), 0.0, 1.0, false, false));
+      }
+    } else {
+      for(int g = 0; g < G; g++) {
+        loglik += W(i, g) * log(eta(g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)), sd(g), false));
+      }
     }
   }
   
@@ -578,12 +582,12 @@ arma::field<arma::mat> lognormal_mixture_em(const int& Niter, const int& G, cons
     out_internal_true(2) = phi;
     out_internal_true(3) = W;
     out_internal_true(4) = augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, n);
-    out_internal_true(5) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, out_internal_true(4), G, X, n, mean);
+    out_internal_true(5) = loglik_em(eta, 1.0 / sqrt(phi), compute_W(y, X, eta, beta, 1.0 / sqrt(phi), G, n, denom, mat_denom, repl_vec), y, G, n, mean, censored_indexes);
     
     return out_internal_true;
   } else {
     out_internal_false(0) = out;
-    out_internal_false(1) = loglik_em(eta, beta, 1.0 / sqrt(phi), W, augment_em(y, censored_indexes, X, beta, 1.0 / sqrt(phi), W, G, mean, n), G, X, n, X * beta.t());
+    out_internal_false(1) = loglik_em(eta, 1.0 / sqrt(phi), compute_W(y, X, eta, beta, 1.0 / sqrt(phi), G, n, denom, mat_denom, repl_vec), y, G, n, mean, censored_indexes);
     
     return out_internal_false;
   }

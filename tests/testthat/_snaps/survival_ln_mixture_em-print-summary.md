@@ -10,16 +10,23 @@
        predictors: 2
        mixture groups: 2
       ------------------
+      
+       Fixed parameter(s):
                       estimate
-      (Intercept)_1  4.0053915
-      x1_1          -1.5436892
-      (Intercept)_2  3.7767085
-      x1_2           0.6431441
+      (Intercept)_1  3.6798547
+      x1_1           0.9830726
+      (Intercept)_2  3.9704707
+      x1_2          -0.6036128
       
       Auxiliary parameter(s):
-                estimate
-      phi_1 2.281356e+01
-      phi_2 2.577437e+00
-      eta_1 4.905988e-14
-      eta_2 1.000000e+00
+             estimate
+      phi_1 3.3144060
+      phi_2 8.5560578
+      eta_1 0.8014815
+      eta_2 0.1985185
+      
+      ------------------
+      
+       AIC: 8.64
+       BIC: 66.32
 
