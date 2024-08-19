@@ -468,11 +468,19 @@ double loglik_em(const arma::vec& eta, const arma::vec& sd, const arma::mat& W, 
   for(int i = 0; i < N; i++) {
     if(arma::any(censored_indexes == i)) {
       for (int g = 0; g < G; g++) {
-        loglik += W(i, g) * log(eta(g) * R::pnorm((z(i) - mean(i, g))/sd(g), 0.0, 1.0, false, false));
+        if (eta(g) * R::pnorm((z(i) - mean(i, g))/sd(g), 0.0, 1.0, false, false) == 0.0) {
+          loglik += W(i, g) * log(0.00001);
+        } else {
+          loglik += W(i, g) * log(eta(g) * R::pnorm((z(i) - mean(i, g))/sd(g), 0.0, 1.0, false, false));
+        }
       }
     } else {
       for(int g = 0; g < G; g++) {
-        loglik += W(i, g) * log(eta(g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)), sd(g), false));
+        if (eta(g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)), sd(g), false) == 0.0) {
+          loglik += W(i, g) * log(0.00001);
+        } else {
+          loglik += W(i, g) * log(eta(g) * R::dnorm(z(i), arma::as_scalar(mean(i, g)), sd(g), false));
+        }
       }
     }
   }
