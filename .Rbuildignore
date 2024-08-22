@@ -9,6 +9,7 @@
 ^pkgdown$
 ^README\.Rmd$
 ^vignettes/articles$
+^vignettes/parsnip_spec.Rmd
 ^doc$
 ^Meta$
 ^data-raw$
