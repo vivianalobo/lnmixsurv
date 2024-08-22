@@ -86,7 +86,7 @@ also provided, adding the `survival_ln_mixture` engine to the
 The following models, engines, and prediction type are
 available/extended through `persistencia`:
 
-| model | engine | time | survival | linear_pred | raw | quantile | hazard |
-|:---|:---|:---|:---|:---|:---|:---|:---|
-| survival_reg | survival_ln_mixture | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
-| survival_reg | survival_ln_mixture_em | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
+| model        | engine                 | time | survival | linear_pred | raw | quantile | hazard |
+|:-------------|:-----------------------|:-----|:---------|:------------|:----|:---------|:-------|
+| survival_reg | survival_ln_mixture    | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
+| survival_reg | survival_ln_mixture_em | ✖    | ✔        | ✖           | ✖   | ✖        | ✔      |
