@@ -17,3 +17,5 @@
 ^lib$
 ^LICENSE\.md$
 ^\.github$
+^codecov.yml
+^.gitlab-ci.yml
