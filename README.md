@@ -8,7 +8,7 @@
 [![Lifecycle:
 stable](https://lifecycle.r-lib.org/articles/figures/lifecycle-stable.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![R-CMD-check](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vivianalobo/lnmixsurv/actions/workflows/R-CMD-check.yaml)
-[![codecov](https://codecov.io/gitlab/victorsney/lnmixsurv/branch/master/graph/badge.svg?token=HU74ZZQ7MD)](https://codecov.io/gitlab/victorsney/lnmixsurv)
+[![codecov](https://codecov.io/gitlab/victorsney/lnmixsurv/branch/master/graph/badge.svg?token=HU74ZZQ7MD)](https://app.codecov.io/gitlab/victorsney/lnmixsurv)
 <!-- badges: end -->
 
 The `lnmixsurv` package provides an easy interface to the Bayesian

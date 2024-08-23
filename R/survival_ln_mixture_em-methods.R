@@ -1,6 +1,5 @@
 #' Visualizes the path of the EM algorithm
 #' @param x A fitted `survival_ln_mixture_em` object.
-#'
 #' @param ... Not used.
 #'
 #' @export
@@ -69,22 +68,12 @@ niterations <- function(model) {
   return(nrow(model$em_iterations))
 }
 
-#' Return log-likelihood of a fitted `survival_ln_mixture_em` object
-#' @param model A fitted `survival_ln_mixture_em` object.
-#' @param ... Not used.
-#'
-#' @export
 logLik.survival_ln_mixture_em <- function(model, ...) {
   rlang::check_dots_empty(...)
   
   return(model$logLik)
 }
 
-#' Return AIC of a fitted `survival_ln_mixture_em` object
-#' @param model A fitted `survival_ln_mixture_em` object.
-#' @param ... Not used.
-#'
-#' @export
 AIC.survival_ln_mixture_em <- function(model, ...) {
   rlang::check_dots_empty(...)
   logLik <- logLik(model)
@@ -93,11 +82,6 @@ AIC.survival_ln_mixture_em <- function(model, ...) {
   return(round(-2 * logLik + 2 * nparam, 2))
 }
 
-#' Return BIC of a fitted `survival_ln_mixture_em` object
-#' @param model A fitted `survival_ln_mixture_em` object.
-#' @param ... Not used.
-#'
-#' @export
 BIC.survival_ln_mixture_em <- function(model, ...) {
   rlang::check_dots_empty(...)
   logLik <- logLik(model)

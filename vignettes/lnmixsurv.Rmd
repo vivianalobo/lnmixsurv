@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -23,51 +23,20 @@ The model can be used with the usual formula interface or using the `tidymodels`
 
 Formula interface:
 
-```{r}
-library(lnmixsurv)
-
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ x,
-  sim_data$data,
-  starting_seed = 20
-)
-
-mod1
-```
-
-```{r eval = TRUE, include = FALSE}
+```{r eval = TRUE, include = TRUE}
 library(lnmixsurv)
 library(readr)
 
-dir.create(file.path("data", "lnmixsurv"), showWarnings = FALSE)
-
-if (!file.exists("data/lnmixsurv/model.rds")) {
-  model <- survival_ln_mixture(Surv(y, delta) ~ x,
-    sim_data$data,
-    starting_seed = 20
-  )
-
-  write_rds(model, "data/lnmixsurv/model.rds")
-}
-
-mod1 <- read_rds("data/lnmixsurv/model.rds")
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ x,
+                            sim_data$data,
+                            starting_seed = 20)
 
 mod1
 ```
 
 Tidymodels approach:
 
-```{r}
-library(censored)
-
-mod_spec <- survival_reg() |>
-  set_engine("survival_ln_mixture", starting_seed = 20) |>
-  set_mode("censored regression")
-
-mod2 <- mod_spec |>
-  fit(Surv(y, delta) ~ x, sim_data$data)
-```
-
-```{r eval=TRUE, include=FALSE}
+```{r eval=TRUE, include=TRUE}
 library(censored)
 library(ggplot2)
 library(dplyr)
@@ -78,14 +47,8 @@ mod_spec <- survival_reg() |>
   set_engine("survival_ln_mixture", starting_seed = 20) |>
   set_mode("censored regression")
 
-if (!file.exists("data/lnmixsurv/model2.rds")) {
-  model <- mod_spec |>
-    fit(Surv(y, delta) ~ x, sim_data$data)
-
-  write_rds(model, "data/lnmixsurv/model2.rds")
-}
-
-mod2 <- read_rds("data/lnmixsurv/model2.rds")
+mod2 <- mod_spec |>
+  fit(Surv(y, delta) ~ x, sim_data$data)      
 ```
 
 The estimates are easily obtained using tidy method. See `?tidy.survival_ln_mixture` for extra options.
@@ -107,8 +70,8 @@ models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
 pred_sob <- map(models, ~ predict(.x, new_data,
-  type = "survival",
-  eval_time = seq(120)
+                                  type = "survival",
+                                  eval_time = seq(120)
 ))
 
 bind_rows(pred_sob, .id = "modelo") |>
@@ -127,16 +90,10 @@ models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
 
-if (!file.exists("data/lnmixsurv/pred_sob.rds")) {
-  pred_sob <- map(models, ~ predict(.x, new_data,
-    type = "survival",
-    eval_time = seq(120)
-  ))
-
-  write_rds(pred_sob, "data/lnmixsurv/pred_sob.rds")
-}
-
-pred_sob <- read_rds("data/lnmixsurv/pred_sob.rds")
+pred_sob <- map(models, ~ predict(.x, new_data,
+                                  type = "survival",
+                                  eval_time = seq(120)
+))
 
 bind_rows(pred_sob, .id = "modelo") |>
   group_by(modelo) |>
@@ -148,4 +105,3 @@ bind_rows(pred_sob, .id = "modelo") |>
   theme_bw() +
   facet_wrap(~modelo)
 ```
-

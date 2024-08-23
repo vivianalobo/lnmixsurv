@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -23,28 +23,7 @@ available through `censored`.
 
 We begin by loading the packages and preparing the data.
 
-```{r}
-library(lnmixsurv)
-require(censored)
-require(purrr)
-require(dplyr)
-require(ggplot2)
-
-set.seed(25)
-
-data <- simulate_data(
-  n = 6000,
-  mixture_components = 3,
-  k = 2,
-  percentage_censored = 0.3
-)$data |>
-  rename(x = cat, y = t)
-
-new_data <- data |>
-  distinct(x)
-```
-
-```{r eval = TRUE, include = FALSE}
+```{r eval = TRUE, include = TRUE}
 library(lnmixsurv)
 library(readr)
 require(censored)
@@ -52,24 +31,13 @@ require(purrr)
 require(dplyr)
 require(ggplot2)
 
-set.seed(25)
+set.seed(4)
 
-dir.create(file.path("data", "compare"), showWarnings = FALSE)
-
-if (!file.exists("data/compare/data.rds")) {
-  data <- simulate_data(
-    n = 6000,
-    mixture_components = 3,
-    k = 2,
-    percentage_censored = 0.3
-  )$data |>
-    rename(x = cat, y = t)
-
-  write_rds(data, "data/compare/data.rds")
-}
-
-
-data <- read_rds("data/compare/data.rds")
+# Gerando dados
+data <- simulate_data(n = 6000, k = 3, mixture_components = 2, 
+                      percentage_censored = 0.3)$data |> 
+  filter(t < 500) |> 
+  rename(x = cat, y = t) 
 
 new_data <- data |>
   distinct(x)
@@ -79,26 +47,10 @@ formula <- Surv(y, delta) ~ x
 
 For comparison, lets also estimate the Kaplan-Meier survival function.
 
-```{r}
-require(ggsurvfit)
-km <- survfit2(formula, dados)
-
-# Manipulating the KM to format that matches parsnip predictions.
-surv_km <- tidy_survfit(km, type = "surv") |>
-  select(.eval_time = time, .pred_survival = estimate, id = strata) |>
-  tidyr::nest(.pred = c(.eval_time, .pred_survival))
-```
-
-```{r eval = TRUE, include = FALSE}
+```{r eval = TRUE, include = TRUE}
 library(ggsurvfit)
 
-if (!file.exists("data/compare/km.rds")) {
-  km <- survfit2(formula, data)
-
-  write_rds(km, "data/compare/km.rds")
-}
-
-km <- read_rds("data/compare/km.rds")
+km <- survfit2(formula, data)
 
 surv_km <- tidy_survfit(km, type = "surv") |>
   select(.eval_time = time, .pred_survival = estimate, id = strata) |>
@@ -120,14 +72,11 @@ decision_tree <- decision_tree(cost_complexity = 0) |>
 
 ln_mixture <- survival_reg() |>
   set_engine("survival_ln_mixture",
-    iter = 800, warmup = 0,
-    starting_seed = 5
-  )
+             iter = 4000, warmup = 2000, starting_seed = 10, em_iter = 450, mixture_components = 3)
 
 ln_mixture_em <- survival_reg() |>
   set_engine("survival_ln_mixture_em",
-    iter = 150, starting_seed = 5
-  )
+             iter = 250, starting_seed = 15, mixture_components = 3)
 
 specs <- list(
   ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em = ln_mixture_em
@@ -136,38 +85,14 @@ specs <- list(
 
 Finally, thanks to the great parsnip API, we can fit and predict all models at once.
 
-```{r}
+```{r eval = TRUE, include = TRUE}
 set.seed(1)
 
-models <- map(specs, ~ fit(.x, formula, dados))
+models <- map(specs, ~ fit(.x, formula, data))
 
 pred_sob <- map(models, ~ predict(.x, new_data,
-  type = "survival",
-  eval_time = seq(1000)
-))
-```
-
-```{r eval = TRUE, include = FALSE}
-set.seed(1)
-
-if (!file.exists("data/compare/models.rds")) {
-  models <- map(specs, ~ fit(.x, formula, data))
-
-  write_rds(models, "data/compare/models.rds")
-}
-
-models <- read_rds("data/compare/models.rds")
-
-if (!file.exists("data/compare/pred_sob.rds")) {
-  pred_sob <- map(models, ~ predict(.x, new_data,
-    type = "survival",
-    eval_time = seq(1000)
-  ))
-
-  write_rds(pred_sob, "data/compare/pred_sob.rds")
-}
-
-pred_sob <- read_rds("data/compare/pred_sob.rds")
+                                  type = "survival",
+                                  eval_time = seq(500)))
 ```
 
 The following plot compares each model with the Kaplan-Meier estimates of the survival function.
@@ -181,7 +106,7 @@ all_preds <- bind_rows(pred_sob, .id = "modelo") |>
 
 km_fit <- surv_km |>
   tidyr::unnest(cols = .pred) |>
-  filter(.eval_time < 1000)
+  filter(.eval_time < 500)
 
 ggplot(aes(x = .eval_time, y = .pred_survival, col = id), data = all_preds) +
   theme_bw() +

@@ -32,7 +32,7 @@ test_that("survival_ln_mixture doesnt work with xy specification", {
 
 test_that("survival_ln_mixture works with intercept only fit", {
   mod <- readRDS(test_path("fixtures", "ln_fit_with_intercept_only.rds"))
-  expect_equal(tidy(mod)$estimate, c(3.6, 4.5), tolerance = 1)
+  expect_equal(tidy(mod)$estimate, c(3.44, 4.02, 4.83), tolerance = 1)
 })
 
 test_that("fit works as expected with simulated data", {
