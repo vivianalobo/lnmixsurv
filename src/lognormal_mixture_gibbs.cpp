@@ -168,6 +168,10 @@ void sample_groups_advanced(const int& G, const arma::vec& y, const arma::vec& e
     if(arma::det(S) == 0) {
       S_inv = Vg0;
     } else {
+      if (arma::det(makeSymmetric(S)) < 1e-10) { // regularization if matrix is poorly conditioned
+        S += 1e-8 * arma::eye(p, p);
+      }
+
       S_inv = arma::solve(makeSymmetric(S), identity_p, 
                           arma::solve_opts::likely_sympd);
     }
@@ -408,7 +412,13 @@ void sample_initial_values_em(arma::vec& eta, arma::vec& phi, arma::mat& beta, a
 void update_beta_g(const arma::vec& colg, const arma::mat& X, const int& g, const arma::vec& z, arma::mat& beta,
                    arma::sp_mat& Wg) {
   Wg = arma::diagmat(colg);
-  beta.row(g) = arma::solve(makeSymmetric(X.t() * Wg * X), X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
+  arma::mat S = X.t() * Wg * X; 
+
+  if(arma::det(makeSymmetric(S)) < 1e-10) { // regularization if matrix is poorly conditioned
+    S += 1e-8 * arma::eye(S.n_cols, S.n_cols);
+  }
+
+  beta.row(g) = arma::solve(makeSymmetric(S), X.t() * Wg * z, arma::solve_opts::likely_sympd).t();
 }
 
 // Update the parameter phi(g)
@@ -686,6 +696,10 @@ arma::rowvec update_beta_g_gibbs(const double& phi_g, const arma::mat& Xg, const
   arma::vec mg;
   
   if(arma::det(comb) != 0) {
+    if(arma::det(makeSymmetric(comb)) < 1e-10) { // regularization if matrix is poorly conditioned
+      comb += 1e-8 * arma::eye(Xg.n_cols, Xg.n_cols);
+    }
+    
     Sg = arma::solve(makeSymmetric(comb),
                          arma::eye(Xg.n_cols, Xg.n_cols),
                          arma::solve_opts::likely_sympd);

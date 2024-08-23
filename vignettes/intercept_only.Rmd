@@ -6,7 +6,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -20,43 +20,23 @@ knitr::opts_chunk$set(
 
 Intercept only fits should be done setting `intercept = TRUE` and using `NULL` for the left side of the formula.
 
-```{r}
-library(lnmixsurv)
-library(dplyr)
-library(tidyr)
-
-mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL,
-  sim_data$data,
-  intercept = TRUE,
-  starting_seed = 10
-)
-```
-
-```{r eval = TRUE, include = FALSE}
+```{r eval = TRUE, include = TRUE}
 library(lnmixsurv)
 library(dplyr)
 library(tidyr)
 library(readr)
 
-dir.create(file.path("data/", "intercept_only"), showWarnings = FALSE)
+mod1 <- survival_ln_mixture(Surv(y, delta) ~ NULL,
+                            sim_data$data,
+                            iter = 4000,
+                            warmup = 2000,
+                            intercept = TRUE,
+                            starting_seed = 15,
+                            em_iter = 50,
+                            mixture_components = 3
+)
 
-if (!file.exists("data/intercept_only/model.rds")) {
-  model <- survival_ln_mixture(Surv(y, delta) ~ NULL,
-    sim_data$data,
-    intercept = TRUE,
-    starting_seed = 10
-  )
-
-  readr::write_rds(model, "data/intercept_only/model.rds")
-}
-
-mod1 <- readr::read_rds("data/intercept_only/model.rds")
-
-if (!file.exists("data/intercept_only/chains.rds")) {
-  write_rds(bayesplot::mcmc_trace(mod1$posterior), "data/intercept_only/chains.rds")
-}
-
-chains <- read_rds("data/intercept_only/chains.rds")
+chains <- bayesplot::mcmc_trace(mod1$posterior)
 ```
 
 We can easily see the chains with the `mcmc_trace()` function from `bayesplot` package. Since it's just an example, we don't expect that the chains have already converged.
@@ -80,7 +60,7 @@ km <- survival::survfit(
 
 ggplot(km) +
   geom_step(aes(x = time, y = estimate),
-    color = "darkslategrey"
+            color = "darkslategrey"
   ) +
   labs(
     title = "Kaplan-Meier estimate",
@@ -92,28 +72,13 @@ ggplot(km) +
 
 The predictions can be easily made with a "empty" data.frame with one row.
 
-```{r}
+```{r eval = TRUE, include = TRUE}
 predictions <- predict(mod1,
-  new_data = data.frame(val = NA),
-  type = "survival",
-  eval_time = seq(0, 300)
+                       new_data = data.frame(val = NA),
+                       type = "survival",
+                       eval_time = seq(0, 300)
 ) |>
   tidyr::unnest(cols = .pred)
-```
-
-```{r eval = TRUE, include = FALSE}
-if (!file.exists("data/intercept_only/predictions.rds")) {
-  predictions <- predict(mod1,
-    new_data = data.frame(val = NA),
-    type = "survival",
-    eval_time = seq(0, 300)
-  ) |>
-    tidyr::unnest(cols = .pred)
-
-  write_rds(predictions, "data/intercept_only/predictions.rds")
-}
-
-predictions <- read_rds("data/intercept_only/predictions.rds")
 ```
 
 `ggplot2` can be used to visualize the model's fitted survival estimates for the data.
@@ -121,11 +86,11 @@ predictions <- read_rds("data/intercept_only/predictions.rds")
 ```{r fig.width=7, eval = TRUE}
 ggplot() +
   geom_step(aes(x = time, y = estimate, linetype = "Kaplan-Meier"),
-    color = "darkslategrey", data = km
+            color = "darkslategrey", data = km
   ) +
   geom_line(aes(x = .eval_time, y = .pred_survival, linetype = "Fitted"),
-    color = "darkslategrey",
-    data = predictions, alpha = 0.7
+            color = "darkslategrey",
+            data = predictions, alpha = 0.7
   ) +
   labs(
     title = "Fitted survival estimates",
@@ -135,5 +100,3 @@ ggplot() +
   ) +
   theme_bw()
 ```
-
-

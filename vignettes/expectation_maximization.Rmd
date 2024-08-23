@@ -21,30 +21,8 @@ knitr::opts_chunk$set(
 The Expectation-Maximization (EM) algorithm is available through the function `survival_ln_mixture_em` and it's a frequentist method in alternative to the Bayesian approach. It handles better big data situations when the Bayesian approach will run out of memory or take a lot of time to finish.
   
 Using it is similar to using the Bayesian method, `survival_ln_mixture`, sharing a lot of similar parameters and specifications. Here follows a really basic code to fit the model using the EM algorithm.
-  
-```{r}
-library(lnmixsurv)
-library(tidyr)
-library(dplyr)
-library(ggplot2)
 
-set.seed(25)
-
-data <- simulate_data(6000,
-  mixture_components = 3, k = 2,
-  percentage_censored = 0.3
-)$data |>
-  rename(x = cat, y = t)
-
-model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-  data = data,
-  iter = 200,
-  starting_seed = 5,
-  number_em_search = 0
-)
-```
-
-```{r eval=TRUE, include=FALSE}
+```{r eval=TRUE, include=TRUE}
 library(lnmixsurv)
 library(tidyr)
 library(dplyr)
@@ -53,38 +31,20 @@ library(readr)
 
 set.seed(8)
 
-dir.create(file.path("data/", "expectation_maximization"), showWarnings = FALSE)
-
-if (!file.exists("data/expectation_maximization/data.rds")) {
-  data <- simulate_data(6000,
+data <- simulate_data(6000,
     mixture_components = 3, k = 2,
     percentage_censored = 0.3
   )$data |>
     rename(x = cat, y = t)
 
-  write_rds(data, "data/expectation_maximization/data.rds")
-}
-
-data <- read_rds("data/expectation_maximization/data.rds")
-
-if (!file.exists("data/expectation_maximization/model_em1.rds")) {
-  model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
+model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
     data = data,
     iter = 200,
     starting_seed = 20,
     number_em_search = 0
   )
 
-  write_rds(model_em, "data/expectation_maximization/model_em1.rds")
-}
-
-model_em <- read_rds("data/expectation_maximization/model_em1.rds")
-
-if (!file.exists("data/expectation_maximization/gg1.rds")) {
-  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg1.rds")
-}
-
-gg <- read_rds("data/expectation_maximization/gg1.rds")
+gg <- plot_fit_on_data(model_em, data)$ggplot
 ```
 
 The parameters `number_em_search` is used to find initial values closer to the maximum likelihood, avoid local maximas. Here, we are just disabling it to show it's impact.
@@ -98,7 +58,7 @@ plot(model_em)
 When using the Expectation-Maximization algorithm to fit the model, you can use the function `plot_fit_on_data()` to quickly visualize the model's estimated survival (or hazard) on the data used to fit the model.
 
 ```{r}
-plot_fit_on_data(model_em, type = "survival")
+plot_fit_on_data(model_em, data = data, type = "survival")$ggplot
 ```
 
 ```{r fig.width = 7, echo=FALSE, eval = TRUE}
@@ -118,17 +78,13 @@ model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
 ```
 
 ```{r include=FALSE, eval = TRUE}
-if (!file.exists("data/expectation_maximization/gg2.rds")) {
-  write_rds(plot_fit_on_data(model_em), "data/expectation_maximization/gg2.rds")
-}
-
-gg <- read_rds("data/expectation_maximization/gg2.rds")
+gg <- plot_fit_on_data(model_em, data)$ggplot
 ```
 
 Now, we have a maximum likelihood estimator that tries to avoid local maximas. As before, we can use the function `plot_fit_on_data()` to visualize the model's estimated survival on the data used to fit the model.
 
 ```{r}
-plot_fit_on_data(model_em, type = "survival")
+plot_fit_on_data(model_em, data = data, type = "survival")$ggplot
 ```
 
 ```{r fig.width = 7, echo = FALSE, eval = TRUE}
