@@ -18,8 +18,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette shows a brief comparison of the survival_ln_mixture with other survival models, 
-available through `censored`.
+This vignette shows a brief comparison of the survival_ln_mixture with other survival models, available through `censored`.
 
 We begin by loading the packages and preparing the data.
 
@@ -72,11 +71,13 @@ decision_tree <- decision_tree(cost_complexity = 0) |>
 
 ln_mixture <- survival_reg() |>
   set_engine("survival_ln_mixture",
-             iter = 4000, warmup = 2000, starting_seed = 10, em_iter = 450, mixture_components = 3)
+             iter = 4000, warmup = 2000, starting_seed = 10, 
+             em_iter = 450, mixture_components = 3)
 
 ln_mixture_em <- survival_reg() |>
   set_engine("survival_ln_mixture_em",
-             iter = 250, starting_seed = 15, mixture_components = 3)
+             iter = 250, starting_seed = 15, 
+             mixture_components = 3)
 
 specs <- list(
   ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em = ln_mixture_em
