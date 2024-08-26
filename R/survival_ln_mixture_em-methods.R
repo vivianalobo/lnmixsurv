@@ -80,7 +80,7 @@ logLik.survival_ln_mixture_em <- function(model, ...) {
 ##' @export
 AIC.survival_ln_mixture_em <- function(model, ...) {
   rlang::check_dots_empty(...)
-  logLik <- logLik.survival_ln_mixture_em(model)
+  logLik <- stats::logLik(model)
   nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
   
   return(round(-2 * logLik + 2 * nparam, 2))
@@ -90,7 +90,7 @@ AIC.survival_ln_mixture_em <- function(model, ...) {
 ##' @export
 BIC.survival_ln_mixture_em <- function(model, ...) {
   rlang::check_dots_empty(...)
-  logLik <- logLik.survival_ln_mixture_em(model)
+  logLik <- stats::logLik(model)
   nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
   
   return(round(-2 * logLik + log(nobs(model)) * nparam, 2))
