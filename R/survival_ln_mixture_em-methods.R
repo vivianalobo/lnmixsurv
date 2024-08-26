@@ -70,28 +70,28 @@ niterations <- function(model) {
 
 ##' @importFrom stats logLik
 ##' @export
-logLik.survival_ln_mixture_em <- function(model, ...) {
+logLik.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
   
-  return(model$logLik)
+  return(object$logLik)
 }
 
 ##' @importFrom stats AIC
 ##' @export
-AIC.survival_ln_mixture_em <- function(model, ...) {
+AIC.survival_ln_mixture_em <- function(object, ..., k = 2) {
   rlang::check_dots_empty(...)
-  logLik <- stats::logLik(model)
-  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  logLik <- stats::logLik(object)
+  nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
   
-  return(round(-2 * logLik + 2 * nparam, 2))
+  return(round(-2 * logLik + k * nparam, 2))
 }
 
 ##' @importFrom stats BIC
 ##' @export
-BIC.survival_ln_mixture_em <- function(model, ...) {
+BIC.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
-  logLik <- stats::logLik(model)
-  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  logLik <- stats::logLik(object)
+  nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
   
-  return(round(-2 * logLik + log(nobs(model)) * nparam, 2))
+  return(round(-2 * logLik + log(nobs(object)) * nparam, 2))
 }
