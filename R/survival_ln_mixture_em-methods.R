@@ -2,6 +2,8 @@
 #' @param x A fitted `survival_ln_mixture_em` object.
 #' @param ... Not used.
 #'
+#' @returns A `ggplot` object (or `plotly`, if the package is avaiable) of the EM algorithm iterations.
+#'
 #' @export
 plot.survival_ln_mixture_em <- function(x, ...) {
   iter <- value <- var <- NULL

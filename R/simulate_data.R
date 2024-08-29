@@ -12,6 +12,8 @@
 #'
 #' @param starting_seed Seed to start the random number generation.
 #'
+#' @returns A list with two elements: `data` and `real_values`. The `data` element is a tibble with the simulated data. The `real_values` is a tibble with the real values of the parameters used to generate the data.
+#' 
 #' @export
 simulate_data <- function(n = 4000, mixture_components = 2, k = 2,
                           percentage_censored = 0.4,

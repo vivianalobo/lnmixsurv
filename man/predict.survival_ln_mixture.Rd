@@ -49,19 +49,18 @@ otherwise the predictions will fail.
 \examples{
 
 # Categorical variables must be converted to factor before the fit.
+
 require(survival)
+# This would result in error:
 set.seed(1)
 mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
-# Would result in error
-\dontrun{
 predict(mod, data.frame(sex = 1), type = "survival", eval_time = 100)
-}
 
 # Correct way
-lung$sex <- factor(lung$sex)
+lung$sex <- factor(lung$sex) # converting to factor before
 set.seed(1)
 mod2 <- survival_ln_mixture(Surv(time, status == 2) ~ sex, lung, intercept = TRUE)
-# Note: the categorical predictors must be character.
+# Note: the categorical predictors must be a character.
 predict(mod2, data.frame(sex = "1"), type = "survival", eval_time = 100)
 
 }

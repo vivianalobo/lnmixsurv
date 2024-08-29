@@ -12,6 +12,8 @@
 #'
 #' @param level A numeric value between 0 and 1 specifying the level of the confidence interval. The default is 0.95.
 #'
+#' @returns A list with two objects, one ggplot (`$ggplot`) with the predictions plotted against the empirical data and a tibble with the predictions (`$preds`).
+#'
 #' @export
 plot_fit_on_data <- function(model, data, type = "survival", interval = "none",
                              level = 0.95) {

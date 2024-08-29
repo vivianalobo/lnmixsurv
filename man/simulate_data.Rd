@@ -23,6 +23,9 @@ simulate_data(
 
 \item{starting_seed}{Seed to start the random number generation.}
 }
+\value{
+A list with two elements: \code{data} and \code{real_values}. The \code{data} element is a tibble with the simulated data. The \code{real_values} is a tibble with the real values of the parameters used to generate the data.
+}
 \description{
 \code{simulate_data()} simulates data from a mixture model.
 }

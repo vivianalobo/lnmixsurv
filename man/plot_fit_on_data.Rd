@@ -23,6 +23,9 @@ plot_fit_on_data(
 
 \item{level}{A numeric value between 0 and 1 specifying the level of the confidence interval. The default is 0.95.}
 }
+\value{
+A list with two objects, one ggplot (\verb{$ggplot}) with the predictions plotted against the empirical data and a tibble with the predictions (\verb{$preds}).
+}
 \description{
 \code{plot_fit_on_data()} estimates survival/hazard for the data the model was fitted on and plots the results.
 }

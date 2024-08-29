@@ -24,6 +24,14 @@
 #'
 #' @param ... Not currently used, but required for extensibility.
 #'
+#' @returns An object of class `survival_ln_mixture_em` containing the following elements:
+#' - `em_iterations`: A data frame containing the EM iterations.
+#' - `nobs`: The number of observations.
+#' - `predictors_name`: The names of the predictors.
+#' - `logLik`: The log-likelihood of the model.
+#' - `mixture_groups`: The number of mixture groups.
+#' - `blueprint`: The blueprint used to process the formula
+#'
 #' @export
 survival_ln_mixture_em <- function(
     formula, data, intercept = TRUE, iter = 50, mixture_components = 2, starting_seed = sample(1:2^28, 1), number_em_search = 200, iteration_em_search = 1,
