@@ -51,10 +51,14 @@ otherwise the predictions will fail.
 # Categorical variables must be converted to factor before the fit.
 
 require(survival)
-# This would result in error:
+# Wrong way of doing
 set.seed(1)
 mod <- survival_ln_mixture(Surv(time, status == 2) ~ factor(sex), lung, intercept = TRUE)
+
+\dontrun{
+# this piece of code will throw error
 predict(mod, data.frame(sex = 1), type = "survival", eval_time = 100)
+}
 
 # Correct way
 lung$sex <- factor(lung$sex) # converting to factor before
