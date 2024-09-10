@@ -9,6 +9,7 @@
 #' 
 #' @returns A `tibble` with the following columns:
 #' - `strata`: The stratas used to fit the model (if necessary).
+#' - `n_strata`: The number of observations in the strata.
 #' - `chain`: The chain of the Bayesian model (only if necessary).
 #' - `metric`: Which metric is being calculated.
 #' - `value`: Value for the metric.
@@ -54,8 +55,15 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
     
     if ('strata' %in% names(preds)) {
       strata <- preds$strata[i]
+      n_strata <- preds |> 
+        dplyr::filter(strata == preds$strata[i]) |> 
+        dplyr::pull(n.risk) |>
+        max()
     } else {
       strata <- NA
+      n_strata <- preds |> 
+        dplyr::pull(n.risk) |>
+        max()
     }
     
     if ('chain' %in% names(preds)) {
@@ -65,9 +73,10 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
     }
     
     if(preds$n.risk[i] > nt) {
-      out_tibble <- tibble::tibble(time = rep(time, 5),
-                                   strata = rep(strata, 5),
-                                   chain = rep(chain, 5),
+      out_tibble <- tibble::tibble(time = rep(time, 4),
+                                   strata = rep(strata, 4),
+                                   n_strata = rep(n_strata, 4),
+                                   chain = rep(chain, 4),
                                    metric = c('MSE', 'MAE', 'Hellinger Distance', 'KS Distance'),
                                    value = c((preds$estimate[i] - preds$.pred_survival[i])^2,
                                              abs(preds$estimate[i] - preds$.pred_survival[i]),
@@ -86,14 +95,13 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
         dplyr::group_by(strata, chain, metric) |> 
         dplyr::summarise(value_mean = mean(value, na.rm = TRUE),
                          value_max = max(value, na.rm = TRUE),
-                         nvalid = dplyr::n()) |> 
+                         nvalid = dplyr::n(),
+                         n_strata = mean(n_strata)) |> 
         dplyr::mutate(value = ifelse(metric == 'Hellinger Distance',
                                      (1/sqrt(2)) * sqrt(nvalid * value_mean),
                                      ifelse(metric == 'KS Distance',
                                             value_max,
-                                            ifelse(metric == 'KL Divergence',
-                                                   nvalid * value_mean,
-                                                   value_mean)))) |> 
+                                            value_mean))) |> 
         dplyr::select(-nvalid, -value_max, -value_mean)
     } else {
       out <- out |> 
@@ -102,14 +110,13 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
         dplyr::group_by(strata, metric) |> 
         dplyr::summarise(value_mean = mean(value, na.rm = TRUE),
                          value_max = max(value, na.rm = TRUE),
-                         nvalid = dplyr::n()) |> 
+                         nvalid = dplyr::n(),
+                         n_strata = mean(n_strata)) |> 
         dplyr::mutate(value = ifelse(metric == 'Hellinger Distance',
                                      (1/sqrt(2)) * sqrt(nvalid * value_mean),
                                      ifelse(metric == 'KS Distance',
                                             value_max,
-                                            ifelse(metric == 'KL Divergence',
-                                                   nvalid * value_mean,
-                                                   value_mean)))) |> 
+                                            value_mean))) |> 
         dplyr::select(-nvalid, -value_max, -value_mean)
     }
   } else {
@@ -120,14 +127,13 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
         dplyr::group_by(chain, metric) |> 
         dplyr::summarise(value_mean = mean(value, na.rm = TRUE),
                          value_max = max(value, na.rm = TRUE),
-                         nvalid = dplyr::n()) |> 
+                         nvalid = dplyr::n(),
+                         n_strata = mean(n_strata)) |> 
         dplyr::mutate(value = ifelse(metric == 'Hellinger Distance',
                                      (1/sqrt(2)) * sqrt(nvalid * value_mean),
                                      ifelse(metric == 'KS Distance',
                                             value_max,
-                                            ifelse(metric == 'KL Divergence',
-                                                   nvalid * value_mean,
-                                                   value_mean)))) |> 
+                                            value_mean))) |> 
         dplyr::select(-nvalid, -value_max, -value_mean)
     } else {
       out <- out |> 
@@ -136,14 +142,13 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
         dplyr::group_by(metric) |> 
         dplyr::summarise(value_mean = mean(value, na.rm = TRUE),
                          value_max = max(value, na.rm = TRUE),
-                         nvalid = dplyr::n()) |> 
+                         nvalid = dplyr::n(),
+                         n_strata = mean(n_strata)) |> 
         dplyr::mutate(value = ifelse(metric == 'Hellinger Distance',
                                      (1/sqrt(2)) * sqrt(nvalid * value_mean),
                                      ifelse(metric == 'KS Distance',
                                             value_max,
-                                            ifelse(metric == 'KL Divergence',
-                                                   nvalid * value_mean,
-                                                   value_mean)))) |> 
+                                            value_mean))) |> 
         dplyr::select(-nvalid, -value_max, -value_mean)
     }
   }

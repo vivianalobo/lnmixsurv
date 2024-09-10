@@ -18,6 +18,7 @@ fit_metrics(preds, nobs = NULL, threshold = 0.005)
 A \code{tibble} with the following columns:
 \itemize{
 \item \code{strata}: The stratas used to fit the model (if necessary).
+\item \code{n_strata}: The number of observations in the strata.
 \item \code{chain}: The chain of the Bayesian model (only if necessary).
 \item \code{metric}: Which metric is being calculated.
 \item \code{value}: Value for the metric.
@@ -29,7 +30,6 @@ For now, the following metrics are available and will be included:
 \item \code{MAE}: Mean Absolute Error (the less the better).
 \item \verb{Hellinger Distance}: Hellinger distance, sometimes called Jeffreys distance (the less the better).
 \item \verb{KS Distance}: Kolmogorov-Smirnov distance (the less the better).
-\item \verb{KL Divergence}: Kullback-Leiber divergence (the less the better). Measures how much the fitted survival is different from the empirical one.
 }
 }
 \description{
