@@ -77,6 +77,7 @@ A \code{survival_ln_mixture} object, which is a list with the following componen
 }
 \description{
 \code{survival_ln_mixture()} fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
+The posterior used is given by \pi
 }
 \note{
 Categorical predictors must be converted to factors before the fit,

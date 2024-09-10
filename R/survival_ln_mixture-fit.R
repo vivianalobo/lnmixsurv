@@ -1,6 +1,5 @@
-#' Lognormal mixture model - Gibbs sampler
-#'
-#' `survival_ln_mixture()` fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
+#' @title Lognormal mixture model - Gibbs sampler
+#' @description `survival_ln_mixture()` fits a Bayesian lognormal mixture model with Gibbs sampling (optional EM algorithm to find local maximum at the likelihood function), as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024.
 #'
 #' @param formula A formula specifying the outcome terms on the left-hand side,
 #' and the predictor terms on the right-hand side. The outcome must be a [survival::Surv]

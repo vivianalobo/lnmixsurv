@@ -18,7 +18,6 @@
 #' - `MAE`: Mean Absolute Error (the less the better).
 #' - `Hellinger Distance`: Hellinger distance, sometimes called Jeffreys distance (the less the better).
 #' - `KS Distance`: Kolmogorov-Smirnov distance (the less the better).
-#' - `KL Divergence`: Kullback-Leiber divergence (the less the better). Measures how much the fitted survival is different from the empirical one.
 #'
 #' @export
 fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
@@ -48,14 +47,7 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
   
   epsilon <- 1e-10
   
-  # Calculating the binary cross entropy
-  out <- tibble::tibble(
-    time = NA,
-    strata = NA,
-    chain = NA,
-    metric = NA,
-    value = NA
-  )
+  out <- list()
   
   for(i in 1:nrow(preds)) {
     time <- preds$time[i]
@@ -73,50 +65,19 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
     }
     
     if(preds$n.risk[i] > nt) {
-      # MSE
-      out <- out |> 
-        dplyr::bind_rows(tibble::tibble(time = time,
-                                        strata = strata,
-                                        chain = chain,
-                                        metric = 'MSE',
-                                        value = (preds$estimate[i] - preds$.pred_survival[i])^2))
-      
-      # MAE
-      out <- out |> 
-        dplyr::bind_rows(tibble::tibble(time = time,
-                                        strata = strata,
-                                        chain = chain,
-                                        metric = 'MAE',
-                                        value = abs(preds$estimate[i] - preds$.pred_survival[i])))
-      
-      # Hellinger Distance
-      out <- out |> 
-        dplyr::bind_rows(tibble::tibble(time = time,
-                                        strata = strata,
-                                        chain = chain,
-                                        metric = 'Hellinger Distance',
-                                        value = (sqrt(preds$estimate[i]) - sqrt(preds$.pred_survival[i]))^2))
-      
-      # KS Distance
-      out <- out |> 
-        dplyr::bind_rows(tibble::tibble(time = time,
-                                        strata = strata,
-                                        chain = chain,
-                                        metric = 'KS Distance',
-                                        value = abs(preds$estimate[i] - preds$.pred_survival[i])))
-      
-      # KL Divergence
-      out <- out |> 
-        dplyr::bind_rows(tibble::tibble(time = time,
-                                        strata = strata,
-                                        chain = chain,
-                                        metric = 'KL Divergence',
-                                        value = preds$.pred_survival[i] * log(preds$.pred_survival[i] / max(preds$estimate[i], epsilon))))
+      out_tibble <- tibble::tibble(time = rep(time, 5),
+                                   strata = rep(strata, 5),
+                                   chain = rep(chain, 5),
+                                   metric = c('MSE', 'MAE', 'Hellinger Distance', 'KS Distance'),
+                                   value = c((preds$estimate[i] - preds$.pred_survival[i])^2,
+                                             abs(preds$estimate[i] - preds$.pred_survival[i]),
+                                             (sqrt(preds$estimate[i]) - sqrt(preds$.pred_survival[i]))^2,
+                                             abs(preds$estimate[i] - preds$.pred_survival[i])))
+      out[[i]] <- out_tibble
     }
   }
   
-  out <- out |> 
-    dplyr::slice(-1)
+  out <- dplyr::bind_rows(out)
   
   if ('strata' %in% names(preds)) {
     if ('chain' %in% names(preds)) {
