@@ -1,8 +1,8 @@
 #' @export
 print.survival_ln_mixture <- function(x, digits = NULL, ...) {
   if (is.null(digits)) digits <- getOption("digits")
-  fixed <- tidy.survival_ln_mixture(x, effects = "fixed", conf.int = TRUE)
-  auxiliary <- tidy.survival_ln_mixture(x, effects = "auxiliary", conf.int = TRUE)
+  fixed <- tidy.survival_ln_mixture(x, effects = "fixed", conf.int = TRUE, conf.level = 0.95)
+  auxiliary <- tidy.survival_ln_mixture(x, effects = "auxiliary", conf.int = TRUE, conf.level = 0.95)
   cat("survival_ln_mixture")
   cat("\n formula:", extract_formula(x))
   cat("\n observations:", nobs(x))

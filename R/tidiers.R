@@ -39,7 +39,7 @@ globalVariables(".pred")
 tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
                                      effects = "fixed",
                                      conf.int = FALSE, # nolint: object_name_linter.
-                                     conf.level = 0.9, # nolint: object_name_linter.
+                                     conf.level = 0.95, # nolint: object_name_linter.
                                      digits = NULL,
                                      ...) {
   rlang::arg_match(effects, c("fixed", "auxiliary"))
@@ -140,7 +140,7 @@ tidy.survival_ln_mixture_em <- function(x, # nolint: object_name_linter.
 #' Funcao auxiliar para calcular intervalo de credibilidade usando quantis.
 #' @noRd
 credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
-  ret <- unname(stats::quantile(x, probs = c(1 - conf.level, conf.level)))
+  ret <- unname(stats::quantile(x, probs = c((1 - conf.level)/2, (1 + conf.level)/2)))
   return(c("cred.low" = ret[1], "cred.high" = ret[2]))
 }
 

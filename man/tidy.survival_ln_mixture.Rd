@@ -8,7 +8,7 @@
   x,
   effects = "fixed",
   conf.int = FALSE,
-  conf.level = 0.9,
+  conf.level = 0.95,
   digits = NULL,
   ...
 )
