@@ -23,7 +23,7 @@
 #' @export
 fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
   # Checks
-  if (!is_tibble(preds)) {
+  if (!tibble::is_tibble(preds)) {
     stop("The input 'preds' must be a tibble.")
   }
   
@@ -38,6 +38,8 @@ fit_metrics <- function(preds, nobs = NULL, threshold = 0.005) {
   if (is.null(nobs) && threshold != 0) {
     stop("The input 'nobs' must be provided if 'threshold' is different from 0.")
   }
+  
+  n.risk <- metric <- value <- nvalid <- value_mean <- value_max <- NULL
   
   # Defining the numeric threshold (nt)
   if (threshold == 0) {
