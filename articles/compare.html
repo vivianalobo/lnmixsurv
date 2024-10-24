@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">lnmixsurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">3.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -116,11 +116,13 @@ in a list.</p>
 <span></span>
 <span><span class="va">ln_mixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://parsnip.tidymodels.org/reference/survival_reg.html" class="external-link">survival_reg</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_engine.html" class="external-link">set_engine</a></span><span class="op">(</span><span class="st">"survival_ln_mixture"</span>,</span>
-<span>             iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">2000</span>, starting_seed <span class="op">=</span> <span class="fl">10</span>, em_iter <span class="op">=</span> <span class="fl">450</span>, mixture_components <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>             iter <span class="op">=</span> <span class="fl">4000</span>, warmup <span class="op">=</span> <span class="fl">2000</span>, starting_seed <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>             em_iter <span class="op">=</span> <span class="fl">450</span>, mixture_components <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ln_mixture_em</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://parsnip.tidymodels.org/reference/survival_reg.html" class="external-link">survival_reg</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_engine.html" class="external-link">set_engine</a></span><span class="op">(</span><span class="st">"survival_ln_mixture_em"</span>,</span>
-<span>             iter <span class="op">=</span> <span class="fl">250</span>, starting_seed <span class="op">=</span> <span class="fl">15</span>, mixture_components <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>             iter <span class="op">=</span> <span class="fl">250</span>, starting_seed <span class="op">=</span> <span class="fl">15</span>, </span>
+<span>             mixture_components <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">specs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  ln_survival <span class="op">=</span> <span class="va">ln_survival</span>, ph_survival <span class="op">=</span> <span class="va">ph_survival</span>, ln_mixture <span class="op">=</span> <span class="va">ln_mixture</span>, decision_tree <span class="op">=</span> <span class="va">decision_tree</span>, ln_mixture_em <span class="op">=</span> <span class="va">ln_mixture_em</span></span>
@@ -164,7 +166,7 @@ estimates of the survival function.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>
