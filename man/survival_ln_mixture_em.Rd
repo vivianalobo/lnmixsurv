@@ -46,6 +46,17 @@ object.}
 
 \item{...}{Not currently used, but required for extensibility.}
 }
+\value{
+An object of class \code{survival_ln_mixture_em} containing the following elements:
+\itemize{
+\item \code{em_iterations}: A data frame containing the EM iterations.
+\item \code{nobs}: The number of observations.
+\item \code{predictors_name}: The names of the predictors.
+\item \code{logLik}: The log-likelihood of the model.
+\item \code{mixture_groups}: The number of mixture groups.
+\item \code{blueprint}: The blueprint used to process the formula
+}
+}
 \description{
 \code{survival_ln_mixture_em()} fits an EM algorithm, as described in LOBO, Viviana GR; FONSECA, Thaís CO; ALVES, Mariane B. Lapse risk modeling in insurance: a Bayesian mixture approach. Annals of Actuarial Science, v. 18, n. 1, p. 126-151, 2024, for modelling mixtures of lognormal distributions applied to survival data.
 }

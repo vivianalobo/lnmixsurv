@@ -2,6 +2,8 @@
 #' @param x A fitted `survival_ln_mixture_em` object.
 #' @param ... Not used.
 #'
+#' @returns A `ggplot` object (or `plotly`, if the package is avaiable) of the EM algorithm iterations.
+#'
 #' @export
 plot.survival_ln_mixture_em <- function(x, ...) {
   iter <- value <- var <- NULL
@@ -68,24 +70,30 @@ niterations <- function(model) {
   return(nrow(model$em_iterations))
 }
 
-logLik.survival_ln_mixture_em <- function(model, ...) {
+##' @importFrom stats logLik
+##' @export
+logLik.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
   
-  return(model$logLik)
+  return(object$logLik)
 }
 
-AIC.survival_ln_mixture_em <- function(model, ...) {
+##' @importFrom stats AIC
+##' @export
+AIC.survival_ln_mixture_em <- function(object, ..., k = 2) {
   rlang::check_dots_empty(...)
-  logLik <- logLik(model)
-  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  logLik <- stats::logLik(object)
+  nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
   
-  return(round(-2 * logLik + 2 * nparam, 2))
+  return(round(-2 * logLik + k * nparam, 2))
 }
 
-BIC.survival_ln_mixture_em <- function(model, ...) {
+##' @importFrom stats BIC
+##' @export
+BIC.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
-  logLik <- logLik(model)
-  nparam <- ncol(model$em_iteration) - 1 # remove iter column from em_iteration matrix
+  logLik <- stats::logLik(object)
+  nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
   
-  return(round(-2 * logLik + log(nobs(model)) * nparam, 2))
+  return(round(-2 * logLik + log(nobs(object)) * nparam, 2))
 }

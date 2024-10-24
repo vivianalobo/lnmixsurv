@@ -9,6 +9,9 @@ join_empirical_hazard(km)
 \arguments{
 \item{km}{Kaplan-Meier estimates, i.e., object generated after running broom::tidy(survfit_obj), in which survfit_obj is a survfit object. Can also be a survfit object.}
 }
+\value{
+The same object as inputed, but with the hazard estimates column (hazard_estimate) joined to it.
+}
 \description{
 \code{join_empirical_hazard()} takes a Kaplan Meier empirical estimate which includes the survival estimates and joins the hazard estimates to it.
 }

@@ -11,6 +11,9 @@
 
 \item{...}{Not used.}
 }
+\value{
+A \code{ggplot} object (or \code{plotly}, if the package is avaiable) of the EM algorithm iterations.
+}
 \description{
 Visualizes the path of the EM algorithm
 }

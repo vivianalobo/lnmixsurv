@@ -4,6 +4,8 @@
 #'
 #' @param km Kaplan-Meier estimates, i.e., object generated after running broom::tidy(survfit_obj), in which survfit_obj is a survfit object. Can also be a survfit object.
 #'
+#' @returns The same object as inputed, but with the hazard estimates column (hazard_estimate) joined to it.
+#' 
 #' @export
 join_empirical_hazard <- function(km) {
   # check if the only class is a survfit object
