@@ -8,8 +8,8 @@
 <title>Parallel computation and posterior analysis • lnmixsurv</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Parallel computation and posterior analysis">
 </head>
 <body>
@@ -130,10 +130,10 @@ results.</p>
 <p>We expect the parallel algorithm to be faster. The times for the
 sequential and parallel runs are:</p>
 <pre><code><span><span class="co">#&gt; [1] "Sequential"</span></span>
-<span><span class="co">#&gt; Time difference of 0.4962382 secs</span></span>
+<span><span class="co">#&gt; Time difference of 0.4353764 secs</span></span>
 <span><span class="co">#&gt; [1] "-------------"</span></span>
 <span><span class="co">#&gt; [1] "Parallel"</span></span>
-<span><span class="co">#&gt; Time difference of 0.3231812 secs</span></span></code></pre>
+<span><span class="co">#&gt; Time difference of 0.2737367 secs</span></span></code></pre>
 <p>The parallel run should be faster than the sequential run. The
 speedup will depend on the number of cores available and the number of
 chains.</p>
