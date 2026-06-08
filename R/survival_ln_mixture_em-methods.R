@@ -74,7 +74,7 @@ niterations <- function(model) {
 ##' @export
 logLik.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
-  
+
   return(object$logLik)
 }
 
@@ -84,7 +84,7 @@ AIC.survival_ln_mixture_em <- function(object, ..., k = 2) {
   rlang::check_dots_empty(...)
   logLik <- stats::logLik(object)
   nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
-  
+
   return(round(-2 * logLik + k * nparam, 2))
 }
 
@@ -94,6 +94,6 @@ BIC.survival_ln_mixture_em <- function(object, ...) {
   rlang::check_dots_empty(...)
   logLik <- stats::logLik(object)
   nparam <- ncol(object$em_iteration) - 1 # remove iter column from em_iteration matrix
-  
+
   return(round(-2 * logLik + log(nobs(object)) * nparam, 2))
 }

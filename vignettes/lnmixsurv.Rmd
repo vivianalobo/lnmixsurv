@@ -28,8 +28,9 @@ library(lnmixsurv)
 library(readr)
 
 mod1 <- survival_ln_mixture(Surv(y, delta) ~ x,
-                            sim_data$data,
-                            starting_seed = 20)
+  sim_data$data,
+  starting_seed = 20
+)
 
 mod1
 ```
@@ -48,7 +49,7 @@ mod_spec <- survival_reg() |>
   set_mode("censored regression")
 
 mod2 <- mod_spec |>
-  fit(Surv(y, delta) ~ x, sim_data$data)      
+  fit(Surv(y, delta) ~ x, sim_data$data)
 ```
 
 The estimates are easily obtained using tidy method. See `?tidy.survival_ln_mixture` for extra options.
@@ -70,8 +71,8 @@ models <- list(formula = mod1, tidymodels = mod2)
 
 new_data <- sim_data$data |> distinct(x)
 pred_sob <- map(models, ~ predict(.x, new_data,
-                                  type = "survival",
-                                  eval_time = seq(120)
+  type = "survival",
+  eval_time = seq(120)
 ))
 
 bind_rows(pred_sob, .id = "modelo") |>
@@ -91,8 +92,8 @@ models <- list(formula = mod1, tidymodels = mod2)
 new_data <- sim_data$data |> distinct(x)
 
 pred_sob <- map(models, ~ predict(.x, new_data,
-                                  type = "survival",
-                                  eval_time = seq(120)
+  type = "survival",
+  eval_time = seq(120)
 ))
 
 bind_rows(pred_sob, .id = "modelo") |>

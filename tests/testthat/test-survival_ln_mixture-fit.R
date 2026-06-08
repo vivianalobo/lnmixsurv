@@ -40,7 +40,7 @@ test_that("fit works as expected with simulated data", {
   post_summary <- posterior::summarise_draws(mod$posterior, estimate = stats::median, std.error = stats::mad)
   colnames(post_summary)[1] <- "term"
   post_tidy <- tidy(mod, effects = c("fixed", "auxiliary"))
-  
+
   expected_result <- structure(
     list(term = c(
       "(Intercept)_1", "x1_1", "(Intercept)_2",
@@ -50,9 +50,10 @@ test_that("fit works as expected with simulated data", {
     ), std.error = c(
       0.00668, 0.00942, 0.0172, 0.0203, 1.34, 0.114, 0.0109
     )),
-    row.names = c(NA, -7L), 
-    class = c("draws_summary", "tbl_df", "tbl", "data.frame"), 
-    num_args = list())
+    row.names = c(NA, -7L),
+    class = c("draws_summary", "tbl_df", "tbl", "data.frame"),
+    num_args = list()
+  )
 
   expect_equal(mod$nobs, 10000)
   expect_equal(post_summary, post_tidy, tolerance = 1)

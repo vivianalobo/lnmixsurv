@@ -33,10 +33,12 @@ require(ggplot2)
 set.seed(4)
 
 # Gerando dados
-data <- simulate_data(n = 6000, k = 3, mixture_components = 2, 
-                      percentage_censored = 0.3)$data |> 
-  filter(t < 500) |> 
-  rename(x = cat, y = t) 
+data <- simulate_data(
+  n = 6000, k = 3, mixture_components = 2,
+  percentage_censored = 0.3
+)$data |>
+  filter(t < 500) |>
+  rename(x = cat, y = t)
 
 new_data <- data |>
   distinct(x)
@@ -71,13 +73,15 @@ decision_tree <- decision_tree(cost_complexity = 0) |>
 
 ln_mixture <- survival_reg() |>
   set_engine("survival_ln_mixture",
-             iter = 4000, warmup = 2000, starting_seed = 10, 
-             em_iter = 450, mixture_components = 3)
+    iter = 4000, warmup = 2000, starting_seed = 10,
+    em_iter = 450, mixture_components = 3
+  )
 
 ln_mixture_em <- survival_reg() |>
   set_engine("survival_ln_mixture_em",
-             iter = 250, starting_seed = 15, 
-             mixture_components = 3)
+    iter = 250, starting_seed = 15,
+    mixture_components = 3
+  )
 
 specs <- list(
   ln_survival = ln_survival, ph_survival = ph_survival, ln_mixture = ln_mixture, decision_tree = decision_tree, ln_mixture_em = ln_mixture_em
@@ -92,8 +96,9 @@ set.seed(1)
 models <- map(specs, ~ fit(.x, formula, data))
 
 pred_sob <- map(models, ~ predict(.x, new_data,
-                                  type = "survival",
-                                  eval_time = seq(500)))
+  type = "survival",
+  eval_time = seq(500)
+))
 ```
 
 The following plot compares each model with the Kaplan-Meier estimates of the survival function.

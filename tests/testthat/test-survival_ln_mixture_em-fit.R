@@ -36,23 +36,25 @@ test_that("survival_ln_mixture_em works with intercept only fit", {
 })
 
 test_that("fit works as expected with simulated data", {
-  mod <- survival_ln_mixture_em(survival::Surv(y, delta) ~ x, sim_data$data, 
-                                starting_seed = 10, 
-                                iter = 150)
-  
+  mod <- survival_ln_mixture_em(survival::Surv(y, delta) ~ x, sim_data$data,
+    starting_seed = 10,
+    iter = 150
+  )
+
   mod_tidy <- tidy(mod, effects = c("fixed", "auxiliary"))
-  
+
   expected_result <- structure(
     list(term = c(
       "(Intercept)_1", "x1_1", "(Intercept)_2",
       "x1_2", "phi_1", "phi_2", "eta_1", "eta_2"
     ), estimate = c(
-      4.01 , -1.54, 3.78, 0.64, 22.8,
+      4.01, -1.54, 3.78, 0.64, 22.8,
       2.57, 4.9e-14, 1
     )),
-    row.names = c(NA, -8L), 
-    class = c("tbl_df", "tbl", "data.frame"))
-  
+    row.names = c(NA, -8L),
+    class = c("tbl_df", "tbl", "data.frame")
+  )
+
   expect_equal(mod$nobs, 10000)
   expect_equal(mod_tidy, expected_result, tolerance = 1)
 })
