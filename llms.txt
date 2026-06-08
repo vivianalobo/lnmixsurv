@@ -1,0 +1,164 @@
+# lnmixsurv
+
+The `lnmixsurv` package provides an easy interface to the Bayesian
+lognormal mixture model proposed by [Lobo, Fonseca and Alves,
+2023](https://www.cambridge.org/core/journals/annals-of-actuarial-science/article/abs/lapse-risk-modeling-in-insurance-a-bayesian-mixture-approach/EDA511D313959D9A4040C51289A29B4A).
+
+An usual formula-type model is implemented in `survival_ln_mixture`,
+with the usual `suvival::Surv()` interface. The model tries to follow
+the [conventions for R modeling
+packages](https://tidymodels.github.io/model-implementation-principles/),
+and uses the [hardhat](https://hardhat.tidymodels.org/) structure.
+
+The underlying algorithm implementation is a Gibbs sampler which takes
+initial values from a small run of the EM-Algorithm, with initial values
+selection based on the log-likelihood. Besides the Bayesian approach,
+the Expectation-Maximization approach (which focus on maximizing the
+likelihood) for censored data is also available. The methods are
+implemented in `C++` using `RcppArmadillo` for the linear algebra
+operations, `RcppGSL` for the random number generation and seed control
+and `RcppParallel` (since version 3.0.0) for parallelization.
+
+## Dependencies
+
+The only dependency is on GSL, so, make sure you have
+[GSL](https://www.gnu.org/software/gsl/) installed before proceeding
+Below, there are some basic guides on how to install these for each
+operational system other than Windows (Windows users are probably fine
+and ready to go).
+
+### Mac OS
+
+Run `brew install gsl` at the console/terminal should be enough for
+installing GSL.
+
+### Linux
+
+The installation of GSL on Linux is distro-specific. For the main
+distros out-there:
+
+- Arch: `sudo pacman -S gsl`
+- CentOS/RHEL: `sudo yum install gsl-devel` or
+  `sudo dnf install gsl-devel` (make sure the EPEL – Extra Packages for
+  Enterprise Linux – repository is enabled)
+- Debian/Ubuntu: `sudo apt-get install libgsl-dev`
+- Fedora: `sudo dnf install gsl-devel`
+- Gentoo: `sudo emerge sci-libs/gsl`
+- openSUSE: `sudo zypper install gsl-devel`
+
+## Installation
+
+You can install the latest development version of `lnmixsurv` from
+[GitHub](https://github.com/):
+
+``` r
+
+# install.packages("devtools")
+devtools::install_github("vivianalobo/lnmixsurv")
+```
+
+Alternatively, to install the latest development version of `lnmixsurv`,
+you can use the following code:
+
+``` r
+
+# install.packages("devtools")
+devtools::install_github("vivianalobo/lnmixsurv", "devel")
+```
+
+## parsnip and censored extension
+
+An extension to the models defined by
+[parsnip](https://parsnip.tidymodels.org/index.html) and
+[censored](https://censored.tidymodels.org/articles/examples.html) is
+also provided, adding the `survival_ln_mixture` engine to the
+[`parsnip::survival_reg()`](https://parsnip.tidymodels.org/reference/survival_reg.html)
+model.
+
+The following models, engines, and prediction type are
+available/extended through `persistencia`:
+
+| model | engine | time | survival | linear_pred | raw | quantile | hazard |
+|:---|:---|:---|:---|:---|:---|:---|:---|
+| survival_reg | survival_ln_mixture | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
+| survival_reg | survival_ln_mixture_em | ✖ | ✔ | ✖ | ✖ | ✖ | ✔ |
+
+# Package index
+
+## All functions
+
+- [`augment(`*`<survival_ln_mixture>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/augment.survival_ln_mixture.md)
+  : Augment data with information from a survival_ln_mixture object
+
+- [`augment(`*`<survival_ln_mixture_em>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/augment.survival_ln_mixture_em.md)
+  : Augment data with information from a survival_ln_mixture_em object
+
+- [`fit_metrics()`](https://vivianalobo.github.io/lnmixsurv/reference/fit_metrics.md)
+  :
+
+  Function used to calculate some distance metrics between the predicted
+  survival and the observed survival.
+  [`fit_metrics()`](https://vivianalobo.github.io/lnmixsurv/reference/fit_metrics.md)
+  is used to calculate distance metrics between empirical and fitted
+  survival for a predictions object, preferably the object `$preds`
+  returned from
+  [`plot_fit_on_data()`](https://vivianalobo.github.io/lnmixsurv/reference/plot_fit_on_data.md).
+
+- [`join_empirical_hazard()`](https://vivianalobo.github.io/lnmixsurv/reference/join_empirical_hazard.md)
+  : Function used to join the empirical hazard to the data
+
+- [`nobs(`*`<survival_ln_mixture>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/nobs.survival_ln_mixture.md)
+  :
+
+  Extract the number of observations from `survival_ln_mixture` fit.
+
+- [`plot(`*`<survival_ln_mixture_em>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/plot.survival_ln_mixture_em.md)
+  : Visualizes the path of the EM algorithm
+
+- [`plot_fit_on_data()`](https://vivianalobo.github.io/lnmixsurv/reference/plot_fit_on_data.md)
+  : Function used to quick visualize the fitted values (survival
+  estimate) on the data used to fit the model (via EM algorithm or
+  Gibbs).
+
+- [`predict(`*`<survival_ln_mixture>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/predict.survival_ln_mixture.md)
+  : Predict from a Lognormal Mixture Model
+
+- [`predict(`*`<survival_ln_mixture_em>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/predict.survival_ln_mixture_em.md)
+  : Predict from a lognormal_em Mixture Model fitted using EM algorithm.
+
+- [`sim_data`](https://vivianalobo.github.io/lnmixsurv/reference/sim_data.md)
+  : Simulated lognormal mixture data.
+
+- [`simulate_data()`](https://vivianalobo.github.io/lnmixsurv/reference/simulate_data.md)
+  : Function to simulate survival data from a mixture of normal
+  distribution.
+
+- [`survival_ln_mixture()`](https://vivianalobo.github.io/lnmixsurv/reference/survival_ln_mixture.md)
+  : Lognormal mixture model - Gibbs sampler
+
+- [`survival_ln_mixture_em()`](https://vivianalobo.github.io/lnmixsurv/reference/survival_ln_mixture_em.md)
+  : Lognormal mixture model - Expectation-Maximization Algorithm
+
+- [`tidy(`*`<survival_ln_mixture>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/tidy.survival_ln_mixture.md)
+  : Tidying method for a Lognormal Mixture model.
+
+- [`tidy(`*`<survival_ln_mixture_em>`*`)`](https://vivianalobo.github.io/lnmixsurv/reference/tidy.survival_ln_mixture_em.md)
+  : Tidying method for a Lognormal Mixture model (fitted via
+  Expectation-Maximization algorithm).
+
+# Articles
+
+### All vignettes
+
+- [Comparison with other
+  models](https://vivianalobo.github.io/lnmixsurv/articles/compare.md):
+- [Expectation
+  Maximization](https://vivianalobo.github.io/lnmixsurv/articles/expectation_maximization.md):
+- [Intercept only
+  fits](https://vivianalobo.github.io/lnmixsurv/articles/intercept_only.md):
+- [Get
+  started](https://vivianalobo.github.io/lnmixsurv/articles/lnmixsurv.md):
+- [Parallel computation and posterior
+  analysis](https://vivianalobo.github.io/lnmixsurv/articles/parallel_computation.md):
+- [UNKNOWN
+  TITLE](https://vivianalobo.github.io/lnmixsurv/articles/parsnip_spec.md):
