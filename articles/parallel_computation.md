@@ -88,10 +88,10 @@ We expect the parallel algorithm to be faster. The times for the
 sequential and parallel runs are:
 
     #> [1] "Sequential"
-    #> Time difference of 0.4393353 secs
+    #> Time difference of 0.4266927 secs
     #> [1] "-------------"
     #> [1] "Parallel"
-    #> Time difference of 0.2697778 secs
+    #> Time difference of 0.258369 secs
 
 The parallel run should be faster than the sequential run. The speedup
 will depend on the number of cores available and the number of chains.
