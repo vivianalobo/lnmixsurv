@@ -23,7 +23,7 @@ test_that("tiders work as expected (EM)", {
       term = c("(Intercept)_1", "x1_1", "(Intercept)_2", "x1_2"),
       estimate = c(3.47, 0.75, 3.97, 6.25)
     ),
-    row.names = c(NA, -4L), 
+    row.names = c(NA, -4L),
     class = c("tbl_df", "tbl", "data.frame")
   )
   expect_equal(obtained, expected, tolerance = 1)

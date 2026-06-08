@@ -32,17 +32,17 @@ library(readr)
 set.seed(8)
 
 data <- simulate_data(6000,
-    mixture_components = 3, k = 2,
-    percentage_censored = 0.3
-  )$data |>
-    rename(x = cat, y = t)
+  mixture_components = 3, k = 2,
+  percentage_censored = 0.3
+)$data |>
+  rename(x = cat, y = t)
 
 model_em <- survival_ln_mixture_em(Surv(y, delta) ~ x,
-    data = data,
-    iter = 200,
-    starting_seed = 20,
-    number_em_search = 0
-  )
+  data = data,
+  iter = 200,
+  starting_seed = 20,
+  number_em_search = 0
+)
 
 gg <- plot_fit_on_data(model_em, data)$ggplot
 ```

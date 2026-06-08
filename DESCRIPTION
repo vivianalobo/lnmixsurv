@@ -1,14 +1,13 @@
 Package: lnmixsurv
 Type: Package
 Title: Bayesian Mixture Log-Normal Survival Model
-Version: 3.1.6
-Date: 2024-08-21
+Version: 3.1.7
 Authors@R: c(
-    person("Viviana das Gra\u00e7as Ribeiro Lobo", email = "viviana@dme.ufrj.br", role = "aut"),
+    person("Viviana das Gra\u00e7as Ribeiro Lobo", email = "viviana@dme.ufrj.br", role = "cre"),
     person("Tha\u00eds Cristina Oliveira da Fonseca", role = "aut"),
     person("Mariane Branco Alves", role = "aut"),
     person("Vitor Capdeville", role = "aut"),
-    person("Victor Hugo Soares Ney", email = "victor.s.ney@gmail.com", role = "cre"))
+    person("Victor Hugo Soares Ney", email = "victor.s.ney@gmail.com", role = "aut"))
 Description: Bayesian Survival models via the mixture of Log-Normal distribution extends the well-known survival models and accommodates different behaviour over time and considers higher censored survival times. The proposal combines mixture distributions Fruhwirth-Schnatter(2006) <doi:10.1007/s11336-009-9121-4>, and data augmentation techniques Tanner and Wong (1987) <doi:10.1080/01621459.1987.10478458>.
 License: MIT + file LICENSE
 Imports: 
@@ -18,8 +17,6 @@ Imports:
     rlang,
     generics,
     dplyr,
-    readr,
-    purrr,
     tidyr,
     tibble,
     Rcpp,
@@ -37,6 +34,8 @@ Suggests:
     plotly,
     bayesplot,
     censored,
+    readr,
+    purrr,
     knitr,
     rmarkdown,
     tidymodels,
@@ -47,12 +46,11 @@ Suggests:
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 SystemRequirements:
-	C++,
-	GNU,
+  GNU,
 	GNU make,
 	GSL
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 LazyData: true
 URL: https://vivianalobo.github.io/lnmixsurv/
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.0.0

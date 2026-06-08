@@ -41,13 +41,15 @@ This piece of code will run the chains sequentially and save the times for the s
 ```{r eval = TRUE, include = TRUE}
 start_sequential <- Sys.time()
 mod_sequential <- survival_ln_mixture(Surv(y, delta) ~ x, data,
-                                      iter = 50, chains = 2,
-                                      starting_seed = 5, warmup = 0
+  iter = 50, chains = 2,
+  starting_seed = 5, warmup = 0
 )
 end_sequential <- Sys.time()
 
-times_sequential <- tibble::tibble(start_sequential = start_sequential,
-                                   end_sequential = end_sequential)
+times_sequential <- tibble::tibble(
+  start_sequential = start_sequential,
+  end_sequential = end_sequential
+)
 ```
 
 We can specify the `cores` argument to run the chains in parallel. In this case, since we're using `chains = 2`, specifying any number of cores above 2 will limit the number of cores to 2. If the number of cores is between 1 and the number of chains, the chains will be fitted in parallel limited to the number of cores.
@@ -55,13 +57,15 @@ We can specify the `cores` argument to run the chains in parallel. In this case,
 ```{r eval = TRUE, include = TRUE}
 start_parallel <- Sys.time()
 mod_parallel <- survival_ln_mixture(Surv(y, delta) ~ x, data,
-                                    iter = 50, chains = 2, cores = 2,
-                                    starting_seed = 5, warmup = 0
+  iter = 50, chains = 2, cores = 2,
+  starting_seed = 5, warmup = 0
 )
 end_parallel <- Sys.time()
 
-times_parallel <- tibble::tibble(start_parallel = start_parallel,
-                                 end_parallel = end_parallel)
+times_parallel <- tibble::tibble(
+  start_parallel = start_parallel,
+  end_parallel = end_parallel
+)
 ```
 
 Since the seed is fixed, the results should be the same. We can check that by comparing the posterior samples:

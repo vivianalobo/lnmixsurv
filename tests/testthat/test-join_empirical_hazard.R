@@ -1,4 +1,4 @@
-km <- survival::survfit(survival::Surv(time, status == 2) ~ sex, data = survival::lung) |> 
+km <- survival::survfit(survival::Surv(time, status == 2) ~ sex, data = survival::lung) |>
   broom::tidy()
 
 test_that("empirical hazards are joined as expected", {

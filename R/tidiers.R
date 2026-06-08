@@ -24,7 +24,7 @@ globalVariables(".pred")
 #' \code{\link[rstanarm]{print.stanreg}} for more details.}
 #'
 #' Setting \code{effects="auxiliary"} will select the precision and proportion of mixture components parameters.
-#' 
+#'
 #' @examples
 #'
 #' require(survival)
@@ -94,7 +94,7 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
 #' \item{estimate}{A point estimate of the coefficient (last iteration value).}
 #'
 #' Setting \code{effects="auxiliary"} will select the precision and proportion of mixture components parameters.
-#' 
+#'
 #' @examples
 #'
 #' require(survival)
@@ -106,20 +106,20 @@ tidy.survival_ln_mixture <- function(x, # nolint: object_name_linter.
 #'
 #' @export
 tidy.survival_ln_mixture_em <- function(x, # nolint: object_name_linter.
-                                     effects = "fixed",
-                                     digits = NULL,
-                                     ...) {
+                                        effects = "fixed",
+                                        digits = NULL,
+                                        ...) {
   rlang::arg_match(effects, c("fixed", "auxiliary"))
   rlang::check_dots_empty(...)
   all_vars <- colnames(x$em_iterations)
   vars <- c()
-  
+
   if ("fixed" %in% effects) {
     for (i in x$mixture_groups) {
       vars <- c(vars, paste0(x$predictors_name, "_", i))
     }
   }
-  
+
   if ("auxiliary" %in% effects) {
     auxiliary_vars <- all_vars[startsWith(all_vars, "phi")]
     auxiliary_vars <- c(
@@ -128,19 +128,21 @@ tidy.survival_ln_mixture_em <- function(x, # nolint: object_name_linter.
     )
     vars <- c(vars, auxiliary_vars)
   }
-  
-  estimate <- dplyr::select(x$em_iterations, dplyr::all_of(vars)) |> 
-    dplyr::slice(nrow(x$em_iterations)) |> 
+
+  estimate <- dplyr::select(x$em_iterations, dplyr::all_of(vars)) |>
+    dplyr::slice(nrow(x$em_iterations)) |>
     as.numeric()
-  
-  return(tibble::tibble(term = vars,
-                        estimate = estimate))
+
+  return(tibble::tibble(
+    term = vars,
+    estimate = estimate
+  ))
 }
 
 #' Funcao auxiliar para calcular intervalo de credibilidade usando quantis.
 #' @noRd
 credibility_interval <- function(x, conf.level) { # nolint: object_name_linter.
-  ret <- unname(stats::quantile(x, probs = c((1 - conf.level)/2, (1 + conf.level)/2)))
+  ret <- unname(stats::quantile(x, probs = c((1 - conf.level) / 2, (1 + conf.level) / 2)))
   return(c("cred.low" = ret[1], "cred.high" = ret[2]))
 }
 
